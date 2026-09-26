@@ -3045,7 +3045,7 @@ const QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qr
 const AR_STOP = new Set(('في من على إلى الى عن مع هذا هذه ذلك تلك التي الذي الذين أن ان إن او أو ثم كل قد لا ما لم لن هو هي هم نحن أنا انا كان كانت يكون تكون بعد قبل عند حتى إذا اذا كما لكن بل أي اي بين ايضا أيضا جدا جدًا فقط وهو وهي وفي ومن وعلى والى وان به بها له لها لهم منه منها عليه عليها فيه فيها عبر خلال حول دون غير أكثر اكثر أقل اقل كيف لماذا متى أين اين هل نعم يعني مثل ذات عدة بعض لدى لدي لديه لديها كذلك وأن وإن وكل فإن لأن لان حيث التي وهذا وهذه يمكن تم ليس ليست إلى').split(' '));
 function wordFreq(texts) {
   const c = {};
-  texts.forEach(t => String(t || '').replace(/[ً-ْـ]/g, '').replace(/[^؀-ۿa-zA-Z0-9\s]/g, ' ').split(/\s+/).forEach(w => {
+  texts.forEach(t => String(t || '').replace(/[،؛؟«»٪٫٬]/g, ' ').replace(/[ً-ْـ]/g, '').replace(/[^؀-ۿa-zA-Z0-9\s]/g, ' ').split(/\s+/).forEach(w => {
     w = w.trim(); if (w.length < 3 || AR_STOP.has(w) || /^\d+$/.test(w)) return; const k = w.replace(/^(وال|بال|فال|كال|لل)/, 'ال'); c[k] = (c[k] || 0) + 1; }));
   return Object.keys(c).map(k => ({ w: k, n: c[k] })).sort((a, b) => b.n - a.n).slice(0, 45);
 }
