@@ -29,6 +29,7 @@ function drop(key, inner) { return UIState.openDrop.has(key) ? '<div class="tool
 function tags(x) { return (x._added ? '<span class="tag added">مضاف</span> ' : '') + (x._modified ? '<span class="tag mod">معدَّل</span> ' : '') + (x._hidden ? '<span class="tag hid">مخفي</span> ' : '') + (x._disabled ? '<span class="tag off">معطّل</span> ' : ''); }
 
 function exSummary(e) {
+  if (e.kind === 'survey') { const st = SurveyStats.of(Store.posts[e.id], e); if (st.n) return '<div class="summary"><b class="num">' + st.n + '</b> تقييم · متوسط الرضا <b class="num">' + (st.overall ? st.overall.toFixed(2) : '—') + '</b>/5 · NPS <b class="num">' + (st.nps == null ? '—' : st.nps) + '</b>' + st.rates.map((r, i) => '<div class="it"><span class="grow">' + h(r) + '</span><b class="num">' + (st.avgs[i] ? st.avgs[i].toFixed(2) : '—') + '</b></div>').join('') + '</div>'; }
   const ps = Store.posts[e.id] || {}; const keys = Object.keys(ps).filter(k => ps[k]).sort((a, b) => (ps[b].ts || 0) - (ps[a].ts || 0));
   if (!keys.length) return '<div class="summary">لا مشاركات بعد.</div>';
   const reveal = isRevealed(e);
@@ -328,7 +329,8 @@ function exFormHtml(kind) {
     out += '<div class="field"><label>السيناريو / الموقف' + (isAct ? ' (اختياري)' : '') + '</label>' + RTE.html('exScenario', e.scenario) + '</div>';
     if (!isAct) out += '<div class="field"><label>المبدأ العلمي باختصار</label><textarea id="exPrinciple" data-keep="ex-pr" rows="2">' + h(stripHtml(e.principle || '')) + '</textarea></div><div class="field"><label>خطوات «كيف تنجز التمرين؟» (سطر لكل خطوة)</label><textarea id="exSteps" data-keep="ex-steps" rows="4">' + h(arr(e.steps).join('\n')) + '</textarea></div>';
   }
-  out += '<div class="field"><label>📝 المطلوب منك</label>' + RTE.html('exTask', e.task) + '</div>';
+  out += '<div class="field"><label>📝 ' + (isSurvey ? 'سؤال الرأي المفتوح' : 'المطلوب منك') + '</label>' + RTE.html('exTask', e.task) + '</div>';
+  if (isSurvey) out += '<div class="field"><label>⭐ بنود التقييم بالنجوم (سطر لكل بند)</label><textarea id="svRates" data-keep="sv-rates" rows="6">' + h(arr(e.rates).join('\n')) + '</textarea></div><div class="field"><label>سؤال التوصية NPS (0–10) — اتركه فارغًا لإخفائه</label><input id="svNps" data-keep="sv-nps" value="' + h(e.nps || '') + '"></div>';
   if (!isSurvey) {
     out += '<div class="field" id="hintField" ' + (fmt === 'text' ? 'style="display:none"' : '') + '><label>💡 تلميح عام (يحل محل «المطلوب» في النماذج التفاعلية)</label>' + RTE.html('exHint', e.hint) + '</div>';
     if (!isAct) out += '<div class="field"><label>🎯 لماذا هذا النشاط؟</label><textarea id="exWhy" data-keep="ex-why" rows="2">' + h(stripHtml(e.why || '')) + '</textarea></div>';
@@ -361,6 +363,7 @@ async function exFormSave(root, kind) {
   const fmt = kind === 'survey' ? 'text' : ($('#exFormat', root) ? $('#exFormat', root).value : 'text');
   const data = { title: $('#exTitle', root).value.trim(), icon: $('#exIcon', root).value.trim(), task: RTE.val(root, 'exTask') };
   if (!data.title) { UI.alert('اكتب عنوانًا أولًا.'); return; }
+  if (kind === 'survey') { data.rates = ($('#svRates', root).value || '').split('\n').map(x => x.trim()).filter(Boolean); data.nps = $('#svNps', root).value.trim(); }
   if (kind !== 'survey') {
     data.format = fmt; data.mode = FORMAT_MODE[fmt] || $('#exMode', root).value;
     data.scenario = RTE.val(root, 'exScenario'); data.hint = RTE.val(root, 'exHint'); data.model = fmt === 'text' ? RTE.val(root, 'exModel') : ''; data.image = ImgPick.val('exImg');

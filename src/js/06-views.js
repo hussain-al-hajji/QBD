@@ -112,7 +112,7 @@ Views.assess = {
     if (!Me.isReg()) return out + '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
     const key = 'as_' + ph; let d = UIState.draft[key]; if (!d) { d = A.items.map(() => null); UIState.draft[key] = d; }
     out += '<div class="answer-box"><div class="status-note" style="margin-bottom:6px">أجب عن كل الأسئلة ثم اضغط «إرسال». يمكنك تغيير اختيارك قبل الإرسال فقط، ولا تظهر النتائج إلا بعد أن يكشفها المدرّب.</div>' +
-      A.items.map((it, i) => '<div class="q-card"><div class="qt"><span class="qn num">' + (i + 1) + '</span><span>' + h(it.q) + '</span></div><div class="opts">' + it.options.map((o, k) => { const sel = d[i] !== null && +d[i] === k; return '<button class="opt ' + (sel ? 'sel' : '') + '" data-act="as-pick" data-ph="' + ph + '" data-i="' + i + '" data-v="' + k + '"><span class="mk">' + (sel ? '✓' : '') + '</span><span><b>' + LETTERS[k] + ')</b> ' + h(o) + '</span></button>'; }).join('') + '</div></div>').join('') +
+      seededOrder(n, Me.uid() + ph).map((i, pos) => { const it = A.items[i]; return '<div class="q-card"><div class="qt"><span class="qn num">' + (pos + 1) + '</span><span>' + h(it.q) + '</span></div><div class="opts">' + seededOrder(it.options.length, Me.uid() + ph + i).map((k, kp) => { const o = it.options[k]; const sel = d[i] !== null && +d[i] === k; return '<button class="opt ' + (sel ? 'sel' : '') + '" data-act="as-pick" data-ph="' + ph + '" data-i="' + i + '" data-v="' + k + '"><span class="mk">' + (sel ? '✓' : '') + '</span><span><b>' + LETTERS[kp] + ')</b> ' + h(o) + '</span></button>'; }).join('') + '</div></div>'; }).join('') +
       '<div class="save-row"><button class="btn btn-primary" data-act="as-submit" data-ph="' + ph + '">📤 إرسال ' + lbl + '</button><span class="status-note num">' + d.filter(x => x !== null).length + ' / ' + n + '</span></div></div>';
     return out;
   }
@@ -347,7 +347,7 @@ Views.ex = {
       (e.image ? '<img class="ex-img" src="' + e.image + '" alt="">' : '') +
       '<div class="ex-head"><div class="ico">' + h(e.icon || '✍️') + '</div><div><h1>' + h(e.title) + '</h1><div class="row" style="margin-top:4px"><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + '</span>' + (e.format !== 'text' ? '<span class="pill">' + h(FORMATS[e.format]) + '</span>' : '') + '</div></div></div>';
     if (isSurvey) {
-      out += '<div class="ex-block task"><div class="lbl">📝 المطلوب منك</div>' + richHtml(e.task) + '</div>' + '<div id="ansZone">' + answerBoxHtml(e) + '</div><div id="feedZone">' + feedHtml(e) + '</div></div>';
+      out += '<div class="ex-block task"><div class="lbl">📝 قيّم تجربتك</div>' + richHtml(e.task) + '</div>' + '<div id="ansZone">' + surveyFormHtml(e) + '</div><div id="feedZone">' + surveyFeedHtml(e) + '</div></div>';
       return out;
     }
     if (e.scenario || e.chart) out += '<div class="ex-block scenario"><div class="lbl">🎬 الموقف</div>' + richHtml(e.scenario) + (e.chart ? '<div style="margin-top:12px">' + Charts.render(e.chart, col) + '</div>' : '') + '</div>';
@@ -368,6 +368,29 @@ Views.ex = {
     return out;
   }
 };
+
+// ============ تقييم البرنامج (نجوم + توصية + رأي) ============
+function starsHtml(v, attrs, dis) { return '<span class="stars">' + [1, 2, 3, 4, 5].map(n => '<button class="star ' + (v >= n ? 'on' : '') + '" ' + attrs + ' data-v="' + n + '" ' + dis + ' title="' + n + '">★</button>').join('') + '</span>'; }
+function surveyFormHtml(e) {
+  if (!Me.isReg()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
+  const post = (Store.posts[e.id] || {})[Me.uid()]; const editing = !!UIState.editing[e.id];
+  if (post && !editing) return '<div class="answer-box"><div class="row" style="margin-bottom:8px"><b style="font-family:var(--f-display)">✅ شكرًا لتقييمك</b><span class="grow"></span><button class="btn btn-soft btn-sm" data-act="edit-ans" data-ex="' + h(e.id) + '">✏️ تعديل</button></div>' +
+    e.rates.map((r, i) => '<div class="rate-row"><span>' + h(r) + '</span>' + starsHtml(+((post.ratings || {})[i]) || 0, '', 'disabled') + '</div>').join('') + (post.nps != null ? '<div class="rate-row"><span>التوصية</span><b class="num">' + post.nps + ' / 10</b></div>' : '') + (post.text ? '<div class="answer-view" style="margin-top:8px">' + h(post.text) + '</div>' : '') + '</div>';
+  let d = UIState.draft.sv; if (!d) { d = { ratings: Object.assign({}, (post && post.ratings) || {}), nps: post && post.nps != null ? post.nps : null }; UIState.draft.sv = d; }
+  return '<div class="answer-box">' + e.rates.map((r, i) => '<div class="rate-row"><span>' + h(r) + '</span>' + starsHtml(+d.ratings[i] || 0, 'data-act="sv-rate" data-i="' + i + '"', '') + '</div>').join('') +
+    (e.nps ? '<div class="field" style="margin-top:12px"><label>' + h(e.nps) + '</label><div class="nps-row">' + Array.from({ length: 11 }).map((_, n) => '<button class="nps-btn ' + (d.nps === n ? 'on' : '') + ' ' + (n <= 6 ? 'd' : n <= 8 ? 'p' : 'g') + '" data-act="sv-nps" data-v="' + n + '"><span class="num">' + n + '</span></button>').join('') + '</div><div class="nps-legend"><span>0 = لن أوصي أبدًا</span><span>10 = سأوصي بالتأكيد</span></div></div>' : '') +
+    '<div class="field"><label>رأيك ومقترحاتك</label><textarea data-keep="sv-text" id="svText" placeholder="الفكرة التي ستطبقها أولًا، وما تقترح تحسينه…">' + (post ? h(post.text || '') : '') + '</textarea></div>' +
+    '<div class="save-row"><button class="btn btn-primary" data-act="sv-save" data-ex="' + h(e.id) + '">📤 إرسال التقييم</button>' + (editing ? '<button class="btn btn-ghost" data-act="cancel-edit" data-ex="' + h(e.id) + '">إلغاء</button>' : '') + '</div></div>';
+}
+function surveyFeedHtml(e) {
+  const st = SurveyStats.of(Store.posts[e.id], e); if (!st.n) return '<div class="feed"><div class="empty">لا توجد تقييمات بعد.</div></div>';
+  const del = k => Admin.ctl() ? '<button class="del-btn" data-act="del-post" data-ex="' + h(e.id) + '" data-k="' + h(k) + '">🗑</button>' : '';
+  const ps = Store.posts[e.id] || {}; const keys = Object.keys(ps).filter(k => ps[k] && ps[k].text).sort((a, b) => (ps[b].ts || 0) - (ps[a].ts || 0));
+  return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>نتائج التقييم مباشرة</h3><span class="pill num">' + st.n + '</span></div>' +
+    '<div class="sv-stats"><div class="sv-kpi"><b class="num">' + (st.overall ? st.overall.toFixed(1) : '—') + '</b><span>متوسط الرضا من 5</span></div><div class="sv-kpi"><b class="num">' + (st.nps == null ? '—' : (st.nps > 0 ? '+' : '') + st.nps) + '</b><span>صافي التوصية NPS</span></div></div>' +
+    '<div class="sv-bars">' + st.rates.map((r, i) => '<div class="sv-bar"><span>' + h(r) + '</span><i><em style="width:' + ((st.avgs[i] || 0) / 5 * 100) + '%"></em></i><b class="num">' + (st.avgs[i] ? st.avgs[i].toFixed(1) : '—') + '</b></div>').join('') + '</div>' +
+    (keys.length ? '<div class="posts" style="margin-top:12px">' + keys.map(k => { const p = ps[k]; return '<div class="post ' + (k === Me.uid() ? 'mine' : '') + '"><div class="post-head"><span class="av">' + h(initials(p.name)) + '</span><div><div class="who">' + h(p.name || '') + '</div><div class="role">' + h(p.role || '') + ' · ' + ago(p.ts || 0) + '</div></div></div><div class="post-body">' + h(p.text) + '</div><div class="post-foot">' + Likes.btn('posts/' + e.id + '/' + k, p.likes) + del(k) + '</div></div>'; }).join('') + '</div>' : '') + '</div>';
+}
 
 // ============ المختبر الختامي ============
 function labElapsed(t) { if (!t || !t.start) return 0; const now = t.pausedAt || DB.now(); return Math.max(0, now - t.start - (t.pausedTotal || 0)); }

@@ -189,11 +189,20 @@ document.addEventListener('click', async ev => {
     }
     case 'save-inter': saveInter(exId); break;
     case 'sim-save': Sims.save(exId); break;
+    case 'sv-rate': { UIState.draft.sv.ratings[t.getAttribute('data-i')] = +t.getAttribute('data-v'); App.render(); break; }
+    case 'sv-nps': { UIState.draft.sv.nps = +t.getAttribute('data-v'); App.render(); break; }
+    case 'sv-save': {
+      const e = Content.ex(exId); const d = UIState.draft.sv || { ratings: {} };
+      if (e.rates.some((_, i) => !d.ratings[i])) { UI.alert('قيّم كل البنود بالنجوم قبل الإرسال.'); break; }
+      if (e.nps && d.nps == null) { UI.alert('اختر درجة التوصية من 0 إلى 10.'); break; }
+      const me = Me.data; await DB.set('posts/' + exId + '/' + me.uid, Object.assign({}, (Store.posts[exId] || {})[me.uid] || {}, { ratings: d.ratings, nps: d.nps, text: ($('#svText') || {}).value ? $('#svText').value.trim() : '', name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() }));
+      UIState.editing[exId] = false; delete UIState.draft.sv; UI.toast('✅ شكرًا لتقييمك'); App.render(); break;
+    }
     case 'sim-step': { const e = Content.ex(exId); Sims.state(e).step = +t.getAttribute('data-i'); App.render(); break; }
     case 'sim-reset': { const e = Content.ex(exId); if (await UI.confirm('إعادة المحاكاة إلى البداية؟ (لن تُحذف النتيجة المحفوظة إلا إذا حفظت من جديد)', { ok: 'إعادة' })) { UIState.sim[exId] = Sims.of(e).def(); App.render(); } break; }
     case 'save-text': saveText(exId); break;
     case 'edit-ans': { UIState.editing[exId] = true; const e = Content.ex(exId); if (e) { const p = (Store.posts[exId] || {})[postKey(e)]; if (p && p.answers) UIState.draft[exId] = ansList(p.answers, e.items.length); } App.render(); break; }
-    case 'cancel-edit': UIState.editing[exId] = false; delete UIState.draft[exId]; App.render(); break;
+    case 'cancel-edit': UIState.editing[exId] = false; delete UIState.draft[exId]; delete UIState.draft.sv; App.render(); break;
     case 'show-model': UIState.modelShown[exId] = true; App.render(); break;
     case 'del-post': { if (await UI.confirm('حذف هذه المشاركة وحدها؟ لن تتأثر بقية المشاركات.', { danger: true, ok: 'حذف' })) DB.remove('posts/' + exId + '/' + t.getAttribute('data-k')); break; }
     // ----- المختبر -----

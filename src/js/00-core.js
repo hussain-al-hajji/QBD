@@ -84,6 +84,8 @@ function shade(hex, amt) { // amt: -1..1
   return '#' + [f(r), f(g), f(b)].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
 }
 function tint(hex, a) { let c = hex.replace('#', ''); const n = parseInt(c, 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+// ترتيب عشوائي ثابت لكل بذرة (لخلط أسئلة وخيارات التقييم لكل متدرب)
+function seededOrder(n, seed) { let x = 7; for (const ch of String(seed)) x = (x * 31 + ch.charCodeAt(0)) % 1000003; const rnd = () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; const o = []; for (let i = 0; i < n; i++) o.push(i); for (let i = n - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 function loadScript(src) {
   loadScript.cache = loadScript.cache || {};

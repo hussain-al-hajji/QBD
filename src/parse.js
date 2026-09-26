@@ -84,6 +84,7 @@ function parseFile(txt, data) {
         let answer = 0; const options = p.slice(1).map((o, i) => { if (o.startsWith('*')) { answer = i; return o.slice(1).trim(); } return o; });
         cur.items.push({ q: p[0], options, answer }); continue;
       }
+      if (curType === 'ex' && k === 'rate') { (cur.rates = cur.rates || []).push(v); continue; }
       if (curType === 'ex' && k === 'tf') { const p = v.split('||').map(s => s.trim()); cur.items.push({ q: p[0], answer: p[1] === 'صح' }); continue; }
       if (curType === 'ex' && k === 'fb') { const p = v.split('||').map(s => s.trim()); cur.items.push({ text: p[0], answer: p[1] }); continue; }
       if (curType === 'ex' && k === 'cp') { const p = v.split('||').map(s => s.trim()); cur.items.push({ a: p[0], b: p[1], answer: p[2] }); continue; }

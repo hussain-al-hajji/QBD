@@ -117,7 +117,7 @@ const Content = {
     let e;
     if (def) { const ov = Store.contentEx[id]; e = Object.assign({}, def, ov || {}, { id, _modified: !!ov, _added: false }); }
     else e = Object.assign({ format: 'text', mode: 'individual', steps: [] }, added, { id, _added: true, _modified: false });
-    e.steps = arr(e.steps); e.items = arr(e.items).map(it => Object.assign({}, it, it.options ? { options: arr(it.options) } : {}));
+    e.steps = arr(e.steps); e.rates = arr(e.rates); e.items = arr(e.items).map(it => Object.assign({}, it, it.options ? { options: arr(it.options) } : {}));
     if (FORMAT_MODE[e.format]) e.mode = FORMAT_MODE[e.format];
     e._hidden = Content.isHidden(id);
     return e;
@@ -155,6 +155,18 @@ const HOME_BUILTINS = [
   { key: 'survey', icon: '🎓', kicker: 'نهاية الرحلة', title: '🎓 ختام البرنامج' }
 ];
 const SECTION_TYPES = { text: 'نص منسّق', video: 'فيديو', image: 'صورة وإعلان', cta: 'بطاقة رابط / زر' };
+
+// ---------- تقييم البرنامج بعد التدريب (نجوم + مؤشر صافي التوصية) ----------
+const SurveyStats = {
+  of(posts, e) {
+    e = e || Content.survey({ all: true }); const rates = (e && e.rates) || []; const list = Object.keys(posts || {}).map(k => posts[k]).filter(Boolean);
+    const avgs = rates.map((_, i) => { const v = list.map(p => +((p.ratings || {})[i])).filter(x => x >= 1 && x <= 5); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
+    const np = list.map(p => p.nps).filter(x => x !== undefined && x !== null && x !== '').map(Number);
+    const prom = np.filter(x => x >= 9).length, det = np.filter(x => x <= 6).length;
+    const all = avgs.filter(x => x != null); const overall = all.length ? all.reduce((a, b) => a + b, 0) / all.length : null;
+    return { n: list.length, rates, avgs, overall, npsN: np.length, prom, pass: np.length - prom - det, det, nps: np.length ? Math.round((prom - det) / np.length * 100) : null, texts: list.filter(p => p.text) };
+  }
+};
 
 // ---------- التقييم القبلي والبعدي ----------
 const Assess = {
