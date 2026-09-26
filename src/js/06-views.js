@@ -37,8 +37,13 @@ function assessCardHtml(ph) {
   const st = r && r.done ? '<span class="pill ok-pill">✅ أنجزته' + (Assess.cfg().reveal ? ' · <span class="num">' + Assess.score(r.answers) + '/' + n + '</span>' : '') + '</span>' : open ? '<span class="pill open-pill">🟢 متاح الآن</span>' : '<span class="pill">🔒 مغلق حاليًا</span>';
   return '<button class="act-card assess-card ' + (open || (r && r.done) ? '' : 'dim') + '" data-go="assess" data-id="' + ph + '"><div class="act-ico">' + (ph === 'pre' ? '🧭' : '🏁') + '</div><div class="grow"><h3>' + lbl + '</h3><div class="muted" style="font-size:13.5px;font-family:var(--f-ui)">' + sub + ' · <span class="num">' + n + '</span> أسئلة اختيار من متعدد</div><div style="margin-top:6px">' + st + '</div></div></button>';
 }
+function storyCard(st) {
+  const col = AXIS_COLORS[st.color % AXIS_COLORS.length];
+  return '<button class="story-card" data-go="story" data-id="' + h(st.id) + '" style="--ac:' + col + '"><div class="story-art">' + (st.image ? '<img src="' + st.image + '" alt="">' : Scenes.render(st.scene || 'idea', col)) + '<span class="story-flag">' + h(st.flag || '') + ' ' + h(st.country || '') + '</span></div><div class="story-body"><span class="story-sector">' + h(st.sector || '') + (st.year ? ' · <span class="num">' + h(st.year) + '</span>' : '') + '</span><h3>' + h(st.title) + '</h3><p>' + h(clip(stripHtml(st.summary), 150)) + '</p><span class="story-more">اقرأ القصة ←</span></div></button>';
+}
 function homeSectionHtml(sec) {
   const k = sec.key;
+  if (k === 'stories') { const list = Content.stories(); if (!list.length) return ''; return '<section class="section">' + secHead(sec, '<span class="pill">قصص حقيقية منشورة مع مصادرها</span>') + '<div class="story-grid">' + list.map(storyCard).join('') + '</div></section>'; }
   if (k === 'assess') { const A = Content.assess(); if (!A.items.length) return ''; return '<section class="section">' + secHead(sec) + '<div class="act-grid">' + assessCardHtml('pre') + assessCardHtml('post') + '</div></section>'; }
   if (k === 'activities') { const acts = Content.activities(); if (!acts.length) return ''; return '<section class="section">' + secHead(sec) + '<div class="act-grid">' + acts.map(e => '<button class="act-card" data-go="ex" data-id="' + h(e.id) + '"><div class="act-ico">' + h(e.icon || '✨') + '</div><div><h3>' + h(e.title) + '</h3><div class="muted" style="font-size:13.5px;font-family:var(--f-ui)">' + h(clip(stripHtml(e.scenario || e.task), 90)) + '</div></div></button>').join('') + '</div></section>'; }
   if (k === 'axes') {
@@ -64,6 +69,26 @@ Views.home = {
       '<h1>' + h(s.heroTitle) + '</h1><div class="hero-desc">' + richHtml(s.heroDesc) + '</div>' +
       '<div class="stats"><div class="stat"><b class="num">' + Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length + '</b><span>وحدات</span></div><div class="stat"><b class="num">' + axes.length + '</b><span>محور</span></div><div class="stat"><b class="num">' + exCount + '</b><span>تمرين تفاعلي</span></div><div class="stat"><b class="num">' + (Number(Store.registered) || 0) + '</b><span>مسجّل حتى الآن</span></div></div></div></section>';
     Content.homeSections().forEach(sec => { try { out += homeSectionHtml(sec); } catch (e) { console.error(e); } });
+    return out;
+  }
+};
+
+// ============ صفحة قصة النجاح ============
+Views.story = {
+  html() {
+    const st = Content.story(Router.cur.id);
+    if (!st || (st._hidden && !Admin.ctl())) return Layout.crumbs() + '<div class="empty" style="margin-top:20px">هذه القصة غير متاحة.</div>';
+    const col = AXIS_COLORS[st.color % AXIS_COLORS.length]; const list = Content.stories(); const i = list.findIndex(x => x.id === st.id);
+    const prev = i > 0 ? list[i - 1] : null, next = i > -1 && i < list.length - 1 ? list[i + 1] : null; const ax = st.axis ? Content.axis(st.axis) : null;
+    let out = Layout.crumbs('<span class="crumb-tag">قصص نجاح</span>') + '<article class="story-page" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' +
+      '<div class="story-hero"><div class="story-hero-art">' + (st.image ? '<img src="' + st.image + '" alt="">' : Scenes.render(st.scene || 'idea', col)) + '</div><div class="story-hero-body"><span class="story-flag big">' + h(st.flag || '') + ' ' + h(st.country || '') + '</span><div class="story-sector">' + h(st.sector || '') + (st.year ? ' · تأسست <span class="num">' + h(st.year) + '</span>' : '') + '</div><h1>' + h(st.title) + '</h1><p class="story-summary">' + h(stripHtml(st.summary)) + '</p></div></div>' +
+      (st.numbers.length ? '<div class="story-numbers">' + st.numbers.map(n => '<div><b class="' + (/[\u0600-\u06FF]/.test(n.v) ? '' : 'num') + '">' + h(n.v) + '</b><span>' + h(n.l) + '</span></div>').join('') + '</div>' : '') +
+      '<div class="ex-block"><div class="lbl">📖 القصة</div><div class="story-text">' + richHtml(st.story) + '</div></div>' +
+      (st.lessons.length ? '<div class="ex-block principle"><div class="lbl">💡 دروس لمشروعك</div><ul class="points">' + st.lessons.map((l, k) => '<li><span class="n num">' + (k + 1) + '</span><span>' + boldTerm(l) + '</span></li>').join('') + '</ul></div>' : '') +
+      (ax && !ax._hidden ? '<div class="ex-block extract"><div class="lbl">🔗 المحور المرتبط</div><button class="btn btn-soft" data-act="open-axis" data-id="' + h(ax.id) + '">' + iconSvg(ax.icon || 'star', 16) + ' ' + h(ax.title) + '</button></div>' : '') +
+      (st.sources.length ? '<div class="ex-block"><div class="lbl">📚 المصادر</div><ul class="story-sources">' + st.sources.map(x => '<li><a href="' + h(x.url) + '" target="_blank" rel="noopener">' + iconSvg('link', 14) + ' ' + h(x.label) + '</a></li>').join('') + '</ul><div class="muted" style="font-family:var(--f-ui);font-size:12px;margin-top:6px">الأرقام كما وردت في المصادر المنشورة وقت إعداد البرنامج، وقد تتغير لاحقًا.</div></div>' : '') +
+      '<div class="row" style="margin-top:14px;justify-content:center">' + Likes.btn('storyLikes/' + st.id, (Store.storyLikes[st.id] || {}).likes).replace('👍', '👏 ألهمتني') + '</div>' +
+      '<div class="nav-row"><button class="btn btn-ghost" ' + (prev ? 'data-go="story" data-id="' + h(prev.id) + '"' : 'disabled') + '>◀ القصة السابقة</button><button class="btn btn-dark" data-go="home">🏠 الرئيسية</button><button class="btn btn-ghost" ' + (next ? 'data-go="story" data-id="' + h(next.id) + '"' : 'disabled') + '>القصة التالية ▶</button></div></article>';
     return out;
   }
 };

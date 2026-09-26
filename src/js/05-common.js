@@ -27,7 +27,8 @@ const Router = {
   backOf(st) {
     switch (st.view) {
       case 'ex': { const ax = Content.axisOfEx(st.id); return ax ? { view: 'axis', id: ax } : { view: 'home' }; }
-      case 'axis': case 'lab': case 'account': case 'admin': case 'assess': return { view: 'home' };
+      case 'axis': case 'lab': case 'account': case 'admin': case 'assess': case 'story': return { view: 'home' };
+      case 'storyEdit': return { view: 'admin' };
       case 'secEdit': case 'labEdit': case 'assessEdit': return { view: 'admin' };
       case 'exEdit': return st.from === 'axisEdit' && st.axis ? { view: 'axisEdit', id: st.axis } : { view: 'admin' };
       case 'axisEdit': case 'actEdit': return { view: 'admin' };

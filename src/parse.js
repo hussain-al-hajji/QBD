@@ -47,6 +47,9 @@ function parseFile(txt, data) {
       cur = { id: m[1], kind: 'survey', format: 'text', mode: 'individual', steps: [] };
       data.survey = cur; curType = 'ex'; lastKey = null; continue;
     }
+    if ((m = line.match(/^=== STORY (\S+)/))) {
+      cur = { id: m[1], numbers: [], lessons: [], sources: [] }; data.stories.push(cur); curType = 'story'; lastKey = null; continue;
+    }
     if (line.match(/^=== ASSESSMENT/)) {
       cur = { items: [], steps: [] }; data.assessment = cur; curType = 'ex'; lastKey = null; continue;
     }
@@ -63,6 +66,7 @@ function parseFile(txt, data) {
     }
     if ((m = line.match(/^-\s+(.*)$/))) {
       const val = m[1].trim();
+      if (curType === 'story') { if (lastKey && Array.isArray(cur[lastKey])) cur[lastKey].push(val); continue; }
       if (curType === 'axis') cur.highlights.push(val);
       else if (curType === 'slide') {
         if (cur.type === 'examples' || cur.type === 'mistakes' || cur.type === 'tools') cur.items.push(val.replace(/\s*::\s*/, '::'));
@@ -85,7 +89,7 @@ function parseFile(txt, data) {
       if (curType === 'ex' && k === 'cp') { const p = v.split('||').map(s => s.trim()); cur.items.push({ a: p[0], b: p[1], answer: p[2] }); continue; }
       if (curType === 'lab' && k === 'stage') { const p = v.split('|').map(s => s.trim()); cur.stages.push({ icon: p[0], title: p[1], task: p[2] }); continue; }
       if (k === 'chart') { cur.chart = parseChart(v); lastKey = null; continue; }
-      if (k === 'highlights' || k === 'steps') { lastKey = k; continue; }
+      if (k === 'highlights' || k === 'steps' || (curType === 'story' && ['numbers', 'lessons', 'sources'].indexOf(k) > -1)) { lastKey = k; continue; }
       cur[k] = v; lastKey = k; continue;
     }
     // سطر متابعة
@@ -125,14 +129,19 @@ function finalize(data) {
   });
   data.activities.forEach(e => { e.mode = e.mode || 'individual'; exFix(e); });
   if (data.survey) exFix(data.survey);
+  data.stories.forEach(st => {
+    st.story = toHtml(st.story); st.color = +st.color || 0;
+    st.numbers = st.numbers.map(x => { const i = x.indexOf('::'); return { v: x.slice(0, i).trim(), l: x.slice(i + 2).trim() }; });
+    st.sources = st.sources.map(x => { const i = x.lastIndexOf(' :: '); return { label: x.slice(0, i).trim(), url: x.slice(i + 4).trim() }; });
+  });
   if (data.lab) { data.lab.intro = toHtml(data.lab.intro); data.lab.minutes = 10; }
   if (data.assessment) { delete data.assessment.steps; data.assessment.id = 'assess'; shuffleOpts(data.assessment); }
   return data;
 }
 
 function parseAll(dir) {
-  const data = { axes: [], activities: [], survey: null, lab: null, assessment: null };
-  for (const f of ['u1.txt', 'u2.txt', 'u3.txt', 'u4.txt', 'u5.txt', 'u6.txt', 'extra.txt']) parseFile(fs.readFileSync(path.join(dir, f), 'utf8'), data);
+  const data = { axes: [], activities: [], survey: null, lab: null, assessment: null, stories: [] };
+  for (const f of ['stories.txt', 'u1.txt', 'u2.txt', 'u3.txt', 'u4.txt', 'u5.txt', 'u6.txt', 'extra.txt']) parseFile(fs.readFileSync(path.join(dir, f), 'utf8'), data);
   return finalize(data);
 }
 

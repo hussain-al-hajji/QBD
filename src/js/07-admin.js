@@ -93,6 +93,12 @@ Views.admin = {
     out += '<div class="acc ' + (accH ? 'open' : '') + '" style="--ac:#C8702A;--acg:' + tint('#C8702A', .08) + '"><div class="acc-head" data-act="acc" data-k="home-ui"><span class="aico">' + iconSvg('home', 20, '#fff') + '</span><h3>تعديل الشريط العلوي والقسم البارز والتذييل وعدد المسجّلين</h3><span class="arrow">◀</span></div><div class="acc-body">' + (accH ? Views.admin.homeEditor() : '') + '</div></div>';
     const accS = UIState.openAcc.has('home-secs');
     out += '<div class="acc ' + (accS ? 'open' : '') + '" style="--ac:#C8702A;--acg:' + tint('#C8702A', .08) + '"><div class="acc-head" data-act="acc" data-k="home-secs"><span class="aico">' + iconSvg('grid', 20, '#fff') + '</span><h3>أقسام الصفحة الرئيسية — ترتيب، إظهار وإخفاء، تعديل، إضافة وحذف <span class="muted num" style="font-size:12.5px">(' + Content.homeSections({ all: true }).length + ')</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (accS ? Views.admin.sectionsList() : '') + '</div></div>';
+    // ---- قصص النجاح ----
+    out += band('قصص النجاح', '#9A7412', '<button class="btn btn-primary btn-sm" data-go="storyEdit" data-id="new">➕ إضافة قصة</button>');
+    const accSt = UIState.openAcc.has('storiesAcc'); const sts = Content.stories({ all: true });
+    out += '<div class="acc ' + (accSt ? 'open' : '') + '" style="--ac:#9A7412;--acg:' + tint('#9A7412', .08) + '"><div class="acc-head" data-act="acc" data-k="storiesAcc"><span class="aico">🌟</span><h3>قصص النجاح الحقيقية <span class="muted num" style="font-size:12.5px">(' + sts.length + ')</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (accSt ? sts.map((st, i) => '<div class="ex-row"><div class="top"><span style="font-size:18px">' + h(st.flag || '🌟') + '</span><span class="nm">' + h(st.title) + ' ' + tags(st) + '<span class="tag fmt"><span class="num">' + st.sources.length + '</span> مصادر · 👏 <span class="num">' + Object.keys((Store.storyLikes[st.id] || {}).likes || {}).length + '</span></span></span>' +
+      '<button class="btn btn-ghost btn-xs" data-act="story-move" data-d="-1" data-id="' + h(st.id) + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button class="btn btn-ghost btn-xs" data-act="story-move" data-d="1" data-id="' + h(st.id) + '" ' + (i === sts.length - 1 ? 'disabled' : '') + '>↓</button><button class="btn btn-soft btn-xs" data-go="storyEdit" data-id="' + h(st.id) + '">✏️ تعديل</button><button class="btn btn-ghost btn-xs" data-act="toggle-vis" data-id="' + h(st.id) + '">' + (st._hidden ? '👁 إظهار' : '🙈 إخفاء') + '</button><button class="btn btn-ghost btn-xs" data-go="story" data-id="' + h(st.id) + '">👀 عرض</button>' +
+      (st._added ? '<button class="btn btn-danger btn-xs" data-act="story-delete" data-id="' + h(st.id) + '">🗑 حذف نهائي</button>' : (st._modified ? '<button class="btn btn-ghost btn-xs" data-act="story-reset" data-id="' + h(st.id) + '">↺ استرجاع الافتراضي</button>' : '')) + '</div></div>').join('') : '') + '</div></div>';
     // ---- المحاور والتمارين ----
     out += band('المحاور والتمارين', '#C8702A', '<button class="btn btn-primary btn-sm" data-go="axisEdit" data-id="new">➕ إضافة محور جديد</button><button class="btn btn-soft btn-sm" data-go="actEdit" data-id="new">➕ إضافة نشاط جديد</button>');
     const accU = UIState.openAcc.has('units');
@@ -471,5 +477,48 @@ Views.assessEdit = {
     if (!items.length) { UI.alert('أضف سؤالًا واحدًا على الأقل بخيارين أو أكثر.'); return; }
     await DB.set('content/assess', { title: $('#asTitle', root).value.trim(), intro: RTE.val(root, 'asIntro'), items });
     FormState.exId = null; UI.toast('✅ حُفظت الأسئلة'); Router.go('admin');
+  }
+};
+
+
+// ============ نموذج قصة النجاح ============
+Views.storyEdit = {
+  html() {
+    const id = Router.cur.id; const isNew = id === 'new';
+    const st = isNew ? { title: '', country: 'قطر', flag: '🇶🇦', sector: '', year: '', axis: '', scene: 'idea', color: 0, summary: '', story: '', numbers: [], lessons: [], sources: [] } : Content.story(id);
+    if (!st) return adminHeader('تعديل قصة') + '<div class="empty">القصة غير موجودة.</div>';
+    const f = (k, l, ph = '') => '<div class="field"><label>' + l + '</label><input data-stf="' + k + '" data-keep="stf-' + k + '" value="' + h(st[k] || '') + '" placeholder="' + h(ph) + '"></div>';
+    const scenes = Scenes.keys.filter(k => k !== 'hero');
+    return adminHeader(isNew ? '➕ قصة نجاح جديدة' : '✏️ تعديل قصة نجاح') + Layout.crumbs() + '<div class="form-page"><div class="card pad">' +
+      f('title', 'العنوان') + '<div class="grid2">' + f('country', 'الدولة') + f('flag', 'العلم (إيموجي)', '🇶🇦') + f('sector', 'القطاع') + f('year', 'سنة التأسيس') + '</div>' +
+      '<div class="grid2"><div class="field"><label>المحور المرتبط</label><select data-stf="axis"><option value="">— بدون —</option>' + Content.axes({ all: true }).map(a => '<option value="' + h(a.id) + '" ' + (a.id === st.axis ? 'selected' : '') + '>' + h(a.title) + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>الرسم التعبيري</label><select data-stf="scene" id="stScene">' + scenes.map(k => '<option value="' + k + '" ' + (k === st.scene ? 'selected' : '') + '>' + k + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>اللون</label><select data-stf="color" id="stColor">' + AXIS_COLORS.map((c, i) => '<option value="' + i + '" ' + (i === +st.color ? 'selected' : '') + ' style="background:' + c + ';color:#fff">لون ' + (i + 1) + '</option>').join('') + '</select></div></div>' +
+      '<div id="stPreview" class="story-preview">' + Scenes.render(st.scene || 'idea', AXIS_COLORS[(+st.color || 0) % AXIS_COLORS.length]) + '</div>' +
+      '<div class="field"><label>صورة بدل الرسم (اختيارية)</label>' + ImgPick.html('stImg', st.image) + '</div>' +
+      '<div class="field"><label>الملخص (يظهر على البطاقة)</label><textarea data-stf="summary" rows="3">' + h(stripHtml(st.summary || '')) + '</textarea></div>' +
+      '<div class="field"><label>نص القصة</label>' + RTE.html('stStory', st.story) + '</div>' +
+      '<div class="field"><label>أرقام بارزة (سطر لكل رقم بصيغة: الرقم :: الوصف)</label><textarea data-stf="numbers" rows="3">' + h(st.numbers.map(n => n.v + ' :: ' + n.l).join('\n')) + '</textarea></div>' +
+      '<div class="field"><label>دروس لمشروعك (سطر لكل درس)</label><textarea data-stf="lessons" rows="4">' + h(st.lessons.join('\n')) + '</textarea></div>' +
+      '<div class="field"><label>المصادر (سطر لكل مصدر بصيغة: اسم المصدر :: الرابط)</label><textarea data-stf="sources" rows="4" dir="auto">' + h(st.sources.map(x => x.label + ' :: ' + x.url).join('\n')) + '</textarea></div>' +
+      '</div><div class="sticky-actions"><button class="btn btn-primary" data-act="storyform-save">💾 حفظ القصة</button><button class="btn btn-ghost" data-act="form-cancel">إلغاء</button></div></div>';
+  },
+  after(root) {
+    RTE.mount(root); ImgPick.mount(root);
+    const upd = () => { $('#stPreview', root).innerHTML = Scenes.render($('#stScene', root).value, AXIS_COLORS[+$('#stColor', root).value % AXIS_COLORS.length]); };
+    $('#stScene', root).addEventListener('change', upd); $('#stColor', root).addEventListener('change', upd);
+  },
+  async save(root) {
+    const id = Router.cur.id; const isNew = id === 'new'; const g = k => ($('[data-stf="' + k + '"]', root) || {}).value || '';
+    const lines = k => g(k).split('\n').map(x => x.trim()).filter(Boolean);
+    const data = { title: g('title').trim(), country: g('country').trim(), flag: g('flag').trim(), sector: g('sector').trim(), year: g('year').trim(), axis: g('axis'), scene: g('scene'), color: +g('color') || 0, image: ImgPick.val('stImg'), summary: g('summary').trim(), story: RTE.val(root, 'stStory'),
+      numbers: lines('numbers').map(x => { const i = x.indexOf('::'); return i > -1 ? { v: x.slice(0, i).trim(), l: x.slice(i + 2).trim() } : { v: x, l: '' }; }),
+      lessons: lines('lessons'),
+      sources: lines('sources').map(x => { const i = x.lastIndexOf('::'); return i > -1 ? { label: x.slice(0, i).trim(), url: x.slice(i + 2).trim() } : { label: x, url: x }; }).filter(x => /^https?:\/\//.test(x.url)) };
+    if (!data.title) { UI.alert('اكتب عنوان القصة.'); return; }
+    if (isNew) { data.ts = DB.now(); await DB.set('added/stories/s' + genId(), data); }
+    else if (COURSE.stories.some(x => x.id === id)) await DB.set('content/stories/' + id, data);
+    else await DB.set('added/stories/' + id, Object.assign({}, Store.addedStories[id] || {}, data));
+    UI.toast('✅ حُفظت القصة ونُشرت حيًا'); UIState.openAcc.add('storiesAcc'); Router.go('admin');
   }
 };

@@ -6,7 +6,7 @@ const Store = {
   contentAxes: {}, contentEx: {}, addedAxes: {}, addedEx: {}, visibility: {}, enabled: {}, order: [],
   site: {}, groupCount: DEFAULT_GROUPS, groupNames: {}, assign: {}, users: {}, posts: {}, reveal: {},
   labTimers: {}, labAnswers: {}, broadcast: null, resetStamp: 0, registered: 0, ready: false,
-  contentLab: null, contentAssess: null, exOrder: {}, assess: {}, assessCfg: {}, attendance: {}, attCfg: {}
+  contentLab: null, contentAssess: null, contentStories: {}, addedStories: {}, storyOrder: [], storyLikes: {}, exOrder: {}, assess: {}, assessCfg: {}, attendance: {}, attCfg: {}
 };
 const DEFAULT_SITE = {
   headerTitle: 'تسريع التجارة الإلكترونية للمشاريع الصغيرة والمتوسطة',
@@ -49,6 +49,18 @@ const Content = {
   doc(kind) { return kind === 'cert' ? Content.cert() : Content.congrats(); },
   unitName(n) { const u = (Store.site.units || {})[n]; return (u && u.name) || UNIT_NAMES[n] || ''; },
   unitKicker(n) { const u = (Store.site.units || {})[n]; return (u && u.kicker) || UNIT_KICKERS[n] || ''; },
+  // قصص النجاح: الافتراضي في الكود + تراكب + إضافات + ترتيب + إظهار
+  storyIds() {
+    const all = COURSE.stories.map(x => x.id).concat(Object.keys(Store.addedStories || {}).sort((x, y) => (Store.addedStories[x].ts || 0) - (Store.addedStories[y].ts || 0)));
+    const saved = arr(Store.storyOrder).filter(id => all.indexOf(id) > -1); return saved.concat(all.filter(id => saved.indexOf(id) === -1));
+  },
+  story(id) {
+    const def = COURSE.stories.find(x => x.id === id), added = (Store.addedStories || {})[id]; if (!def && !added) return null;
+    const ov = def ? (Store.contentStories || {})[id] : null;
+    const st = Object.assign({ numbers: [], lessons: [], sources: [], color: 0, scene: 'idea' }, def || {}, ov || {}, added || {}, { id, _added: !def, _modified: !!ov });
+    st.numbers = arr(st.numbers); st.lessons = arr(st.lessons); st.sources = arr(st.sources); st._hidden = Content.isHidden(id); return st;
+  },
+  stories(o = {}) { return Content.storyIds().map(Content.story).filter(x => x && (o.all || !x._hidden)); },
   lab() {
     const ov = Store.contentLab || {}; const L = Object.assign({}, COURSE.lab, ov);
     L.stages = arr(L.stages).map(x => Object.assign({ icon: '📌', title: '', task: '' }, x));
@@ -135,6 +147,7 @@ const Content = {
 };
 
 const HOME_BUILTINS = [
+  { key: 'stories', icon: '🌟', kicker: 'من الواقع القطري والخليجي', title: '🌟 قصص نجاح ملهمة' },
   { key: 'assess', icon: '📋', kicker: 'قياس المعرفة', title: '📋 التقييم القبلي والبعدي' },
   { key: 'activities', icon: '⚡', kicker: 'قبل أن نبدأ', title: '⚡ أنشطة' },
   { key: 'axes', icon: '🗺️', kicker: 'خارطة البرنامج', title: '🗺️ محاور البرنامج' },

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------
 // التطبيق: الرسم، المراقبات الحية، والتفاعلات
 // ---------------------------------------------------------------------
-const FORM_VIEWS = ['axisEdit', 'exEdit', 'actEdit', 'secEdit', 'labEdit', 'assessEdit'];
+const FORM_VIEWS = ['axisEdit', 'exEdit', 'actEdit', 'secEdit', 'labEdit', 'assessEdit', 'storyEdit'];
 const ADMIN_VIEWS = ['admin'].concat(FORM_VIEWS);
 const App = {
   inIframe: (() => { try { return window.self !== window.top; } catch (e) { return true; } })(),
@@ -30,11 +30,12 @@ function applyFilter(inp) { const q = inp.value.trim().toLowerCase(); const scop
 // ---------- المراقبات الحية ----------
 function watchAll() {
   const W = (path, fn) => DB.watch(path, v => { fn(v); App.onData(); });
-  W('content', v => { v = v || {}; Store.contentAxes = v.axes || {}; Store.contentEx = v.ex || {}; Store.contentLab = v.lab || null; Store.contentAssess = v.assess || null; });
-  W('added', v => { v = v || {}; Store.addedAxes = v.axes || {}; Store.addedEx = v.ex || {}; });
+  W('content', v => { v = v || {}; Store.contentAxes = v.axes || {}; Store.contentEx = v.ex || {}; Store.contentLab = v.lab || null; Store.contentAssess = v.assess || null; Store.contentStories = v.stories || {}; });
+  W('added', v => { v = v || {}; Store.addedAxes = v.axes || {}; Store.addedEx = v.ex || {}; Store.addedStories = v.stories || {}; });
+  W('storyLikes', v => { Store.storyLikes = v || {}; });
   W('visibility', v => { Store.visibility = v || {}; });
   W('enabled', v => { Store.enabled = v || {}; });
-  W('order', v => { v = v || {}; Store.order = arr(v.axes); Store.exOrder = v.ex || {}; });
+  W('order', v => { v = v || {}; Store.order = arr(v.axes); Store.exOrder = v.ex || {}; Store.storyOrder = arr(v.stories); });
   W('assess', v => { Store.assess = v || {}; });
   W('attendance', v => { Store.attendance = v || {}; });
   W('site', v => { Store.site = v || {}; });
@@ -51,7 +52,7 @@ function watchAll() {
     if (Me.data && Store.resetStamp && (Me.data.ts || 0) < Store.resetStamp) { Me.clear(); UIState.draft = {}; UIState.editing = {}; setTimeout(() => UI.toast('تمت إعادة ضبط البرنامج — سجّل اسمك من جديد'), 300); }
   });
 }
-function getByPath(path) { const seg = path.split('/'); let n = seg[0] === 'posts' ? Store.posts : seg[0] === 'lab' ? Store.labAnswers : null; const rest = seg[0] === 'lab' ? seg.slice(2) : seg.slice(1); for (const s of rest) { if (!n) return null; n = n[s]; } return n; }
+function getByPath(path) { const seg = path.split('/'); let n = seg[0] === 'posts' ? Store.posts : seg[0] === 'lab' ? Store.labAnswers : seg[0] === 'storyLikes' ? Store.storyLikes : null; const rest = seg[0] === 'lab' ? seg.slice(2) : seg.slice(1); for (const s of rest) { if (!n) return null; n = n[s]; } return n; }
 
 // ---------- التسجيل والدخول ----------
 async function doRegister() {
@@ -122,7 +123,7 @@ async function copyEx(id) {
   await DB.set('added/ex/n' + genId(), ne); UI.toast('🧬 تم نسخ التمرين');
 }
 function backupData() {
-  return { app: 'qdb-ecom', version: 1, exportedAt: new Date().toISOString(), data: { content: { axes: Store.contentAxes, ex: Store.contentEx, lab: Store.contentLab, assess: Store.contentAssess }, added: { axes: Store.addedAxes, ex: Store.addedEx }, visibility: Store.visibility, enabled: Store.enabled, order: { axes: Store.order, ex: Store.exOrder }, site: Store.site, settings: { groups: { count: Groups.count() }, groupNames: Store.groupNames, assess: Store.assessCfg, attendance: Store.attCfg } } };
+  return { app: 'qdb-ecom', version: 1, exportedAt: new Date().toISOString(), data: { content: { axes: Store.contentAxes, ex: Store.contentEx, lab: Store.contentLab, assess: Store.contentAssess, stories: Store.contentStories }, added: { axes: Store.addedAxes, ex: Store.addedEx, stories: Store.addedStories }, visibility: Store.visibility, enabled: Store.enabled, order: { axes: Store.order, ex: Store.exOrder, stories: Store.storyOrder }, site: Store.site, settings: { groups: { count: Groups.count() }, groupNames: Store.groupNames, assess: Store.assessCfg, attendance: Store.attCfg } } };
 }
 async function importBackup(file) {
   try {
@@ -284,6 +285,10 @@ document.addEventListener('click', async ev => {
     // ----- الترتيب -----
     case 'axis-move': { const ids = Content.axisIds(); const i = ids.indexOf(id), j = i + (+t.getAttribute('data-d')); if (i < 0 || j < 0 || j >= ids.length) break; [ids[i], ids[j]] = [ids[j], ids[i]]; DB.set('order/axes', ids); break; }
     case 'ex-move': { const key = t.getAttribute('data-key'); const ids = key === '_acts' ? Content.activities({ all: true }).map(e => e.id) : Content.exIdsOf(key); const i = ids.indexOf(id), j = i + (+t.getAttribute('data-d')); if (i < 0 || j < 0 || j >= ids.length) break; [ids[i], ids[j]] = [ids[j], ids[i]]; DB.set('order/ex/' + key, ids); break; }
+    case 'story-move': { const ids = Content.storyIds(); const i = ids.indexOf(id), j = i + (+t.getAttribute('data-d')); if (i < 0 || j < 0 || j >= ids.length) break; [ids[i], ids[j]] = [ids[j], ids[i]]; DB.set('order/stories', ids); break; }
+    case 'story-reset': { if (await UI.confirm('استرجاع النص الأصلي لهذه القصة؟', { ok: 'استرجاع' })) DB.remove('content/stories/' + id); break; }
+    case 'story-delete': { if (await UI.confirm('حذف هذه القصة نهائيًا؟', { danger: true, ok: 'حذف' })) DB.update('', { ['added/stories/' + id]: null, ['visibility/' + id]: null, ['storyLikes/' + id]: null }); break; }
+    case 'storyform-save': Views.storyEdit.save(root); break;
     // ----- المختبر -----
     case 'lab-reset-content': { if (await UI.confirm('استرجاع المحتوى الأصلي للمختبر؟', { ok: 'استرجاع' })) DB.remove('content/lab'); break; }
     case 'lab-clear': { if (await UI.confirm('مسح كل إجابات ومؤقتات المختبر لكل المجموعات؟', { danger: true, ok: 'مسح' })) DB.remove('lab'); break; }
