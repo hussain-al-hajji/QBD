@@ -351,3 +351,13 @@ async function buildGuidePdf() {
     doc.save('دليل المدرب - ' + safeName(T) + '.pdf'); pm.close();
   } catch (e) { pm.close(); UI.alert('تعذر إنشاء الدليل: ' + h(e.message || e)); }
 }
+
+// ---------- المسجّلون CSV (كل حقول التسجيل + الموافقات + الحضور) ----------
+function exportUsersCsv() {
+  const users = Store.users || {}; const fs = RegFields.all();
+  const rows = [['رقم العضوية'].concat(fs.map(f => f.label)).concat(['تاريخ التسجيل', 'موافقة الخصوصية', 'موافقة المتابعة', 'نسبة الحضور', 'التقييم القبلي', 'التقييم البعدي', 'نسبة الإنجاز'])];
+  const n = Content.assess().items.length;
+  Object.keys(users).sort((a, b) => (users[a].member || 0) - (users[b].member || 0)).forEach(u => { const x = users[u]; const pre = Assess.rec('pre', u), post = Assess.rec('post', u);
+    rows.push([pad4(x.member || 0)].concat(fs.map(f => RegFields.val(x, f.key))).concat([x.ts ? fmtTime(x.ts) : '', x.consent && x.consent.privacy ? 'نعم' : '—', x.consent && x.consent.followup ? 'نعم' : 'لا', Attend.pct(u) + '%', pre && pre.done ? Assess.score(pre.answers) + '/' + n : '', post && post.done ? Assess.score(post.answers) + '/' + n : '', Math.round(Progress.forUser(u).pct * 100) + '%'])); });
+  downloadBlob(csvBlob(rows), 'المسجلون.csv');
+}

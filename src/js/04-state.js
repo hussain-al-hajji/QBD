@@ -83,6 +83,7 @@ const Content = {
       sec._hidden = Content.isHidden('home_' + k); return sec;
     }).filter(x => o.all || !x._hidden);
   },
+  privacy() { return Object.assign({}, DEFAULT_PRIVACY, (Store.site && Store.site.privacy) || {}); },
   pdf() { return Object.assign({}, DEFAULT_PDF, Store.site.pdf || {}); },
   courseTitle() { const el = document.getElementById('brandTitle'); return (el && el.textContent.trim()) || Content.site().headerTitle; },
   isHidden(id) { return Store.visibility && Store.visibility[id] === false; },
@@ -189,6 +190,51 @@ const Attend = {
   eligible(uid) { return Attend.pct(uid) >= Attend.cfg().threshold; },
   openDays() { const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open && c.codes['d' + d].code); },
   holders() { return Object.keys(Store.users || {}).filter(Attend.eligible).map(u => Object.assign({ uid: u }, Store.users[u])); }
+};
+
+// ---------- حقول التسجيل (قابلة للتحكم من لوحة الإدارة) ----------
+const REG_DEFAULTS = {
+  name: { label: 'الاسم الكامل', type: 'text', required: true, visible: true, locked: true, ph: 'مثال: محمد عبدالله' },
+  role: { label: 'المجال / المسمى الوظيفي', type: 'text', required: true, visible: true, ph: 'مثال: صاحب متجر إلكتروني' },
+  org: { label: 'اسم المشروع / الشركة', type: 'text', required: false, visible: true, ph: 'مثال: دار المسك للعطور' },
+  sector: { label: 'قطاع المشروع', type: 'select', required: false, visible: true, options: ['تجزئة ومنتجات استهلاكية', 'أغذية ومشروبات', 'أزياء وعطور ومستحضرات', 'خدمات وحجوزات', 'تقنية ومنتجات رقمية', 'صناعة وتوريد (B2B)', 'أخرى'] },
+  stage: { label: 'مرحلة المشروع', type: 'select', required: false, visible: true, options: ['فكرة لم تنطلق بعد', 'مشروع قائم دون بيع إلكتروني', 'بدأت البيع إلكترونيًا منذ أقل من سنة', 'متجر إلكتروني قائم يسعى للتوسع'] },
+  hasStore: { label: 'هل لديك قناة بيع إلكترونية؟', type: 'select', required: false, visible: true, options: ['متجر إلكتروني خاص', 'سوق إلكتروني (مثل Noon أو سنونو)', 'وسائل التواصل وواتساب فقط', 'أكثر من قناة', 'لا يوجد بعد'] },
+  onlineSales: { label: 'نسبة المبيعات الإلكترونية من إجمالي المبيعات', type: 'select', required: false, visible: true, options: ['لا توجد مبيعات إلكترونية', 'أقل من 10%', '10% – 30%', '30% – 60%', 'أكثر من 60%'] },
+  email: { label: 'البريد الإلكتروني', type: 'email', required: false, visible: true, ph: 'name@example.com' },
+  phone: { label: 'رقم الجوال', type: 'tel', required: false, visible: false, ph: '+974' },
+  cr: { label: 'رقم السجل التجاري', type: 'text', required: false, visible: false }
+};
+const REG_TYPES = { text: 'نص قصير', textarea: 'نص طويل', select: 'قائمة اختيار', email: 'بريد إلكتروني', tel: 'رقم هاتف', number: 'رقم' };
+const RegFields = {
+  all() {
+    const cfg = (Store.site && Store.site.regFields) || {}; const fc = cfg.fields || {};
+    const keys = Object.keys(REG_DEFAULTS).concat(Object.keys(fc).filter(k => !REG_DEFAULTS[k]));
+    const saved = arr(cfg.order).filter(k => keys.indexOf(k) > -1); const order = saved.concat(keys.filter(k => saved.indexOf(k) === -1));
+    return order.map(k => { const f = Object.assign({}, REG_DEFAULTS[k] || {}, fc[k] || {}, { key: k, builtin: !!REG_DEFAULTS[k] }); f.options = arr(f.options); if (k === 'name') { f.visible = true; f.required = true; } return f; }).filter(f => !f.deleted);
+  },
+  visible() { return RegFields.all().filter(f => f.visible); },
+  // قيمة الحقل لمستخدم: الاسم والمسمى في الجذر، والبقية في f/
+  val(u, k) { if (!u) return ''; if (k === 'name' || k === 'role') return u[k] || ''; return (u.f && u.f[k]) != null ? u.f[k] : (u[k] || ''); },
+  input(f, v, prefix) {
+    const id = prefix + f.key; const req = f.required ? ' <span class="req">*</span>' : ' <span class="muted">(اختياري)</span>';
+    let el;
+    if (f.type === 'select') el = '<select id="' + id + '" data-keep="' + id + '" data-rf="' + f.key + '"><option value="">— اختر —</option>' + f.options.map(o => '<option ' + (o === v ? 'selected' : '') + '>' + h(o) + '</option>').join('') + '</select>';
+    else if (f.type === 'textarea') el = '<textarea id="' + id + '" data-keep="' + id + '" data-rf="' + f.key + '" rows="2" placeholder="' + h(f.ph || '') + '">' + h(v || '') + '</textarea>';
+    else el = '<input id="' + id + '" data-keep="' + id + '" data-rf="' + f.key + '" type="' + (f.type === 'number' ? 'number' : f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text') + '" value="' + h(v || '') + '" placeholder="' + h(f.ph || '') + '"' + (f.key === 'name' ? ' autocomplete="name"' : '') + '>';
+    return '<div class="field"><label>' + h(f.label) + req + '</label>' + el + '</div>';
+  },
+  collect(root, prefix) {
+    const out = { f: {} }; let err = '';
+    RegFields.visible().forEach(f => { const el = document.getElementById(prefix + f.key); const v = el ? el.value.trim() : ''; if (f.required && !v && !err) err = 'أكمل حقل «' + f.label + '».'; if (f.type === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !err) err = 'صيغة البريد الإلكتروني غير صحيحة.'; if (f.key === 'name' || f.key === 'role') out[f.key] = v; else out.f[f.key] = v; });
+    if (out.name != null && out.name.length < 2 && !err) err = 'اكتب اسمك الكامل.';
+    return { data: out, err };
+  }
+};
+const DEFAULT_PRIVACY = {
+  text: 'نجمع في هذه المنصة البيانات التي تدخلها عند التسجيل (الاسم والمسمى وبيانات المشروع وما تختاره من حقول اختيارية)، ومشاركاتك في التمارين والتقييمات، وسجل حضورك. نستخدمها فقط لإدارة البرنامج التدريبي، وإصدار شهادة المشاركة، وقياس أثر التدريب وإعداد تقرير الختام للجهة المنظمة. لا نبيع بياناتك ولا نشاركها لأغراض تسويقية لطرف ثالث. تُحفظ البيانات في قاعدة بيانات سحابية (Google Firebase)، ويمكنك تعديل بياناتك أو حذفها بالكامل في أي وقت من صفحة «حسابي». نلتزم بمبادئ قانون حماية خصوصية البيانات الشخصية في دولة قطر (القانون رقم 13 لسنة 2016).',
+  consent: 'قرأت إشعار الخصوصية وأوافق على معالجة بياناتي لأغراض البرنامج',
+  followup: 'أوافق على التواصل معي بعد البرنامج لقياس الأثر (بعد 30 و60 و90 يومًا) وبخصوص برامج الدعم ذات الصلة'
 };
 
 // ---------- المجموعات ----------

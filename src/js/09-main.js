@@ -46,6 +46,7 @@ function watchAll() {
   W('reveal', v => { Store.reveal = v || {}; });
   W('lab', v => { v = v || {}; Store.labTimers = v.timers || {}; Store.labAnswers = v.answers || {}; });
   W('broadcast', v => { Store.broadcast = v; });
+  W('backupIndex', v => { Store.backupIndex = v || {}; });
   W('stats/registered', v => { Store.registered = Number(v) || 0; });
   W('meta/resetStamp', v => {
     Store.resetStamp = Number(v) || 0;
@@ -56,20 +57,33 @@ function getByPath(path) { const seg = path.split('/'); let n = seg[0] === 'post
 
 // ---------- التسجيل والدخول ----------
 async function doRegister() {
-  const name = ($('#regName') || {}).value ? $('#regName').value.trim() : ''; const role = ($('#regRole') || {}).value ? $('#regRole').value.trim() : ''; const org = ($('#regOrg') || {}).value ? $('#regOrg').value.trim() : '';
-  if (name.length < 2) { UI.alert('اكتب اسمك الكامل أولًا.'); return; }
-  if (!role) { UI.alert('اكتب مجالك أو مسماك الوظيفي.'); return; }
+  const { data, err } = RegFields.collect(document, 'reg_');
+  if (err) { UI.alert(err); return; }
+  if (!($('#regConsent') || {}).checked) { UI.alert('يلزم الموافقة على إشعار الخصوصية لإتمام التسجيل.'); return; }
+  const follow = !!($('#regFollow') || {}).checked;
   const btn = $('[data-act="register"]'); if (btn) { btn.disabled = true; btn.textContent = 'جارٍ التسجيل…'; }
   try {
     const uid = genId('u');
     // رقم عضوية تسلسلي عبر عملية ذرّية مع حماية دنيا صريحة
     const member = await DB.transaction('meta/memberCounter', cur => Math.max(Number(cur) || 0, MEMBER_NO_FLOOR) + 1);
-    const ts = DB.now();
-    await DB.set('users/' + uid, { name, role, org, member, ts });
+    const ts = DB.now(); const name = data.name, role = data.role || '';
+    await DB.set('users/' + uid, { name, role, f: data.f, member, ts, consent: { privacy: ts, followup: follow } });
     DB.transaction('stats/registered', c => (Number(c) || 0) + 1);
-    const me = { uid, name, role, org, member, ts }; Me.save(me);
+    const me = { uid, name, role, member, ts }; Me.save(me);
     App.render(); welcomeModal(me);
   } catch (e) { UI.alert('تعذر التسجيل: ' + h(e.message || e)); if (btn) { btn.disabled = false; btn.textContent = 'ابدأ 🚀'; } }
+}
+function privacyModal() { const pv = Content.privacy(); const m = UI.modal('<h3>🔒 إشعار الخصوصية</h3><div style="line-height:1.9">' + richHtml(pv.text) + '</div><div class="actions"><button class="btn btn-primary" data-x>حسنًا</button></div>', { wide: true }); $('[data-x]', m.el).onclick = () => m.close(); }
+// حذف كل بيانات المتدرب من السيرفر (حق المستخدم في حذف بياناته)
+async function deleteMyData() {
+  const ok = await UI.confirm('سيُحذف نهائيًا من السيرفر: بياناتك، ومشاركاتك الفردية، ونتائج تقييماتك، وسجل حضورك، واهتماماتك، ومتابعاتك، وإعجاباتك. إجابات المجموعات تبقى باسم المجموعة مع إزالة اسمك منها. لا يمكن التراجع، ولن تتمكن من الحصول على الشهادة.', { danger: true, ok: 'احذف بياناتي نهائيًا', title: 'حذف بياناتي' });
+  if (!ok) return; const uid = Me.uid(); const upd = {};
+  upd['users/' + uid] = null; upd['assess/pre/' + uid] = null; upd['assess/post/' + uid] = null; upd['attendance/' + uid] = null; upd['assign/' + uid] = null; upd['leads/' + uid] = null;
+  ['30', '60', '90'].forEach(n => { upd['followups/d' + n + '/' + uid] = null; });
+  Object.keys(Store.posts || {}).forEach(ex => { const ps = Store.posts[ex] || {}; Object.keys(ps).forEach(k => { const p = ps[k] || {}; if (k === uid) upd['posts/' + ex + '/' + k] = null; else { if (p.members && p.members[uid]) upd['posts/' + ex + '/' + k + '/members/' + uid] = null; if (p.likes && p.likes[uid]) upd['posts/' + ex + '/' + k + '/likes/' + uid] = null; if (p.by === uid) upd['posts/' + ex + '/' + k + '/name'] = ''; } }); });
+  Object.keys(Store.storyLikes || {}).forEach(st => { if (((Store.storyLikes[st] || {}).likes || {})[uid]) upd['storyLikes/' + st + '/likes/' + uid] = null; });
+  await DB.update('', upd); DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1));
+  Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); UI.toast('تم حذف بياناتك نهائيًا');
 }
 function welcomeModal(me) {
   const m = UI.modal('<div class="center"><div style="font-size:48px">🎉</div><h3>أهلًا ' + h(me.name) + '!</h3><p class="muted" style="font-family:var(--f-ui)">تم تسجيلك بنجاح. هذا رقم عضويتك — احتفظ به للدخول من أي جهاز آخر دون كلمة مرور.</p><div class="num" style="font-family:var(--f-display);font-size:52px;font-weight:800;letter-spacing:4px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block">' + pad4(me.member) + '</div></div><div class="actions" style="justify-content:center"><button class="btn btn-primary" data-save-card>💾 حفظ رقم العضوية</button><button class="btn btn-ghost" data-close>ابدأ الجولة</button></div>');
@@ -140,8 +154,16 @@ async function globalReset() {
   if (!ok) return;
   const posts = await DB.get('posts') || {}; const upd = {};
   Object.keys(posts).forEach(k => { if (k !== SURVEY_ID) upd['posts/' + k] = null; }); // استثناء صريح للاستطلاع الختامي
-  upd.lab = null; upd.users = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd['meta/resetStamp'] = DB.now();
+  await autoBackup(true); // نسخة احتياطية تلقائية قبل المسح
+  upd.lab = null; upd.users = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd.leads = null; upd.followups = null; upd['meta/resetStamp'] = DB.now();
   await DB.update('', upd); UI.toast('تمت إعادة الضبط الشاملة');
+}
+
+function collectRegRows() {
+  const base = UIState.regDraft || RegFields.all();
+  return $$('[data-rrow]').map(row => { const f = Object.assign({}, base[+row.getAttribute('data-rrow')]); const g = k => $('[data-rr="' + k + '"]', row);
+    f.label = g('label').value.trim() || f.label; if (!f.builtin) f.type = g('type').value; if (f.key !== 'name') { f.visible = g('visible').checked; f.required = g('required').checked; }
+    f.ph = g('ph').value.trim(); if (g('options')) f.options = g('options').value.split('\n').map(x => x.trim()).filter(Boolean); else if (f.type === 'select' && !f.options.length) f.options = ['خيار 1', 'خيار 2']; return f; });
 }
 
 // ---------- التفاعلات (تفويض أحداث واحد) ----------
@@ -213,7 +235,22 @@ document.addEventListener('click', async ev => {
     case 'lab-save': { const i = t.getAttribute('data-i'); const ta = $('#labAns' + i); const txt = ta ? ta.value.trim() : ''; if (!txt) { UI.alert('اكتبوا مخرج المرحلة أولًا.'); break; } await DB.update('lab/answers/g' + Me.group() + '/s' + i, { text: txt, name: Me.data.name, uid: Me.uid(), ts: DB.now() }); UIState.editing['lab' + i] = false; if (ta) ta.value = ''; UI.toast('✅ حُفظت المرحلة'); App.render(); break; }
     case 'del-lab': { if (await UI.confirm('حذف إجابة هذه المرحلة؟', { danger: true, ok: 'حذف' })) DB.remove('lab/answers/' + t.getAttribute('data-k') + '/s' + t.getAttribute('data-i')); break; }
     // ----- حسابي -----
-    case 'acc-save': { const n = $('#accName').value.trim(), r = $('#accRole').value.trim(), org = $('#accOrg').value.trim(), em = $('#accEmail').value.trim(); if (n.length < 2) { UI.alert('الاسم قصير جدًا.'); break; } if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { UI.alert('صيغة البريد الإلكتروني غير صحيحة.'); break; } const me = Object.assign({}, Me.data, { name: n, role: r, org, email: em }); Me.save(me); await DB.update('users/' + me.uid, { name: n, role: r, org, email: em }); UI.toast('✅ تم تحديث بياناتك'); App.render(); break; }
+    case 'acc-save': { const { data, err } = RegFields.collect(document, 'acc_'); if (err) { UI.alert(err); break; } const me = Object.assign({}, Me.data, { name: data.name || Me.data.name, role: data.role != null ? data.role : Me.data.role }); Me.save(me); await DB.update('users/' + me.uid, { name: me.name, role: me.role || '', f: Object.assign({}, (Store.users[me.uid] || {}).f || {}, data.f), 'consent/followup': !!($('#accFollow') || {}).checked }); UI.toast('✅ تم تحديث بياناتك'); App.render(); break; }
+    case 'privacy-show': ev.preventDefault(); privacyModal(); break;
+    case 'rr-move': case 'rr-del': case 'rr-add': {
+      const fs = collectRegRows(); if (act === 'rr-add') fs.push({ key: 'c' + genId(), label: 'حقل جديد', type: 'text', visible: true, required: false, options: [], builtin: false });
+      else if (act === 'rr-del') fs.splice(+t.getAttribute('data-i'), 1); else { const i = +t.getAttribute('data-i'), j = i + (+t.getAttribute('data-d')); [fs[i], fs[j]] = [fs[j], fs[i]]; }
+      UIState.regDraft = fs; App.render(); break;
+    }
+    case 'rr-save': { const fs = collectRegRows(); const fields = {}; fs.forEach(f => { fields[f.key] = { label: f.label, type: f.type, visible: !!f.visible, required: !!f.required, options: f.options, ph: f.ph || '' }; }); const cur = ((Store.site || {}).regFields || {}).fields || {}; Object.keys(cur).forEach(k => { if (!fields[k] && !REG_DEFAULTS[k]) fields[k] = Object.assign({}, cur[k], { deleted: true }); }); await DB.set('site/regFields', { order: fs.map(f => f.key), fields }); UIState.regDraft = null; UI.toast('✅ حُفظ نموذج التسجيل'); break; }
+    case 'rr-reset': { if (await UI.confirm('استرجاع حقول التسجيل الافتراضية؟', { ok: 'استرجاع' })) { await DB.remove('site/regFields'); UIState.regDraft = null; App.render(); } break; }
+    case 'pv-save': await DB.set('site/privacy', { text: $('#pvText').value.trim(), consent: $('#pvConsent').value.trim(), followup: $('#pvFollow').value.trim() }); UI.toast('✅ حُفظ'); break;
+    case 'pv-reset': { if (await UI.confirm('استرجاع النص الافتراضي؟', { ok: 'استرجاع' })) DB.remove('site/privacy'); break; }
+    case 'users-csv': exportUsersCsv(); break;
+    case 'bk-now': { const ok = await autoBackup(true); UI.toast(ok ? '✅ أُخذت نسخة احتياطية الآن' : 'تعذر أخذ النسخة'); break; }
+    case 'bk-dl': { const d = t.getAttribute('data-d'); const b = await DB.get('backups/' + d); downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom-data', day: d, data: b && b.data }, null, 2)], { type: 'application/json' }), 'نسخة مدخلات المتدربين ' + d + '.json'); break; }
+    case 'bk-restore': restoreBackup(t.getAttribute('data-d')); break;
+    case 'delete-me': deleteMyData(); break;
     case 'congrats-pdf': buildCongratsPdf(Me.data.name, t.getAttribute('data-kind') || 'congrats'); break;
     case 'congrats-mail': {
       const subj = 'تهنئة إنجاز — ' + Content.courseTitle();
@@ -242,7 +279,7 @@ document.addEventListener('click', async ev => {
     }
     // ----- لوحة الأدمن -----
     case 'bell': UIState.bellOpen = !UIState.bellOpen; App.render(); if (UIState.bellOpen) setTimeout(() => { SafeLS.set('ec_bell_seen', String(Date.now())); if (UIState.bellOpen) App.render(); }, 1800); break;
-    case 'drop': { const k = t.getAttribute('data-k'); UIState.openDrop.has(k) ? UIState.openDrop.delete(k) : UIState.openDrop.add(k); App.render(); break; }
+    case 'drop': { const k = t.getAttribute('data-k'); if (k === 'regEdit') UIState.regDraft = null; UIState.openDrop.has(k) ? UIState.openDrop.delete(k) : UIState.openDrop.add(k); App.render(); break; }
     case 'acc': { if (ev.target.closest('.acc-actions') || ev.target.closest('.drag-handle')) break; const k = t.getAttribute('data-k'); UIState.openAcc.has(k) ? UIState.openAcc.delete(k) : UIState.openAcc.add(k); App.render(); break; }
     case 'clear-names': { if (await UI.confirm('مسح أسماء المسجّلين فقط من السيرفر؟ لن تتأثر الإجابات أو المؤقتات، ولن يُطلب من أي متدرب حالي إعادة التسجيل.', { danger: true, ok: 'مسح الأسماء' })) { await DB.remove('users'); UI.toast('تم مسح قائمة الأسماء'); } break; }
     case 'save-groups': { const n = parseInt($('#grpCount').value, 10); if (!(n >= 2 && n <= 30)) { UI.alert('اختر عددًا بين 2 و30.'); break; } await DB.set('settings/groups/count', n); UI.toast('✅ عدد المجموعات: ' + n); break; }
@@ -351,6 +388,32 @@ function labTick() {
   if (rerender) App.render();
 }
 
+// ---------- نسخ احتياطي يومي تلقائي لمدخلات المتدربين ----------
+// أول متصفح يفتح المنصة في يوم جديد يأخذ نسخة من المشاركات والتسجيل والحضور والتقييمات (عملية ذرّية تضمن نسخة واحدة يوميًا)
+const BACKUP_KEEP = 14;
+const BACKUP_PATHS = ['users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes'];
+function dayKey(ts) { const d = new Date(ts || Date.now()); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+async function snapshotData() { const o = {}; for (const k of BACKUP_PATHS) o[k] = await DB.get(k); return o; }
+async function autoBackup(force) {
+  try {
+    const day = dayKey(DB.now()); const mark = day + '|' + genId();
+    const res = await DB.transaction('meta/backupDay', cur => (!force && cur && String(cur).indexOf(day + '|') === 0) ? undefined : mark);
+    if (res !== mark) return false;
+    const data = await snapshotData(); const json = JSON.stringify(data);
+    if (!force && json.length < 20) return false;
+    await DB.set('backups/' + day, { ts: DB.now(), data });
+    await DB.set('backupIndex/' + day, { ts: DB.now(), users: Object.keys(data.users || {}).length, posts: Object.keys(data.posts || {}).reduce((n, k) => n + Object.keys(data.posts[k] || {}).length, 0), kb: Math.round(json.length / 1024) });
+    const idx = Object.keys((await DB.get('backupIndex')) || {}).sort(); const old = idx.slice(0, Math.max(0, idx.length - BACKUP_KEEP));
+    if (old.length) { const upd = {}; old.forEach(k => { upd['backups/' + k] = null; upd['backupIndex/' + k] = null; }); await DB.update('', upd); }
+    return true;
+  } catch (e) { console.warn('backup', e); return false; }
+}
+async function restoreBackup(day) {
+  if (!(await UI.confirm('استعادة مدخلات المتدربين كما كانت في نسخة ' + h(day) + '؟ ستُستبدل البيانات الحالية (التسجيل، المشاركات، التقييمات، الحضور، المختبر). المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'استعادة' }))) return;
+  const b = await DB.get('backups/' + day); if (!b || !b.data) { UI.alert('النسخة غير موجودة.'); return; }
+  const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd); UI.toast('✅ تمت الاستعادة');
+}
+
 // ---------- الإقلاع ----------
 function boot() {
   Me.load();
@@ -359,6 +422,7 @@ function boot() {
   watchAll();
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();
+  setTimeout(() => autoBackup(false), 15000); setInterval(() => autoBackup(false), 3600000);
   App.render();
   setInterval(labTick, 1000);
 }

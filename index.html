@@ -619,6 +619,14 @@ font{background:transparent!important;box-shadow:none!important}
 .trainer-note{margin-top:12px;background:#1F2A44;color:#E9EDF5;border-radius:16px;padding:12px 16px;font-family:var(--f-ui);font-size:14.5px;line-height:1.8}
 .trainer-note .tn-head{font-weight:700;color:#FFD98A;margin-bottom:4px}.trainer-note .muted{color:#A9B3C7}
 .trainer-note .tn-out{margin-top:6px;font-size:13px;color:#BFE8D2}
+.consent{display:flex;gap:8px;align-items:flex-start;font-family:var(--f-ui);font-size:13.5px;margin:8px 0;line-height:1.7}
+.consent input{margin-top:5px;flex:none}
+.req{color:var(--danger)}
+.reg-row{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;background:#fff}
+.reg-row input,.reg-row select,.reg-row textarea{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-family:var(--f-ui)}
+.reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-top:16px}
+.reg-grid .field:first-child{grid-column:1/-1}
+@media (max-width:600px){.reg-grid{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -1486,6 +1494,7 @@ const Content = {
       sec._hidden = Content.isHidden('home_' + k); return sec;
     }).filter(x => o.all || !x._hidden);
   },
+  privacy() { return Object.assign({}, DEFAULT_PRIVACY, (Store.site && Store.site.privacy) || {}); },
   pdf() { return Object.assign({}, DEFAULT_PDF, Store.site.pdf || {}); },
   courseTitle() { const el = document.getElementById('brandTitle'); return (el && el.textContent.trim()) || Content.site().headerTitle; },
   isHidden(id) { return Store.visibility && Store.visibility[id] === false; },
@@ -1592,6 +1601,51 @@ const Attend = {
   eligible(uid) { return Attend.pct(uid) >= Attend.cfg().threshold; },
   openDays() { const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open && c.codes['d' + d].code); },
   holders() { return Object.keys(Store.users || {}).filter(Attend.eligible).map(u => Object.assign({ uid: u }, Store.users[u])); }
+};
+
+// ---------- حقول التسجيل (قابلة للتحكم من لوحة الإدارة) ----------
+const REG_DEFAULTS = {
+  name: { label: 'الاسم الكامل', type: 'text', required: true, visible: true, locked: true, ph: 'مثال: محمد عبدالله' },
+  role: { label: 'المجال / المسمى الوظيفي', type: 'text', required: true, visible: true, ph: 'مثال: صاحب متجر إلكتروني' },
+  org: { label: 'اسم المشروع / الشركة', type: 'text', required: false, visible: true, ph: 'مثال: دار المسك للعطور' },
+  sector: { label: 'قطاع المشروع', type: 'select', required: false, visible: true, options: ['تجزئة ومنتجات استهلاكية', 'أغذية ومشروبات', 'أزياء وعطور ومستحضرات', 'خدمات وحجوزات', 'تقنية ومنتجات رقمية', 'صناعة وتوريد (B2B)', 'أخرى'] },
+  stage: { label: 'مرحلة المشروع', type: 'select', required: false, visible: true, options: ['فكرة لم تنطلق بعد', 'مشروع قائم دون بيع إلكتروني', 'بدأت البيع إلكترونيًا منذ أقل من سنة', 'متجر إلكتروني قائم يسعى للتوسع'] },
+  hasStore: { label: 'هل لديك قناة بيع إلكترونية؟', type: 'select', required: false, visible: true, options: ['متجر إلكتروني خاص', 'سوق إلكتروني (مثل Noon أو سنونو)', 'وسائل التواصل وواتساب فقط', 'أكثر من قناة', 'لا يوجد بعد'] },
+  onlineSales: { label: 'نسبة المبيعات الإلكترونية من إجمالي المبيعات', type: 'select', required: false, visible: true, options: ['لا توجد مبيعات إلكترونية', 'أقل من 10%', '10% – 30%', '30% – 60%', 'أكثر من 60%'] },
+  email: { label: 'البريد الإلكتروني', type: 'email', required: false, visible: true, ph: 'name@example.com' },
+  phone: { label: 'رقم الجوال', type: 'tel', required: false, visible: false, ph: '+974' },
+  cr: { label: 'رقم السجل التجاري', type: 'text', required: false, visible: false }
+};
+const REG_TYPES = { text: 'نص قصير', textarea: 'نص طويل', select: 'قائمة اختيار', email: 'بريد إلكتروني', tel: 'رقم هاتف', number: 'رقم' };
+const RegFields = {
+  all() {
+    const cfg = (Store.site && Store.site.regFields) || {}; const fc = cfg.fields || {};
+    const keys = Object.keys(REG_DEFAULTS).concat(Object.keys(fc).filter(k => !REG_DEFAULTS[k]));
+    const saved = arr(cfg.order).filter(k => keys.indexOf(k) > -1); const order = saved.concat(keys.filter(k => saved.indexOf(k) === -1));
+    return order.map(k => { const f = Object.assign({}, REG_DEFAULTS[k] || {}, fc[k] || {}, { key: k, builtin: !!REG_DEFAULTS[k] }); f.options = arr(f.options); if (k === 'name') { f.visible = true; f.required = true; } return f; }).filter(f => !f.deleted);
+  },
+  visible() { return RegFields.all().filter(f => f.visible); },
+  // قيمة الحقل لمستخدم: الاسم والمسمى في الجذر، والبقية في f/
+  val(u, k) { if (!u) return ''; if (k === 'name' || k === 'role') return u[k] || ''; return (u.f && u.f[k]) != null ? u.f[k] : (u[k] || ''); },
+  input(f, v, prefix) {
+    const id = prefix + f.key; const req = f.required ? ' <span class="req">*</span>' : ' <span class="muted">(اختياري)</span>';
+    let el;
+    if (f.type === 'select') el = '<select id="' + id + '" data-keep="' + id + '" data-rf="' + f.key + '"><option value="">— اختر —</option>' + f.options.map(o => '<option ' + (o === v ? 'selected' : '') + '>' + h(o) + '</option>').join('') + '</select>';
+    else if (f.type === 'textarea') el = '<textarea id="' + id + '" data-keep="' + id + '" data-rf="' + f.key + '" rows="2" placeholder="' + h(f.ph || '') + '">' + h(v || '') + '</textarea>';
+    else el = '<input id="' + id + '" data-keep="' + id + '" data-rf="' + f.key + '" type="' + (f.type === 'number' ? 'number' : f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text') + '" value="' + h(v || '') + '" placeholder="' + h(f.ph || '') + '"' + (f.key === 'name' ? ' autocomplete="name"' : '') + '>';
+    return '<div class="field"><label>' + h(f.label) + req + '</label>' + el + '</div>';
+  },
+  collect(root, prefix) {
+    const out = { f: {} }; let err = '';
+    RegFields.visible().forEach(f => { const el = document.getElementById(prefix + f.key); const v = el ? el.value.trim() : ''; if (f.required && !v && !err) err = 'أكمل حقل «' + f.label + '».'; if (f.type === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !err) err = 'صيغة البريد الإلكتروني غير صحيحة.'; if (f.key === 'name' || f.key === 'role') out[f.key] = v; else out.f[f.key] = v; });
+    if (out.name != null && out.name.length < 2 && !err) err = 'اكتب اسمك الكامل.';
+    return { data: out, err };
+  }
+};
+const DEFAULT_PRIVACY = {
+  text: 'نجمع في هذه المنصة البيانات التي تدخلها عند التسجيل (الاسم والمسمى وبيانات المشروع وما تختاره من حقول اختيارية)، ومشاركاتك في التمارين والتقييمات، وسجل حضورك. نستخدمها فقط لإدارة البرنامج التدريبي، وإصدار شهادة المشاركة، وقياس أثر التدريب وإعداد تقرير الختام للجهة المنظمة. لا نبيع بياناتك ولا نشاركها لأغراض تسويقية لطرف ثالث. تُحفظ البيانات في قاعدة بيانات سحابية (Google Firebase)، ويمكنك تعديل بياناتك أو حذفها بالكامل في أي وقت من صفحة «حسابي». نلتزم بمبادئ قانون حماية خصوصية البيانات الشخصية في دولة قطر (القانون رقم 13 لسنة 2016).',
+  consent: 'قرأت إشعار الخصوصية وأوافق على معالجة بياناتي لأغراض البرنامج',
+  followup: 'أوافق على التواصل معي بعد البرنامج لقياس الأثر (بعد 30 و60 و90 يومًا) وبخصوص برامج الدعم ذات الصلة'
 };
 
 // ---------- المجموعات ----------
@@ -1934,11 +1988,12 @@ const Views = {};
 // ============ شاشة الدخول ============
 Views.login = {
   html() {
+    const pv = Content.privacy();
     return '<div class="login"><div class="login-art">' + Scenes.render('hero') + '</div><div class="login-form">' +
-      '<span class="sec-kicker">أهلًا بك في البرنامج التدريبي</span><h1>' + h(Content.site().heroTitle) + '</h1><p class="muted">سجّل اسمك لتشارك في التقييمات والتمارين الحية وترى مشاركات زملائك لحظيًا، وتتابع إنجازك وحضورك وشهادتك.</p>' +
-      '<div class="field" style="margin-top:16px"><label>الاسم الكامل</label><input data-keep="reg-name" id="regName" autocomplete="name" placeholder="مثال: محمد عبدالله"></div>' +
-      '<div class="field"><label>المجال / المسمى الوظيفي</label><input data-keep="reg-role" id="regRole" placeholder="مثال: صاحب متجر إلكتروني"></div>' +
-      '<div class="field"><label>اسم المشروع / الشركة <span class="muted">(اختياري)</span></label><input data-keep="reg-org" id="regOrg" placeholder="مثال: دار المسك للعطور"></div>' +
+      '<span class="sec-kicker">أهلًا بك في البرنامج التدريبي</span><h1>' + h(Content.site().heroTitle) + '</h1><p class="muted">سجّل لتشارك في التقييمات والتمارين الحية وترى مشاركات زملائك لحظيًا، وتتابع إنجازك وحضورك وشهادتك.</p>' +
+      '<div class="reg-grid">' + RegFields.visible().map(f => RegFields.input(f, '', 'reg_')).join('') + '</div>' +
+      '<label class="consent"><input type="checkbox" id="regConsent" data-keep="reg-consent"> <span>' + h(pv.consent) + ' — <a href="#" data-act="privacy-show">اقرأ إشعار الخصوصية</a></span></label>' +
+      '<label class="consent"><input type="checkbox" id="regFollow" data-keep="reg-follow"> <span>' + h(pv.followup) + ' <span class="muted">(اختياري)</span></span></label>' +
       '<button class="btn btn-primary btn-block" data-act="register">ابدأ 🚀</button>' +
       '<button class="btn btn-mint btn-block" style="margin-top:10px" data-act="member-login">مسجّل مسبقًا؟ الدخول برقم العضوية</button>' +
       '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button>' +
@@ -2407,7 +2462,10 @@ Views.account = {
       '<div class="card pad" style="margin-top:8px"><div class="row" style="align-items:flex-start"><div class="grow"><div class="sec-kicker">نسبة الإنجاز الإجمالية</div><div class="big-pct num">' + pct + '%</div><div class="muted" style="font-family:var(--f-ui)">أنجزت <span class="num">' + pr.done + '</span> من <span class="num">' + pr.total + '</span> تمرينًا</div></div>' +
       '<div style="text-align:center"><div class="sec-kicker">رقم العضوية</div><div class="num notranslate" translate="no" style="font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:2px">' + (member ? pad4(member) : '—') + '</div></div></div><div class="progress" style="margin-top:12px"><i style="width:' + pct + '%"></i></div>' +
       '<div class="mini-stats"><div><span>📍 الحضور</span><b class="num">' + att + '%</b></div><div><span>🧭 التقييم القبلي</span><b class="num">' + scoreTxt(pre) + '</b></div><div><span>🏁 التقييم البعدي</span><b class="num">' + scoreTxt(post) + '</b></div><div><span>🏅 الأوسمة</span><b class="num">' + pr.axes.filter(x => x.pct >= BADGE_THRESHOLD).length + '/' + pr.axes.length + '</b></div></div></div>';
-    out += '<div class="card pad" style="margin-top:16px"><h3 style="margin-bottom:12px">✏️ بياناتي</h3><div class="grid2"><div class="field"><label>الاسم الكامل</label><input id="accName" data-keep="acc-name" value="' + h(me.name) + '"></div><div class="field"><label>المجال / المسمى الوظيفي</label><input id="accRole" data-keep="acc-role" value="' + h(me.role || '') + '"></div><div class="field"><label>اسم المشروع / الشركة (اختياري)</label><input id="accOrg" data-keep="acc-org" value="' + h(me.org || '') + '"></div><div class="field"><label>البريد الإلكتروني (اختياري)</label><input id="accEmail" type="email" data-keep="acc-email" value="' + h(me.email || '') + '"></div></div><button class="btn btn-primary btn-sm" data-act="acc-save">💾 حفظ التعديلات</button><button class="btn btn-ghost btn-sm" data-act="save-card">🪪 حفظ بطاقة رقم العضوية</button></div>';
+    const urec = Object.assign({}, Store.users[me.uid] || {}, { name: me.name, role: me.role }); const cons = urec.consent || {};
+    out += '<div class="card pad" style="margin-top:16px"><h3 style="margin-bottom:12px">✏️ بياناتي</h3><div class="grid2">' + RegFields.visible().map(f => RegFields.input(f, RegFields.val(urec, f.key), 'acc_')).join('') + '</div>' +
+      '<label class="consent"><input type="checkbox" id="accFollow" ' + (cons.followup ? 'checked' : '') + '> <span>' + h(Content.privacy().followup) + '</span></label>' +
+      '<div class="row"><button class="btn btn-primary btn-sm" data-act="acc-save">💾 حفظ التعديلات</button><button class="btn btn-ghost btn-sm" data-act="save-card">🪪 حفظ بطاقة رقم العضوية</button><span class="grow"></span><a href="#" class="btn btn-ghost btn-sm" data-act="privacy-show">🔒 إشعار الخصوصية</a><button class="btn btn-danger btn-sm" data-act="delete-me">🗑 احذف بياناتي</button></div></div>';
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📝 مشاركاتي في التمارين</h2><span class="pill">راجع إجاباتك وافتح أي تمرين لتعديلها</span></div>' + myPostsHtml(me.uid) + '</section>';
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🏅 أوسمتي</h2><span class="pill">يُفتح الوسام عند إنجاز <span class="num">80%</span> من تمارين المحور</span></div><div class="badges">' +
       pr.axes.map(x => { const ok = x.pct >= BADGE_THRESHOLD; return '<div class="badge ' + (ok ? '' : 'locked') + '">' + (ok ? '' : '<span class="lock">🔒</span>') + medalSvg(x.a) + '<h5>' + h(x.a.title) + '</h5><div class="pct num">' + Math.round(x.pct * 100) + '% · ' + x.done + ' من ' + x.total + '</div></div>'; }).join('') + '</div></section>';
@@ -2708,6 +2766,9 @@ Views.admin = {
     out += tool('congrats', '🏆', '#C8702A', 'تهنئة الإنجاز', '<div class="bigno num">' + ach.length + '</div>متدرب بلغ <span class="num">80%</span> إجمالًا', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="ach">الأسماء</button><button class="btn btn-soft btn-xs" data-act="congrats-preview" data-kind="congrats">معاينة</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="congEdit">تعديل المحتوى</button>');
     out += drop('ach', ach.length ? '<div class="people-list">' + ach.map(u => '<div class="person"><span class="nm">🏆 ' + h(u.name) + '</span><span class="muted">' + h(u.role || '') + '</span></div>').join('') + '</div>' : '<div class="empty">لم يبلغ أحد 80% بعد.</div>');
     out += drop('congEdit', Views.admin.congratsEditor('congrats'));
+    out += tool('regform', '📝', '#5B3A8A', 'نموذج التسجيل والخصوصية', '<span class="num">' + RegFields.visible().length + '</span> حقول ظاهرة من <span class="num">' + RegFields.all().length + '</span>. تحكم في الحقول المطلوبة والاختيارية وأضف حقولًا جديدة، وعدّل إشعار الخصوصية.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="regEdit">حقول التسجيل</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="privEdit">إشعار الخصوصية</button><button class="btn btn-ghost btn-xs" data-act="users-csv">⬇️ المسجّلون CSV</button>');
+    out += drop('regEdit', Views.admin.regEditor());
+    out += drop('privEdit', Views.admin.privacyEditor());
     const ac = Attend.cfg(); const holders = Attend.holders();
     out += tool('attend', '📍', '#0E7C7B', 'الحضور وشهادة المشاركة', '<div class="bigno num">' + holders.length + '</div>مستحق للشهادة (حضور ≥ <span class="num">' + ac.threshold + '%</span>)' + Attend.days().map(d => { const cd = ac.codes['d' + d] || {}; return '<div class="att-day"><b>اليوم <span class="num">' + d + '</span></b>' + (cd.code ? '<span class="att-code num notranslate" translate="no">' + h(cd.code) + '</span>' : '') + '<span class="pill ' + (cd.open ? 'open-pill' : '') + '">' + (cd.open ? 'مفتوح' : 'مغلق') + '</span></div>'; }).join(''), '<button class="btn btn-primary btn-xs" data-act="drop" data-k="attCtl">إدارة الحضور</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="attSheet">سجل الحضور</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="certEdit">محتوى الشهادة</button><button class="btn btn-ghost btn-xs" data-act="congrats-preview" data-kind="cert">معاينة</button>');
     out += drop('attCtl', Views.admin.attCtl());
@@ -2729,7 +2790,10 @@ Views.admin = {
     out += tool('csv', '📊', '#138A5E', 'تصدير المشاركات', 'كل إجابات المحاور والأنشطة والاستطلاع والمختبر والتقييمين في ملف CSV واحد يفتح في Excel.', '<button class="btn btn-primary btn-xs" data-act="export-csv">⬇️ تصدير CSV</button>');
     out += tool('person', '🗂️', '#1F3A5F', 'مشاركات فردية', 'ملف PDF وCSV لمشاركات كل متدرب على حدة، أو للجميع في ملف ZIP.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="persons">' + (UIState.openDrop.has('persons') ? 'إخفاء' : 'فتح') + ' القائمة</button>');
     out += drop('persons', '<div class="row" style="margin-bottom:10px"><input data-keep="persons-search" data-filter=".person" placeholder="🔍 بحث بالاسم…" style="flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;padding:8px 10px"><button class="btn btn-primary btn-xs" data-act="export-all-pdf">📦 تصدير الكل PDF</button><button class="btn btn-soft btn-xs" data-act="export-all-csv">📦 تصدير الكل CSV</button></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><button class="btn btn-soft btn-xs" data-act="person-pdf" data-uid="' + h(u) + '">PDF</button><button class="btn btn-ghost btn-xs" data-act="person-csv" data-uid="' + h(u) + '">CSV</button></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
-    out += tool('backup', '💾', '#E8960C', 'النسخة الاحتياطية', 'كل تعديلات وإضافات المحتوى (بلا مشاركات المتدربين) في ملف JSON.', '<button class="btn btn-soft btn-xs" data-act="backup">⬇️ تنزيل</button><label class="btn btn-ghost btn-xs">⬆️ استيراد<input type="file" accept="application/json,.json" hidden data-act-change="import-backup"></label>');
+    out += tool('backup', '💾', '#E8960C', 'النسخة الاحتياطية للمحتوى', 'كل تعديلات وإضافات المحتوى (بلا مشاركات المتدربين) في ملف JSON.', '<button class="btn btn-soft btn-xs" data-act="backup">⬇️ تنزيل</button><label class="btn btn-ghost btn-xs">⬆️ استيراد<input type="file" accept="application/json,.json" hidden data-act-change="import-backup"></label>');
+    const bks = Object.keys(Store.backupIndex || {}).sort().reverse();
+    out += tool('autobk', '🛟', '#138A5E', 'نسخ يومي تلقائي للمدخلات', 'نسخة يومية تلقائية من التسجيل والمشاركات والتقييمات والحضور (آخر <span class="num">' + BACKUP_KEEP + '</span> يومًا). آخر نسخة: <b class="num">' + (bks[0] || '—') + '</b>', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="bkList">النسخ المتاحة</button><button class="btn btn-ghost btn-xs" data-act="bk-now">نسخة الآن</button>');
+    out += drop('bkList', bks.length ? '<div class="people-list">' + bks.map(d => { const x = Store.backupIndex[d]; return '<div class="person"><span class="nm num">' + h(d) + '</span><span class="muted"><span class="num">' + (x.users || 0) + '</span> مسجّل · <span class="num">' + (x.posts || 0) + '</span> مشاركة · <span class="num">' + (x.kb || 0) + '</span> KB</span><button class="btn btn-soft btn-xs" data-act="bk-dl" data-d="' + h(d) + '">⬇️ تنزيل</button><button class="btn btn-danger btn-xs" data-act="bk-restore" data-d="' + h(d) + '">↺ استعادة</button></div>'; }).join('') + '</div>' : '<div class="empty">لا توجد نسخ بعد — تُؤخذ أول نسخة تلقائيًا عند توفر مدخلات.</div>');
     out += '</div>';
     // ---- واجهة الصفحة الرئيسية (أكورديون مضمَّن) ----
     out += band('واجهة الصفحة الرئيسية', '#C8702A');
@@ -2766,7 +2830,7 @@ Views.admin = {
     const L = Content.lab(); const openLab = UIState.openAcc.has('labAcc');
     out += '<div class="acc ' + (openLab ? 'open' : '') + '" style="--ac:#0F6E8C;--acg:' + tint('#0F6E8C', .08) + '"><div class="acc-head" data-act="acc" data-k="labAcc"><span class="aico">🧪</span><h3>المختبر الختامي — ' + h(L.title) + ' ' + (L._modified ? '<span class="tag mod">معدَّل</span> ' : '') + (Content.isHidden('home_lab') ? '<span class="tag hid">مخفي من الرئيسية</span>' : '') + '</h3><span class="arrow">◀</span></div><div class="acc-body">' + (openLab ? '<div class="ex-row"><div class="top"><span class="nm"><span class="num">' + L.stages.length + '</span> مراحل × <span class="num">' + L.minutes + '</span> دقائق · <span class="num">' + Object.keys(Store.labAnswers || {}).length + '</span> مجموعة شاركت</span><button class="btn btn-soft btn-xs" data-go="labEdit">✏️ تعديل المختبر ومراحله</button>' + (L._modified ? '<button class="btn btn-ghost btn-xs" data-act="lab-reset-content">↺ استرجاع الافتراضي</button>' : '') + '<button class="btn btn-danger btn-xs" data-act="lab-clear">🧹 مسح إجابات ومؤقتات المختبر</button></div></div>' : '') + '</div></div>';
     // ---- إجراء إتلافي مستقل ----
-    out += '<div class="tool danger-tool" style="margin-top:34px;min-height:0"><div class="th"><span class="ti" style="background:#FDECEC;color:#C62F35">⚠️</span><h4>إعادة ضبط شاملة — مسح جميع المدخلات من السيرفر</h4></div><div class="tb">يمسح كل مشاركات التمارين والأنشطة (عدا الاستطلاع الختامي)، ومؤقتات وإجابات المختبر، والتقييم القبلي والبعدي، وسجل الحضور، وقائمة المسجّلين والتعيينات، ويُلزم كل متصفح قديم بتسجيل اسم جديد. لا يمس المحتوى وتعديلاته.</div><div class="tf"><button class="btn btn-danger btn-sm" data-act="global-reset">مسح جميع المدخلات من السيرفر</button></div></div>';
+    out += '<div class="tool danger-tool" style="margin-top:34px;min-height:0"><div class="th"><span class="ti" style="background:#FDECEC;color:#C62F35">⚠️</span><h4>إعادة ضبط شاملة — مسح جميع المدخلات من السيرفر</h4></div><div class="tb">يأخذ نسخة احتياطية تلقائيًا ثم يمسح كل مشاركات التمارين والأنشطة (عدا الاستطلاع الختامي)، ومؤقتات وإجابات المختبر، والتقييم القبلي والبعدي، وسجل الحضور، وقائمة المسجّلين والتعيينات، ويُلزم كل متصفح قديم بتسجيل اسم جديد. لا يمس المحتوى وتعديلاته.</div><div class="tf"><button class="btn btn-danger btn-sm" data-act="global-reset">مسح جميع المدخلات من السيرفر</button></div></div>';
     return out;
   },
   homeEditor() {
@@ -2786,6 +2850,21 @@ Views.admin = {
       '<div class="field"><label>الفقرات</label><div data-cg-paras>' + c.paragraphs.map((p, i) => '<div class="row" style="margin-bottom:6px"><textarea data-cg-para rows="2" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-family:var(--f-body)">' + h(p) + '</textarea><button class="btn btn-danger btn-xs" data-act="cg-del-para">🗑</button></div>').join('') + '</div><button class="btn btn-soft btn-xs" data-act="cg-add-para">➕ فقرة</button></div>' +
       '<div class="grid2"><div class="field"><label>تذييل يمين</label><input data-cg="footerRight" data-keep="' + K + 'fr" value="' + h(c.footerRight) + '"></div><div class="field"><label>تذييل يسار</label><input data-cg="footerLeft" data-keep="' + K + 'fl" value="' + h(c.footerLeft) + '"></div></div>' +
       '<div class="field"><label>نص الإشعار أسفل ' + (kind === 'cert' ? 'الشهادة' : 'التهنئة') + '</label><textarea data-cg="notice" data-keep="' + K + 'notice" rows="2">' + h(c.notice) + '</textarea></div><div class="row"><button class="btn btn-primary btn-sm" data-act="cg-save" data-kind="' + kind + '">💾 حفظ</button><button class="btn btn-ghost btn-sm" data-act="cg-reset" data-kind="' + kind + '">↺ استرجاع الافتراضي</button></div>';
+  },
+  regEditor() {
+    const fs = UIState.regDraft || RegFields.all(); UIState.regDraft = fs;
+    return '<p class="help muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:0">الاسم الكامل إلزامي دائمًا. غيّر العنوان والنوع والخيارات، وأظهر أو أخفِ أي حقل، واجعله إلزاميًا أو اختياريًا، ورتّبه بـ ↑↓. الحقول المخفية لا تُحذف بياناتها السابقة.</p><div id="regRows">' +
+      fs.map((f, i) => '<div class="reg-row" data-rrow="' + i + '"><div class="row"><span class="pill num">' + (i + 1) + '</span><input data-rr="label" data-keep="rr-' + f.key + '-label" value="' + h(f.label) + '" class="grow" style="min-width:160px">' +
+        '<select data-rr="type" ' + (f.builtin ? 'disabled' : '') + '>' + Object.keys(REG_TYPES).map(t => '<option value="' + t + '" ' + (t === f.type ? 'selected' : '') + '>' + REG_TYPES[t] + '</option>').join('') + '</select>' +
+        '<label class="sim-cb"><input type="checkbox" data-rr="visible" ' + (f.visible ? 'checked' : '') + ' ' + (f.key === 'name' ? 'disabled' : '') + '> ظاهر</label><label class="sim-cb"><input type="checkbox" data-rr="required" ' + (f.required ? 'checked' : '') + ' ' + (f.key === 'name' ? 'disabled' : '') + '> إلزامي</label>' +
+        '<button class="btn btn-ghost btn-xs" data-act="rr-move" data-d="-1" data-i="' + i + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button class="btn btn-ghost btn-xs" data-act="rr-move" data-d="1" data-i="' + i + '" ' + (i === fs.length - 1 ? 'disabled' : '') + '>↓</button>' + (f.builtin ? '' : '<button class="btn btn-danger btn-xs" data-act="rr-del" data-i="' + i + '">🗑</button>') + '</div>' +
+        '<div class="row" style="margin-top:6px"><input data-rr="ph" data-keep="rr-' + f.key + '-ph" value="' + h(f.ph || '') + '" placeholder="نص توضيحي داخل الحقل (اختياري)" class="grow"></div>' +
+        (f.type === 'select' ? '<textarea data-rr="options" data-keep="rr-' + f.key + '-options" rows="3" placeholder="خيارات القائمة (سطر لكل خيار)" style="width:100%;margin-top:6px">' + h(f.options.join('\n')) + '</textarea>' : '') + '</div>').join('') + '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn btn-soft btn-xs" data-act="rr-add">➕ إضافة حقل</button><button class="btn btn-primary btn-sm" data-act="rr-save">💾 حفظ نموذج التسجيل</button><button class="btn btn-ghost btn-sm" data-act="rr-reset">↺ الافتراضي</button></div>';
+  },
+  privacyEditor() {
+    const pv = Content.privacy();
+    return '<div class="field"><label>نص إشعار الخصوصية</label><textarea id="pvText" data-keep="pv-text" rows="7">' + h(pv.text) + '</textarea></div><div class="field"><label>نص خانة الموافقة الإلزامية</label><input id="pvConsent" data-keep="pv-consent" value="' + h(pv.consent) + '"></div><div class="field"><label>نص موافقة التواصل للمتابعة (اختيارية)</label><input id="pvFollow" data-keep="pv-follow" value="' + h(pv.followup) + '"></div><div class="row"><button class="btn btn-primary btn-sm" data-act="pv-save">💾 حفظ</button><button class="btn btn-ghost btn-sm" data-act="pv-reset">↺ الافتراضي</button></div>';
   },
   guideEditor() {
     const g = Content.guide(); const dayTxt = d => d.map(x => [x.t, x.min, x.act, x.note].join(' | ')).join('\n');
@@ -3536,6 +3615,16 @@ async function buildGuidePdf() {
   } catch (e) { pm.close(); UI.alert('تعذر إنشاء الدليل: ' + h(e.message || e)); }
 }
 
+// ---------- المسجّلون CSV (كل حقول التسجيل + الموافقات + الحضور) ----------
+function exportUsersCsv() {
+  const users = Store.users || {}; const fs = RegFields.all();
+  const rows = [['رقم العضوية'].concat(fs.map(f => f.label)).concat(['تاريخ التسجيل', 'موافقة الخصوصية', 'موافقة المتابعة', 'نسبة الحضور', 'التقييم القبلي', 'التقييم البعدي', 'نسبة الإنجاز'])];
+  const n = Content.assess().items.length;
+  Object.keys(users).sort((a, b) => (users[a].member || 0) - (users[b].member || 0)).forEach(u => { const x = users[u]; const pre = Assess.rec('pre', u), post = Assess.rec('post', u);
+    rows.push([pad4(x.member || 0)].concat(fs.map(f => RegFields.val(x, f.key))).concat([x.ts ? fmtTime(x.ts) : '', x.consent && x.consent.privacy ? 'نعم' : '—', x.consent && x.consent.followup ? 'نعم' : 'لا', Attend.pct(u) + '%', pre && pre.done ? Assess.score(pre.answers) + '/' + n : '', post && post.done ? Assess.score(post.answers) + '/' + n : '', Math.round(Progress.forUser(u).pct * 100) + '%'])); });
+  downloadBlob(csvBlob(rows), 'المسجلون.csv');
+}
+
 
 /* ===== 09-main.js ===== */
 // ---------------------------------------------------------------------
@@ -3586,6 +3675,7 @@ function watchAll() {
   W('reveal', v => { Store.reveal = v || {}; });
   W('lab', v => { v = v || {}; Store.labTimers = v.timers || {}; Store.labAnswers = v.answers || {}; });
   W('broadcast', v => { Store.broadcast = v; });
+  W('backupIndex', v => { Store.backupIndex = v || {}; });
   W('stats/registered', v => { Store.registered = Number(v) || 0; });
   W('meta/resetStamp', v => {
     Store.resetStamp = Number(v) || 0;
@@ -3596,20 +3686,33 @@ function getByPath(path) { const seg = path.split('/'); let n = seg[0] === 'post
 
 // ---------- التسجيل والدخول ----------
 async function doRegister() {
-  const name = ($('#regName') || {}).value ? $('#regName').value.trim() : ''; const role = ($('#regRole') || {}).value ? $('#regRole').value.trim() : ''; const org = ($('#regOrg') || {}).value ? $('#regOrg').value.trim() : '';
-  if (name.length < 2) { UI.alert('اكتب اسمك الكامل أولًا.'); return; }
-  if (!role) { UI.alert('اكتب مجالك أو مسماك الوظيفي.'); return; }
+  const { data, err } = RegFields.collect(document, 'reg_');
+  if (err) { UI.alert(err); return; }
+  if (!($('#regConsent') || {}).checked) { UI.alert('يلزم الموافقة على إشعار الخصوصية لإتمام التسجيل.'); return; }
+  const follow = !!($('#regFollow') || {}).checked;
   const btn = $('[data-act="register"]'); if (btn) { btn.disabled = true; btn.textContent = 'جارٍ التسجيل…'; }
   try {
     const uid = genId('u');
     // رقم عضوية تسلسلي عبر عملية ذرّية مع حماية دنيا صريحة
     const member = await DB.transaction('meta/memberCounter', cur => Math.max(Number(cur) || 0, MEMBER_NO_FLOOR) + 1);
-    const ts = DB.now();
-    await DB.set('users/' + uid, { name, role, org, member, ts });
+    const ts = DB.now(); const name = data.name, role = data.role || '';
+    await DB.set('users/' + uid, { name, role, f: data.f, member, ts, consent: { privacy: ts, followup: follow } });
     DB.transaction('stats/registered', c => (Number(c) || 0) + 1);
-    const me = { uid, name, role, org, member, ts }; Me.save(me);
+    const me = { uid, name, role, member, ts }; Me.save(me);
     App.render(); welcomeModal(me);
   } catch (e) { UI.alert('تعذر التسجيل: ' + h(e.message || e)); if (btn) { btn.disabled = false; btn.textContent = 'ابدأ 🚀'; } }
+}
+function privacyModal() { const pv = Content.privacy(); const m = UI.modal('<h3>🔒 إشعار الخصوصية</h3><div style="line-height:1.9">' + richHtml(pv.text) + '</div><div class="actions"><button class="btn btn-primary" data-x>حسنًا</button></div>', { wide: true }); $('[data-x]', m.el).onclick = () => m.close(); }
+// حذف كل بيانات المتدرب من السيرفر (حق المستخدم في حذف بياناته)
+async function deleteMyData() {
+  const ok = await UI.confirm('سيُحذف نهائيًا من السيرفر: بياناتك، ومشاركاتك الفردية، ونتائج تقييماتك، وسجل حضورك، واهتماماتك، ومتابعاتك، وإعجاباتك. إجابات المجموعات تبقى باسم المجموعة مع إزالة اسمك منها. لا يمكن التراجع، ولن تتمكن من الحصول على الشهادة.', { danger: true, ok: 'احذف بياناتي نهائيًا', title: 'حذف بياناتي' });
+  if (!ok) return; const uid = Me.uid(); const upd = {};
+  upd['users/' + uid] = null; upd['assess/pre/' + uid] = null; upd['assess/post/' + uid] = null; upd['attendance/' + uid] = null; upd['assign/' + uid] = null; upd['leads/' + uid] = null;
+  ['30', '60', '90'].forEach(n => { upd['followups/d' + n + '/' + uid] = null; });
+  Object.keys(Store.posts || {}).forEach(ex => { const ps = Store.posts[ex] || {}; Object.keys(ps).forEach(k => { const p = ps[k] || {}; if (k === uid) upd['posts/' + ex + '/' + k] = null; else { if (p.members && p.members[uid]) upd['posts/' + ex + '/' + k + '/members/' + uid] = null; if (p.likes && p.likes[uid]) upd['posts/' + ex + '/' + k + '/likes/' + uid] = null; if (p.by === uid) upd['posts/' + ex + '/' + k + '/name'] = ''; } }); });
+  Object.keys(Store.storyLikes || {}).forEach(st => { if (((Store.storyLikes[st] || {}).likes || {})[uid]) upd['storyLikes/' + st + '/likes/' + uid] = null; });
+  await DB.update('', upd); DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1));
+  Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); UI.toast('تم حذف بياناتك نهائيًا');
 }
 function welcomeModal(me) {
   const m = UI.modal('<div class="center"><div style="font-size:48px">🎉</div><h3>أهلًا ' + h(me.name) + '!</h3><p class="muted" style="font-family:var(--f-ui)">تم تسجيلك بنجاح. هذا رقم عضويتك — احتفظ به للدخول من أي جهاز آخر دون كلمة مرور.</p><div class="num" style="font-family:var(--f-display);font-size:52px;font-weight:800;letter-spacing:4px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block">' + pad4(me.member) + '</div></div><div class="actions" style="justify-content:center"><button class="btn btn-primary" data-save-card>💾 حفظ رقم العضوية</button><button class="btn btn-ghost" data-close>ابدأ الجولة</button></div>');
@@ -3680,8 +3783,16 @@ async function globalReset() {
   if (!ok) return;
   const posts = await DB.get('posts') || {}; const upd = {};
   Object.keys(posts).forEach(k => { if (k !== SURVEY_ID) upd['posts/' + k] = null; }); // استثناء صريح للاستطلاع الختامي
-  upd.lab = null; upd.users = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd['meta/resetStamp'] = DB.now();
+  await autoBackup(true); // نسخة احتياطية تلقائية قبل المسح
+  upd.lab = null; upd.users = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd.leads = null; upd.followups = null; upd['meta/resetStamp'] = DB.now();
   await DB.update('', upd); UI.toast('تمت إعادة الضبط الشاملة');
+}
+
+function collectRegRows() {
+  const base = UIState.regDraft || RegFields.all();
+  return $$('[data-rrow]').map(row => { const f = Object.assign({}, base[+row.getAttribute('data-rrow')]); const g = k => $('[data-rr="' + k + '"]', row);
+    f.label = g('label').value.trim() || f.label; if (!f.builtin) f.type = g('type').value; if (f.key !== 'name') { f.visible = g('visible').checked; f.required = g('required').checked; }
+    f.ph = g('ph').value.trim(); if (g('options')) f.options = g('options').value.split('\n').map(x => x.trim()).filter(Boolean); else if (f.type === 'select' && !f.options.length) f.options = ['خيار 1', 'خيار 2']; return f; });
 }
 
 // ---------- التفاعلات (تفويض أحداث واحد) ----------
@@ -3753,7 +3864,22 @@ document.addEventListener('click', async ev => {
     case 'lab-save': { const i = t.getAttribute('data-i'); const ta = $('#labAns' + i); const txt = ta ? ta.value.trim() : ''; if (!txt) { UI.alert('اكتبوا مخرج المرحلة أولًا.'); break; } await DB.update('lab/answers/g' + Me.group() + '/s' + i, { text: txt, name: Me.data.name, uid: Me.uid(), ts: DB.now() }); UIState.editing['lab' + i] = false; if (ta) ta.value = ''; UI.toast('✅ حُفظت المرحلة'); App.render(); break; }
     case 'del-lab': { if (await UI.confirm('حذف إجابة هذه المرحلة؟', { danger: true, ok: 'حذف' })) DB.remove('lab/answers/' + t.getAttribute('data-k') + '/s' + t.getAttribute('data-i')); break; }
     // ----- حسابي -----
-    case 'acc-save': { const n = $('#accName').value.trim(), r = $('#accRole').value.trim(), org = $('#accOrg').value.trim(), em = $('#accEmail').value.trim(); if (n.length < 2) { UI.alert('الاسم قصير جدًا.'); break; } if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { UI.alert('صيغة البريد الإلكتروني غير صحيحة.'); break; } const me = Object.assign({}, Me.data, { name: n, role: r, org, email: em }); Me.save(me); await DB.update('users/' + me.uid, { name: n, role: r, org, email: em }); UI.toast('✅ تم تحديث بياناتك'); App.render(); break; }
+    case 'acc-save': { const { data, err } = RegFields.collect(document, 'acc_'); if (err) { UI.alert(err); break; } const me = Object.assign({}, Me.data, { name: data.name || Me.data.name, role: data.role != null ? data.role : Me.data.role }); Me.save(me); await DB.update('users/' + me.uid, { name: me.name, role: me.role || '', f: Object.assign({}, (Store.users[me.uid] || {}).f || {}, data.f), 'consent/followup': !!($('#accFollow') || {}).checked }); UI.toast('✅ تم تحديث بياناتك'); App.render(); break; }
+    case 'privacy-show': ev.preventDefault(); privacyModal(); break;
+    case 'rr-move': case 'rr-del': case 'rr-add': {
+      const fs = collectRegRows(); if (act === 'rr-add') fs.push({ key: 'c' + genId(), label: 'حقل جديد', type: 'text', visible: true, required: false, options: [], builtin: false });
+      else if (act === 'rr-del') fs.splice(+t.getAttribute('data-i'), 1); else { const i = +t.getAttribute('data-i'), j = i + (+t.getAttribute('data-d')); [fs[i], fs[j]] = [fs[j], fs[i]]; }
+      UIState.regDraft = fs; App.render(); break;
+    }
+    case 'rr-save': { const fs = collectRegRows(); const fields = {}; fs.forEach(f => { fields[f.key] = { label: f.label, type: f.type, visible: !!f.visible, required: !!f.required, options: f.options, ph: f.ph || '' }; }); const cur = ((Store.site || {}).regFields || {}).fields || {}; Object.keys(cur).forEach(k => { if (!fields[k] && !REG_DEFAULTS[k]) fields[k] = Object.assign({}, cur[k], { deleted: true }); }); await DB.set('site/regFields', { order: fs.map(f => f.key), fields }); UIState.regDraft = null; UI.toast('✅ حُفظ نموذج التسجيل'); break; }
+    case 'rr-reset': { if (await UI.confirm('استرجاع حقول التسجيل الافتراضية؟', { ok: 'استرجاع' })) { await DB.remove('site/regFields'); UIState.regDraft = null; App.render(); } break; }
+    case 'pv-save': await DB.set('site/privacy', { text: $('#pvText').value.trim(), consent: $('#pvConsent').value.trim(), followup: $('#pvFollow').value.trim() }); UI.toast('✅ حُفظ'); break;
+    case 'pv-reset': { if (await UI.confirm('استرجاع النص الافتراضي؟', { ok: 'استرجاع' })) DB.remove('site/privacy'); break; }
+    case 'users-csv': exportUsersCsv(); break;
+    case 'bk-now': { const ok = await autoBackup(true); UI.toast(ok ? '✅ أُخذت نسخة احتياطية الآن' : 'تعذر أخذ النسخة'); break; }
+    case 'bk-dl': { const d = t.getAttribute('data-d'); const b = await DB.get('backups/' + d); downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom-data', day: d, data: b && b.data }, null, 2)], { type: 'application/json' }), 'نسخة مدخلات المتدربين ' + d + '.json'); break; }
+    case 'bk-restore': restoreBackup(t.getAttribute('data-d')); break;
+    case 'delete-me': deleteMyData(); break;
     case 'congrats-pdf': buildCongratsPdf(Me.data.name, t.getAttribute('data-kind') || 'congrats'); break;
     case 'congrats-mail': {
       const subj = 'تهنئة إنجاز — ' + Content.courseTitle();
@@ -3782,7 +3908,7 @@ document.addEventListener('click', async ev => {
     }
     // ----- لوحة الأدمن -----
     case 'bell': UIState.bellOpen = !UIState.bellOpen; App.render(); if (UIState.bellOpen) setTimeout(() => { SafeLS.set('ec_bell_seen', String(Date.now())); if (UIState.bellOpen) App.render(); }, 1800); break;
-    case 'drop': { const k = t.getAttribute('data-k'); UIState.openDrop.has(k) ? UIState.openDrop.delete(k) : UIState.openDrop.add(k); App.render(); break; }
+    case 'drop': { const k = t.getAttribute('data-k'); if (k === 'regEdit') UIState.regDraft = null; UIState.openDrop.has(k) ? UIState.openDrop.delete(k) : UIState.openDrop.add(k); App.render(); break; }
     case 'acc': { if (ev.target.closest('.acc-actions') || ev.target.closest('.drag-handle')) break; const k = t.getAttribute('data-k'); UIState.openAcc.has(k) ? UIState.openAcc.delete(k) : UIState.openAcc.add(k); App.render(); break; }
     case 'clear-names': { if (await UI.confirm('مسح أسماء المسجّلين فقط من السيرفر؟ لن تتأثر الإجابات أو المؤقتات، ولن يُطلب من أي متدرب حالي إعادة التسجيل.', { danger: true, ok: 'مسح الأسماء' })) { await DB.remove('users'); UI.toast('تم مسح قائمة الأسماء'); } break; }
     case 'save-groups': { const n = parseInt($('#grpCount').value, 10); if (!(n >= 2 && n <= 30)) { UI.alert('اختر عددًا بين 2 و30.'); break; } await DB.set('settings/groups/count', n); UI.toast('✅ عدد المجموعات: ' + n); break; }
@@ -3891,6 +4017,32 @@ function labTick() {
   if (rerender) App.render();
 }
 
+// ---------- نسخ احتياطي يومي تلقائي لمدخلات المتدربين ----------
+// أول متصفح يفتح المنصة في يوم جديد يأخذ نسخة من المشاركات والتسجيل والحضور والتقييمات (عملية ذرّية تضمن نسخة واحدة يوميًا)
+const BACKUP_KEEP = 14;
+const BACKUP_PATHS = ['users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes'];
+function dayKey(ts) { const d = new Date(ts || Date.now()); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+async function snapshotData() { const o = {}; for (const k of BACKUP_PATHS) o[k] = await DB.get(k); return o; }
+async function autoBackup(force) {
+  try {
+    const day = dayKey(DB.now()); const mark = day + '|' + genId();
+    const res = await DB.transaction('meta/backupDay', cur => (!force && cur && String(cur).indexOf(day + '|') === 0) ? undefined : mark);
+    if (res !== mark) return false;
+    const data = await snapshotData(); const json = JSON.stringify(data);
+    if (!force && json.length < 20) return false;
+    await DB.set('backups/' + day, { ts: DB.now(), data });
+    await DB.set('backupIndex/' + day, { ts: DB.now(), users: Object.keys(data.users || {}).length, posts: Object.keys(data.posts || {}).reduce((n, k) => n + Object.keys(data.posts[k] || {}).length, 0), kb: Math.round(json.length / 1024) });
+    const idx = Object.keys((await DB.get('backupIndex')) || {}).sort(); const old = idx.slice(0, Math.max(0, idx.length - BACKUP_KEEP));
+    if (old.length) { const upd = {}; old.forEach(k => { upd['backups/' + k] = null; upd['backupIndex/' + k] = null; }); await DB.update('', upd); }
+    return true;
+  } catch (e) { console.warn('backup', e); return false; }
+}
+async function restoreBackup(day) {
+  if (!(await UI.confirm('استعادة مدخلات المتدربين كما كانت في نسخة ' + h(day) + '؟ ستُستبدل البيانات الحالية (التسجيل، المشاركات، التقييمات، الحضور، المختبر). المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'استعادة' }))) return;
+  const b = await DB.get('backups/' + day); if (!b || !b.data) { UI.alert('النسخة غير موجودة.'); return; }
+  const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd); UI.toast('✅ تمت الاستعادة');
+}
+
 // ---------- الإقلاع ----------
 function boot() {
   Me.load();
@@ -3899,6 +4051,7 @@ function boot() {
   watchAll();
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();
+  setTimeout(() => autoBackup(false), 15000); setInterval(() => autoBackup(false), 3600000);
   App.render();
   setInterval(labTick, 1000);
 }
