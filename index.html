@@ -647,6 +647,70 @@ font{background:transparent!important;box-shadow:none!important}
 .mon-bar i{display:block;height:10px;background:var(--line);border-radius:5px;overflow:hidden}.mon-bar em{display:block;height:100%}
 .mon-q{display:grid;grid-template-columns:22px 1fr;gap:6px;margin-bottom:6px;align-items:center;font-family:var(--f-ui)}
 .mon-recs{margin:0;padding-inline-start:18px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+/* ===== صندوق الأدوات ===== */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.tool-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--sh-1)}
+#tool-matrix{grid-column:1/-1}
+.tc-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}.tc-head>span{font-size:28px}.tc-head h3{font-size:17px}.tc-head p{margin:0;color:var(--ink-3);font-size:13.5px;font-family:var(--f-ui)}
+.tc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:520px){.tc-grid{grid-template-columns:1fr}}
+.tc-inputs{display:flex;flex-direction:column;gap:6px}
+.tc-inputs label{display:flex;flex-direction:column;font-family:var(--f-ui);font-size:12.5px;color:var(--ink-2);gap:2px}
+.tc-inputs input,.mx-table input{border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-family:var(--f-ui);font-size:14px;width:100%;background:var(--surface-2);color:var(--ink)}
+.tc-out{background:var(--surface-2);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.tc-row{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-ui);font-size:13px;border-bottom:1px dashed var(--line);padding-bottom:4px}
+.tc-row b{text-align:left}.tc-row.strong b{color:var(--brand);font-size:15px}
+.mx-table{width:100%;border-collapse:collapse;font-family:var(--f-ui);font-size:13.5px;min-width:520px}
+.mx-table th,.mx-table td{padding:6px;border-bottom:1px solid var(--line);text-align:right}
+.mx-table th{background:var(--surface-2)}.mx-total td{font-weight:700}.mx-total .best{color:var(--ok)}.mx-total .bad{color:var(--danger)}
+.tool-note{font-family:var(--f-ui);font-size:12.5px;color:var(--danger);margin-top:6px}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.tpl-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-1);display:flex;flex-direction:column;gap:6px}
+.tpl-card h3{font-size:16px}.tpl-card p{color:var(--ink-3);font-size:13.5px;margin:0;flex:1}.tpl-ico{font-size:30px}
+.tpl-preview table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.tpl-preview td,.tpl-preview th{border:1px solid var(--line);padding:6px}.tpl-preview th{background:var(--surface-2)}
+/* ===== النقاط ===== */
+.lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media (max-width:700px){.lb-grid{grid-template-columns:1fr}}
+.lb-grid h3{font-size:16px;margin-bottom:8px}
+.lb-row{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:10px;font-family:var(--f-ui)}
+.lb-row:nth-child(even){background:var(--surface-2)}.lb-row.mine{background:#FFF3DA}
+.lb-rank{width:30px;text-align:center;font-weight:700}
+.sp-badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:10px}
+.sp-badge{background:linear-gradient(135deg,#FFF7E6,#FFFFFF);border:1px solid #F2DDB1;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px;font-family:var(--f-ui)}
+.sp-badge span{font-size:26px}.sp-badge em{font-style:normal;font-size:12px;color:var(--ink-3)}
+.fu-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+/* ===== وضع العرض ===== */
+.present{min-height:100vh;background:radial-gradient(circle at 10% 10%,#3A1424,#12182B 55%);color:#fff;display:flex;flex-direction:column}
+.pr-bar{display:flex;gap:10px;align-items:center;padding:10px 20px;background:rgba(255,255,255,.06);flex-wrap:wrap}
+.pr-bar .btn-ghost{color:#fff;border-color:rgba(255,255,255,.3);background:transparent}
+.pr-brand{display:flex;gap:8px;align-items:center;flex:1;font-family:var(--f-display);font-size:16px}
+.pr-sel{max-width:420px;border-radius:10px;padding:6px 10px;font-family:var(--f-ui)}
+.pr-body{flex:1;padding:24px 4vw;display:flex;flex-direction:column;gap:18px}
+.pr-title{font-family:var(--f-display);font-size:clamp(24px,3vw,40px);font-weight:800}.pr-count{font-size:.5em;opacity:.8;font-family:var(--f-ui);margin-inline-start:10px}
+.pr-empty{opacity:.7;font-family:var(--f-ui);font-size:20px;text-align:center;padding:40px}
+.pr-join{display:grid;grid-template-columns:auto 1fr;gap:5vw;align-items:center;margin:auto}
+.pr-qr{background:#fff;border-radius:24px;padding:14px;width:min(42vh,380px);height:min(42vh,380px)}.pr-qr svg{width:100%;height:100%}
+.pr-big{font-family:var(--f-display);font-size:clamp(30px,4vw,56px);font-weight:900}
+.pr-url{font-family:var(--f-ui);opacity:.8;font-size:clamp(14px,1.6vw,22px);direction:ltr;text-align:right}
+.pr-counters{display:flex;gap:16px;flex-wrap:wrap;margin-top:18px}
+.pr-counters>div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:14px 22px;display:flex;flex-direction:column;align-items:center;min-width:150px}
+.pr-counters b{font-family:var(--f-display);font-size:clamp(34px,4.5vw,64px);color:#FFD98A}.pr-counters span{font-family:var(--f-ui);opacity:.85}
+.pr-counters .code b{letter-spacing:8px;color:#8FF0C8}
+.pr-q{font-family:var(--f-display);font-size:clamp(22px,2.6vw,36px);line-height:1.5}.pr-q .num{background:rgba(255,255,255,.12);border-radius:10px;padding:0 10px;font-size:.7em}
+.pr-poll{display:flex;flex-direction:column;gap:12px}
+.pr-opt{position:relative;background:rgba(255,255,255,.07);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;gap:12px;overflow:hidden;font-family:var(--f-ui);font-size:clamp(16px,1.8vw,24px)}
+.pr-opt em{position:absolute;inset:0 0 0 auto;background:linear-gradient(90deg,rgba(201,138,156,.25),rgba(201,138,156,.55));transition:width .6s}
+.pr-opt span,.pr-opt b{position:relative}.pr-opt.right{outline:3px solid #8FF0C8}.pr-opt.right em{background:linear-gradient(90deg,rgba(19,138,94,.4),rgba(19,138,94,.8))}
+.pr-foot{font-family:var(--f-ui);opacity:.85;font-size:18px}
+.pr-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.pr-nav .btn-ghost{color:#fff;border-color:rgba(255,255,255,.3);background:transparent}
+.pr-bars{display:flex;flex-direction:column;gap:10px}
+.pr-qbar{display:grid;grid-template-columns:40px 1fr 170px;gap:12px;align-items:center;font-family:var(--f-ui);font-size:18px}
+.pr-qbar i{position:relative;display:block;height:22px;background:rgba(255,255,255,.08);border-radius:11px;overflow:hidden}
+.pr-qbar em{position:absolute;top:0;bottom:0;right:0;border-radius:11px;transition:width .6s}.pr-qbar em.pre{background:rgba(201,138,156,.55);height:50%}.pr-qbar em.post{background:#8FF0C8;top:50%}
+.pr-qbar em.post:only-child{top:0}
+.wcloud{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;align-items:center;padding:20px;line-height:1.2;font-family:var(--f-display);font-weight:800;background:rgba(255,255,255,.04);border-radius:24px;min-height:40vh}
+.pr-top{background:rgba(255,255,255,.08);border-inline-start:6px solid #FFD98A;border-radius:18px;padding:14px 20px;font-family:var(--f-ui)}
+.pr-top .lbl{color:#FFD98A;font-weight:700}.pr-top .txt{font-size:clamp(18px,2vw,26px);margin:6px 0}.pr-top .who{opacity:.8}
+.present .lb-grid .card,.present .feed,.present .table-wrap{background:rgba(255,255,255,.95);color:var(--ink)}
+@media (max-width:760px){.pr-join{grid-template-columns:1fr;justify-items:center}}
 
 </style>
 </head>
@@ -1585,7 +1649,9 @@ const HOME_BUILTINS = [
   { key: 'activities', icon: '⚡', kicker: 'قبل أن نبدأ', title: '⚡ أنشطة' },
   { key: 'axes', icon: '🗺️', kicker: 'خارطة البرنامج', title: '🗺️ محاور البرنامج' },
   { key: 'lab', icon: '🧪', kicker: 'مشروع تطبيقي شامل', title: '' },
-  { key: 'survey', icon: '🎓', kicker: 'نهاية الرحلة', title: '🎓 ختام البرنامج' }
+  { key: 'survey', icon: '🎓', kicker: 'نهاية الرحلة', title: '🎓 ختام البرنامج' },
+  { key: 'leaderboard', icon: '🏆', kicker: 'التحفيز', title: '🏆 لوحة الصدارة' },
+  { key: 'tools', icon: '🧰', kicker: 'تبقى معك بعد البرنامج', title: '🧰 صندوق أدوات المتجر ومكتبة القوالب' }
 ];
 const SECTION_TYPES = { text: 'نص منسّق', video: 'فيديو', image: 'صورة وإعلان', cta: 'بطاقة رابط / زر' };
 
@@ -1836,7 +1902,7 @@ const Router = {
   backOf(st) {
     switch (st.view) {
       case 'ex': { const ax = Content.axisOfEx(st.id); return ax ? { view: 'axis', id: ax } : { view: 'home' }; }
-      case 'axis': case 'lab': case 'account': case 'admin': case 'assess': case 'story': return { view: 'home' };
+      case 'axis': case 'lab': case 'account': case 'admin': case 'assess': case 'story': case 'tools': case 'followup': return { view: 'home' };
       case 'storyEdit': return { view: 'admin' };
       case 'secEdit': case 'labEdit': case 'assessEdit': return { view: 'admin' };
       case 'exEdit': return st.from === 'axisEdit' && st.axis ? { view: 'axisEdit', id: st.axis } : { view: 'admin' };
@@ -2114,6 +2180,8 @@ function homeSectionHtml(sec) {
       axes.map((a, i) => { const unitHead = (i === 0 || axes[i - 1].unit !== a.unit) ? '<div class="unit-head"><span class="unit-no">' + h(Content.unitKicker(a.unit) || 'محاور إضافية') + '</span><h3>' + h(Content.unitName(a.unit) || 'محاور أُضيفت للبرنامج') + '</h3></div>' : ''; const exs = Content.exercisesOf(a.id).length; const done = Me.isReg() && exs ? Content.exercisesOf(a.id).filter(e => Progress.exDone(e, Me.uid())).length : 0; return unitHead + '<button class="axis-card ' + (a._disabled ? 'disabled' : '') + '" data-act="open-axis" data-id="' + h(a.id) + '">' + (a._disabled ? '<span class="soon-badge">قريبًا</span>' : '') + axisArt(a) + '<span class="axis-no">' + h(Content.unitName(a.unit) || 'محور إضافي') + '</span><div class="axis-body"><div class="axis-title">' + h(a.title) + '</div>' + (a.classic ? '<div class="axis-classic">' + h(a.classic) + '</div>' : '') + '<div class="axis-desc">' + richHtml(a.desc) + '</div><div class="axis-meta"><span class="pill">🎞️ <span class="num">' + a.slides.length + '</span> شريحة</span><span class="pill">✍️ <span class="num">' + exs + '</span> تمرين</span>' + (a.duration ? '<span class="pill">⏱ ' + h(a.duration) + '</span>' : '') + (done ? '<span class="pill ok-pill">✔ <span class="num">' + done + '/' + exs + '</span></span>' : '') + '</div></div></button>'; }).join('') + '</div></section>';
   }
   if (k === 'lab') { const L = Content.lab(); if (!L.stages.length) return ''; return '<section class="section"><div class="lab-banner" data-go="lab"><div class="lab-ico">🧪</div><div class="grow"><div class="sec-kicker" style="color:#D9A62E">' + h(sec.kicker || '') + ' · <span class="num">' + (L.stages.length * L.minutes) + '</span> دقيقة</div><h3>' + h(sec.title || L.title) + '</h3><p><span class="num">' + L.stages.length + '</span> مراحل بمؤقّت حي لكل مجموعة، تجمع كل محاور البرنامج في خطة نمو واحدة.</p></div><span class="btn btn-primary">ادخل المختبر ←</span></div></section>'; }
+  if (k === 'leaderboard') { if (!Points.cfg().enabled) return ''; return '<section class="section">' + secHead(sec) + leaderboardHtml(5) + '</section>'; }
+  if (k === 'tools') return '<section class="section">' + secHead(sec) + '<div class="act-grid"><button class="act-card" data-go="tools"><div class="act-ico">🧮</div><div><h3>7 حاسبات عملية</h3><div class="muted" style="font-size:13.5px;font-family:var(--f-ui)">التكلفة الإجمالية للمنصة، رسوم بوابات الدفع، نقطة إعادة الطلب، التكلفة الواصلة للعميل الدولي، CAC وCLV وROAS، سعر التعادل، ومصفوفة اختيار المنصة.</div></div></button><button class="act-card" data-go="tools"><div class="act-ico">📚</div><div><h3>مكتبة القوالب</h3><div class="muted" style="font-size:13.5px;font-family:var(--f-ui)">إجراء تشغيل قياسي، قائمة إطلاق المتجر، خطة النمو، سياسة الاسترجاع، ومصفوفة المنصات — Word وPDF.</div></div></button></div></section>';
   if (k === 'survey') { const survey = Content.survey(); if (!survey) return ''; return '<section class="section">' + secHead(sec) + '<button class="act-card" style="width:100%" data-go="ex" data-id="' + h(survey.id) + '"><div class="act-ico">' + h(survey.icon || '💬') + '</div><div><h3>' + h(survey.title) + '</h3><div class="muted" style="font-family:var(--f-ui);font-size:14px">' + h(stripHtml(survey.task)) + '</div></div></button></section>'; }
   // الأقسام المخصّصة
   let body = '';
@@ -2130,6 +2198,7 @@ Views.home = {
     let out = '<section class="hero"><div class="hero-cover">' + (s.heroImage ? '<img src="' + s.heroImage + '" alt="">' : Scenes.render('hero')) + '</div><div class="hero-body">' +
       '<h1>' + h(s.heroTitle) + '</h1><div class="hero-desc">' + richHtml(s.heroDesc) + '</div>' +
       '<div class="stats"><div class="stat"><b class="num">' + Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length + '</b><span>وحدات</span></div><div class="stat"><b class="num">' + axes.length + '</b><span>محور</span></div><div class="stat"><b class="num">' + exCount + '</b><span>تمرين تفاعلي</span></div><div class="stat"><b class="num">' + (Number(Store.registered) || 0) + '</b><span>مسجّل حتى الآن</span></div></div></div></section>';
+    const fu = followupCardsHtml(); if (fu) out += '<section class="section">' + fu + '</section>';
     Content.homeSections().forEach(sec => { try { out += homeSectionHtml(sec); } catch (e) { console.error(e); } });
     return out;
   }
@@ -2549,6 +2618,10 @@ Views.account = {
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📝 مشاركاتي في التمارين</h2><span class="pill">راجع إجاباتك وافتح أي تمرين لتعديلها</span></div>' + myPostsHtml(me.uid) + '</section>';
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🏅 أوسمتي</h2><span class="pill">يُفتح الوسام عند إنجاز <span class="num">80%</span> من تمارين المحور</span></div><div class="badges">' +
       pr.axes.map(x => { const ok = x.pct >= BADGE_THRESHOLD; return '<div class="badge ' + (ok ? '' : 'locked') + '">' + (ok ? '' : '<span class="lock">🔒</span>') + medalSvg(x.a) + '<h5>' + h(x.a.title) + '</h5><div class="pct num">' + Math.round(x.pct * 100) + '% · ' + x.done + ' من ' + x.total + '</div></div>'; }).join('') + '</div></section>';
+    const fuc = followupCardsHtml(); if (fuc) out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📈 متابعة ما بعد البرنامج</h2></div>' + fuc + '</section>';
+    if (Points.cfg().enabled) { const pt = Points.table(); const mine = pt.map[me.uid] || { pts: 0 }; const rank = pt.list.findIndex(x => x.uid === me.uid) + 1; const bd = Points.badges(me.uid);
+      out += '<section class="section"><div class="sec-head"><h2 class="sec-title">⭐ نقاطي</h2><span class="pill">المركز <span class="num">' + (rank || '—') + '</span> من <span class="num">' + pt.list.length + '</span></span></div><div class="card pad"><div class="row"><div class="big-pct num">' + mine.pts + '</div><div class="muted" style="font-family:var(--f-ui)">نقطة · <span class="num">' + (mine.ex || 0) + '</span> تمرين · <span class="num">' + (mine.likes || 0) + '</span> إعجاب · <span class="num">' + (mine.att || 0) + '</span> يوم حضور</div></div>' + (bd.length ? '<div class="sp-badges">' + bd.map(b => '<div class="sp-badge"><span>' + b[0] + '</span><b>' + h(b[1]) + '</b><em>' + h(b[2]) + '</em></div>').join('') + '</div>' : '<div class="muted" style="font-family:var(--f-ui);margin-top:8px">شارك مبكرًا واحصل على إعجابات لتفتح الشارات الخاصة.</div>') + '</div></section>'; }
+    out += '<section class="section"><div class="card pad row plan-cta"><div class="grow"><h3>🚀 خطتي للنمو (PDF)</h3><p class="muted" style="font-family:var(--f-ui);font-size:14px">ملف أنيق يجمع خطة نمو مشروعك وخريطة قنواتك وأولويات الإطلاق وأتمتتك الأولى ونتائج محاكياتك ومخرجات مجموعتك في المختبر، مع جدول عمل 30/60/90 يومًا.</p></div><button class="btn btn-primary" data-act="plan-pdf">📘 إنشاء خطتي</button><button class="btn btn-ghost" data-go="tools">🧰 صندوق الأدوات</button></div></section>';
     out += '<section class="section">' + leadFormHtml('acc') + '</section>';
     // شهادة المشاركة (بالحضور)
     const cc = Content.cert();
@@ -2797,6 +2870,240 @@ document.addEventListener('input', ev => { const t = ev.target; const f = t.getA
 document.addEventListener('change', ev => { const t = ev.target; const f = t.getAttribute && t.getAttribute('data-sim-f'); if (!f || t.type === 'range' || t.tagName === 'TEXTAREA' || t.type === 'text') return; if (t.type === 'radio' && !t.checked) return; const v = t.type === 'checkbox' ? t.checked : t.value; Sims.set(t.getAttribute('data-ex'), f, v); });
 
 
+/* ===== 06c-extras.js ===== */
+// ---------------------------------------------------------------------
+// صندوق أدوات المتجر، مكتبة القوالب، النقاط ولوحة الصدارة، المتابعة بعد البرنامج
+// ---------------------------------------------------------------------
+
+// ================= صندوق أدوات المتجر (حاسبات تُحفظ مدخلاتها على جهاز المتدرب) =================
+const TOOLS_KEY = 'ec_tools';
+const ToolState = {
+  all() { try { return JSON.parse(SafeLS.get(TOOLS_KEY) || '{}') || {}; } catch (e) { return {}; } },
+  get(id) { return ToolState.all()[id] || {}; },
+  set(id, k, v) { const a = ToolState.all(); a[id] = Object.assign({}, a[id] || {}, { [k]: v }); SafeLS.set(TOOLS_KEY, JSON.stringify(a)); }
+};
+const n0 = v => { const x = parseFloat(v); return isFinite(x) ? x : 0; };
+const fmt = (v, d = 0) => isFinite(v) ? (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toLocaleString('en-US') : '—';
+const TOOLS = [
+  { id: 'tco', icon: '🧮', title: 'التكلفة الإجمالية للمنصة (TCO)', desc: 'احسب ما تكلفك المنصة فعليًا خلال سنة وتكلفتها على كل طلب.', axis: 'a2',
+    inputs: [['sub', 'الاشتراك الشهري أو الاستضافة (ر.ق)', 150], ['apps', 'التطبيقات والإضافات شهريًا (ر.ق)', 100], ['setup', 'تأسيس لمرة واحدة: تصميم وإدخال منتجات (ر.ق)', 3000], ['orders', 'الطلبات المتوقعة شهريًا', 150], ['aov', 'متوسط قيمة الطلب (ر.ق)', 200], ['fee', 'رسوم المنصة على كل عملية %', 1], ['hours', 'ساعات إدارة شهريًا', 20], ['hourCost', 'تكلفة ساعة العمل (ر.ق)', 50]],
+    calc: v => { const yearly = (v.sub + v.apps) * 12 + v.setup + v.orders * 12 * v.aov * v.fee / 100 + v.hours * v.hourCost * 12; return [['التكلفة الإجمالية خلال سنة', fmt(yearly) + ' ر.ق', 1], ['متوسط شهريًا', fmt(yearly / 12) + ' ر.ق'], ['تكلفة المنصة على كل طلب', fmt(yearly / Math.max(1, v.orders * 12), 2) + ' ر.ق', 1], ['نسبتها من الإيرادات', fmt(yearly / Math.max(1, v.orders * 12 * v.aov) * 100, 1) + '%']]; } },
+  { id: 'gateways', icon: '💳', title: 'مقارنة رسوم بوابتي دفع', desc: 'قارن التكلفة الفعلية على طلبك النموذجي وأثر مدة التسوية على سيولتك.', axis: 'a3',
+    inputs: [['aov', 'متوسط قيمة الطلب (ر.ق)', 200], ['orders', 'الطلبات شهريًا', 300], ['pa', 'البوابة (أ): النسبة %', 2.5], ['fa', 'البوابة (أ): رسم ثابت لكل عملية (ر.ق)', 1], ['da', 'البوابة (أ): مدة التسوية (أيام)', 7], ['pb', 'البوابة (ب): النسبة %', 2], ['fb', 'البوابة (ب): رسم ثابت لكل عملية (ر.ق)', 2], ['db', 'البوابة (ب): مدة التسوية (أيام)', 2]],
+    calc: v => { const ca = v.aov * v.pa / 100 + v.fa, cb = v.aov * v.pb / 100 + v.fb; const monthly = v.orders * v.aov; const tied = d => monthly / 30 * d; return [['تكلفة الطلب: البوابة (أ)', fmt(ca, 2) + ' ر.ق'], ['تكلفة الطلب: البوابة (ب)', fmt(cb, 2) + ' ر.ق'], ['الفرق الشهري', fmt(Math.abs(ca - cb) * v.orders) + ' ر.ق لصالح ' + (ca <= cb ? '(أ)' : '(ب)'), 1], ['مال محتجز بانتظار التسوية (أ)', fmt(tied(v.da)) + ' ر.ق'], ['مال محتجز بانتظار التسوية (ب)', fmt(tied(v.db)) + ' ر.ق', 1]]; } },
+  { id: 'reorder', icon: '📦', title: 'نقطة إعادة الطلب', desc: 'متى تطلب من المورد قبل أن ينفد المنتج؟', axis: 'a5',
+    inputs: [['daily', 'متوسط المبيعات اليومية (وحدات)', 6], ['lead', 'مدة التوريد (أيام)', 10], ['safety', 'مخزون الأمان (وحدات)', 20], ['stock', 'المخزون الحالي (وحدات)', 120]],
+    calc: v => { const rop = v.daily * v.lead + v.safety; const days = v.daily ? (v.stock - rop) / v.daily : 0; return [['نقطة إعادة الطلب', fmt(rop) + ' وحدة', 1], ['المخزون الحالي يكفي', fmt(v.daily ? v.stock / v.daily : 0) + ' يومًا'], ['موعد إصدار طلب الشراء', days <= 0 ? '⚠️ اطلب الآن' : 'بعد ' + fmt(days) + ' يومًا', 1]]; } },
+  { id: 'landed', icon: '🌍', title: 'التكلفة الواصلة للعميل الدولي', desc: 'كم سيدفع عميلك في الخارج فعلًا؟ (القيم تقديرية؛ تحقق من نسب كل دولة)', axis: 'a6',
+    inputs: [['price', 'سعر المنتج (ر.ق)', 250], ['ship', 'الشحن الدولي (ر.ق)', 45], ['duty', 'الرسوم الجمركية %', 5], ['vat', 'ضريبة القيمة المضافة في الوجهة %', 15], ['clear', 'رسوم التخليص (ر.ق)', 15]],
+    calc: v => { const dutyAmt = (v.price + v.ship) * v.duty / 100; const vatAmt = (v.price + v.ship + dutyAmt) * v.vat / 100; const total = v.price + v.ship + dutyAmt + vatAmt + v.clear; return [['الرسوم الجمركية', fmt(dutyAmt, 1) + ' ر.ق'], ['ضريبة الوجهة', fmt(vatAmt, 1) + ' ر.ق'], ['ما يدفعه العميل فعلًا', fmt(total, 1) + ' ر.ق', 1], ['الزيادة على سعر المنتج', fmt((total / Math.max(1, v.price) - 1) * 100) + '%'], ['اقتراح', total - v.price > v.price * .3 ? 'فكّر في الشحن بشروط DDP بسعر شامل' : 'وضّح الرسوم للعميل قبل الدفع', 1]]; } },
+  { id: 'marketing', icon: '📣', title: 'تكلفة الاستحواذ والقيمة الدائمة والعائد', desc: 'هل تربح من إعلاناتك فعلًا على المدى الطويل؟', axis: 'a8',
+    inputs: [['spend', 'الإنفاق الإعلاني (ر.ق)', 3000], ['newC', 'العملاء الجدد', 60], ['rev', 'الإيرادات من الحملة (ر.ق)', 12000], ['aov', 'متوسط قيمة الطلب (ر.ق)', 200], ['freq', 'مرات الشراء سنويًا', 4], ['years', 'مدة العلاقة (سنوات)', 2], ['margin', 'هامش الربح %', 30]],
+    calc: v => { const cac = v.newC ? v.spend / v.newC : 0; const clv = v.aov * v.freq * v.years * v.margin / 100; const roas = v.spend ? v.rev / v.spend : 0; const ratio = cac ? clv / cac : 0; return [['تكلفة الاستحواذ CAC', fmt(cac, 1) + ' ر.ق'], ['العائد على الإنفاق ROAS', fmt(roas, 2)], ['القيمة الدائمة للعميل CLV', fmt(clv) + ' ر.ق'], ['نسبة CLV إلى CAC', fmt(ratio, 1) + ' : 1', 1], ['الحكم', ratio >= 3 ? '✅ علاقة صحية' : ratio >= 1 ? '⚠️ مقبولة لكن حسّن الاحتفاظ' : '❌ كل عميل جديد يخسرك', 1]]; } },
+  { id: 'breakeven', icon: '⚖️', title: 'سعر التعادل وهامش الربح', desc: 'أقل سعر تبيع به دون خسارة، والسعر المطلوب لهامشك المستهدف.', axis: 'a11',
+    inputs: [['cost', 'تكلفة المنتج (ر.ق)', 60], ['ship', 'الشحن والتغليف لكل طلب (ر.ق)', 18], ['fees', 'رسوم الدفع والعمولة %', 3], ['mkt', 'التسويق لكل طلب (ر.ق)', 20], ['target', 'هامش الربح الصافي المستهدف %', 20], ['price', 'سعرك الحالي (ر.ق)', 150]],
+    calc: v => { const fixed = v.cost + v.ship + v.mkt; const be = fixed / Math.max(0.01, 1 - v.fees / 100); const tgt = fixed / Math.max(0.01, 1 - v.fees / 100 - v.target / 100); const net = v.price - fixed - v.price * v.fees / 100; return [['سعر التعادل', fmt(be, 1) + ' ر.ق', 1], ['السعر لتحقيق الهامش المستهدف', fmt(tgt, 1) + ' ر.ق', 1], ['صافي ربحك بالسعر الحالي', fmt(net, 1) + ' ر.ق (' + fmt(v.price ? net / v.price * 100 : 0, 1) + '%)']]; } }
+];
+const MATRIX_CRIT = ['قابلية التوسع', 'التكلفة الإجمالية', 'ملاءمة القطاع', 'الوصول للسوق', 'سهولة التشغيل'];
+function matrixToolHtml() {
+  const s = Object.assign({ names: ['المنصة (أ)', 'المنصة (ب)', 'المنصة (ج)'], w: [25, 25, 20, 20, 10], sc: {} }, ToolState.get('matrix'));
+  const tot = s.w.reduce((a, b) => a + n0(b), 0);
+  const res = s.names.map((nm, j) => MATRIX_CRIT.reduce((a, c, i) => a + n0(s.w[i]) / 100 * n0((s.sc[i] || {})[j] || 3), 0));
+  const best = res.indexOf(Math.max(...res));
+  return '<div class="tool-card" id="tool-matrix"><div class="tc-head"><span>🧭</span><div><h3>مصفوفة اختيار المنصة</h3><p>امنح كل معيار وزنًا (المجموع 100%)، وقيّم كل منصة من 1 إلى 5.</p></div></div>' +
+    '<div class="table-wrap"><table class="mx-table"><thead><tr><th>المعيار</th><th>الوزن %</th>' + s.names.map((nm, j) => '<th><input data-mx="name" data-j="' + j + '" value="' + h(nm) + '"></th>').join('') + '</tr></thead><tbody>' +
+    MATRIX_CRIT.map((c, i) => '<tr><td>' + c + '</td><td><input type="number" min="0" max="100" data-mx="w" data-i="' + i + '" value="' + h(s.w[i]) + '"></td>' + s.names.map((_, j) => '<td><input type="number" min="1" max="5" data-mx="sc" data-i="' + i + '" data-j="' + j + '" value="' + h((s.sc[i] || {})[j] || 3) + '"></td>').join('') + '</tr>').join('') +
+    '<tr class="mx-total"><td>النتيجة الموزونة</td><td class="num ' + (tot === 100 ? '' : 'bad') + '">' + tot + '%</td>' + res.map((r, j) => '<td class="num ' + (j === best ? 'best' : '') + '">' + r.toFixed(2) + (j === best ? ' 🏆' : '') + '</td>').join('') + '</tr></tbody></table></div>' + (tot !== 100 ? '<div class="tool-note">⚠️ مجموع الأوزان يجب أن يكون 100%.</div>' : '') + '</div>';
+}
+function toolCardHtml(t) {
+  const st = ToolState.get(t.id); const v = {}; t.inputs.forEach(([k, , d]) => { v[k] = n0(st[k] != null ? st[k] : d); });
+  return '<div class="tool-card" id="tool-' + t.id + '"><div class="tc-head"><span>' + t.icon + '</span><div><h3>' + h(t.title) + '</h3><p>' + h(t.desc) + '</p></div></div><div class="tc-grid"><div class="tc-inputs">' +
+    t.inputs.map(([k, l, d]) => '<label><span>' + h(l) + '</span><input type="number" step="any" data-tool="' + t.id + '" data-k="' + k + '" value="' + h(st[k] != null ? st[k] : d) + '"></label>').join('') + '</div><div class="tc-out" id="tco-' + t.id + '">' + toolOut(t, v) + '</div></div></div>';
+}
+function toolOut(t, v) { return t.calc(v).map(([l, val, strong]) => '<div class="tc-row ' + (strong ? 'strong' : '') + '"><span>' + h(l) + '</span><b class="num">' + h(val) + '</b></div>').join(''); }
+document.addEventListener('input', ev => {
+  const t = ev.target; if (!t.getAttribute) return;
+  const tid = t.getAttribute('data-tool');
+  if (tid) { const tool = TOOLS.find(x => x.id === tid); ToolState.set(tid, t.getAttribute('data-k'), t.value); const st = ToolState.get(tid); const v = {}; tool.inputs.forEach(([k, , d]) => { v[k] = n0(st[k] != null ? st[k] : d); }); const o = document.getElementById('tco-' + tid); if (o) o.innerHTML = toolOut(tool, v); return; }
+  const mx = t.getAttribute('data-mx');
+  if (mx) { const s = Object.assign({ names: ['المنصة (أ)', 'المنصة (ب)', 'المنصة (ج)'], w: [25, 25, 20, 20, 10], sc: {} }, ToolState.get('matrix'));
+    if (mx === 'name') s.names[+t.getAttribute('data-j')] = t.value; else if (mx === 'w') s.w[+t.getAttribute('data-i')] = t.value; else { const i = t.getAttribute('data-i'); s.sc[i] = Object.assign({}, s.sc[i] || {}, { [t.getAttribute('data-j')]: t.value }); }
+    const a = ToolState.all(); a.matrix = s; SafeLS.set(TOOLS_KEY, JSON.stringify(a));
+    if (mx !== 'name') { const box = document.getElementById('tool-matrix'); const act = document.activeElement; const sel = act && act.getAttribute('data-mx') ? '[data-mx="' + act.getAttribute('data-mx') + '"][data-i="' + act.getAttribute('data-i') + '"]' + (act.getAttribute('data-j') ? '[data-j="' + act.getAttribute('data-j') + '"]' : '') : null; box.outerHTML = matrixToolHtml(); if (sel) { const el = document.querySelector(sel); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } } } }
+});
+
+// ================= مكتبة القوالب القابلة للتحميل =================
+const TEMPLATES = [
+  { id: 'sop', icon: '📘', title: 'قالب إجراء تشغيل قياسي (SOP)', desc: 'هيكل جاهز لكتابة أي إجراء تشغيلي بخطوات ومعيار جودة واستثناءات.',
+    body: '<h2>إجراء التشغيل القياسي: ____________</h2><table><tr><th>البند</th><th>التفاصيل</th></tr><tr><td>الهدف</td><td></td></tr><tr><td>النطاق (متى يُطبّق؟)</td><td></td></tr><tr><td>المسؤول عن التنفيذ</td><td></td></tr><tr><td>المسؤول عن المراجعة</td><td></td></tr><tr><td>الأدوات والأنظمة المستخدمة</td><td></td></tr></table><h3>الخطوات</h3><table><tr><th>#</th><th>الخطوة (فعل واضح)</th><th>معيار الجودة</th><th>المدة</th></tr>' + [1, 2, 3, 4, 5, 6, 7, 8].map(i => '<tr><td>' + i + '</td><td></td><td></td><td></td></tr>').join('') + '</table><h3>الاستثناءات والتصعيد</h3><table><tr><th>الحالة الاستثنائية</th><th>الإجراء</th><th>يُصعَّد إلى</th></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr></table><p>تاريخ الإصدار: ________ · تاريخ المراجعة القادمة: ________ · اختُبر مع موظف جديد: ☐ نعم</p>' },
+  { id: 'launch', icon: '🚀', title: 'قائمة إطلاق المتجر الإلكتروني', desc: 'قائمة تحقق شاملة قبل الإطلاق: الهوية، الصفحات، الدفع، الشحن، الترخيص، التتبع.',
+    body: '<h2>قائمة إطلاق المتجر</h2>' + [['الهوية', ['الشعار والألوان والخطوط موحدة', 'نبرة كتابة موحدة', 'اسم ونطاق .qa أو .com.qa']], ['الصفحات', ['الرئيسية والتصنيفات', 'صفحة المنتج بعنوان ونقاط وصور كاملة', 'من نحن / تواصل معنا / الأسئلة الشائعة', 'سياسات الشحن والاسترجاع والخصوصية والشروط']], ['الكتالوج', ['رمز SKU لكل منتج وخيار', 'تصنيفات حسب طريقة بحث العميل', 'خصائص منظمة مكتملة', 'صور بخلفية نظيفة + صور استخدام']], ['الدفع', ['بطاقات الخصم المحلية (QPay)', 'بطاقات الائتمان والمحافظ الرقمية', 'صفحة دفع مستضافة / لا تخزين للبطاقات', 'تحقق ثلاثي مفعّل']], ['الشحن', ['مناطق التوصيل وأسعارها', 'تكلفة الشحن ظاهرة مبكرًا وحد الشحن المجاني', 'تكامل شركة الشحن ورقم التتبع التلقائي', 'مسار المرتجعات']], ['الترخيص والامتثال', ['رخصة التجارة الإلكترونية من وزارة التجارة والصناعة', 'إشعار خصوصية وموافقة على الرسائل التسويقية', 'تحقق ثنائي وصلاحيات الموظفين']], ['التتبع والإطلاق', ['Google Analytics وبكسل الإعلانات', 'روابط UTM للحملات', 'طلب تجريبي كامل من الجوال والحاسوب', 'خطة أول 30 يومًا للتسويق']]].map(([t, items]) => '<h3>' + t + '</h3><table><tr><th style="width:36px">✓</th><th>البند</th><th>المسؤول</th><th>الموعد</th></tr>' + items.map(x => '<tr><td>☐</td><td>' + x + '</td><td></td><td></td></tr>').join('') + '</table>').join('') },
+  { id: 'growth', icon: '📈', title: 'قالب خطة النمو (12 شهرًا)', desc: 'خطة من خمس ركائز بأهداف ذكية ومؤشرات ومسؤوليات ومراجعة ربع سنوية.',
+    body: '<h2>خطة نمو المتجر — 12 شهرًا</h2><table><tr><th>البند</th><th>الإجابة</th></tr><tr><td>مرحلتي الحالية</td><td>☐ الانطلاق ☐ التأسيس ☐ النمو المحلي ☐ التوسع الإقليمي ☐ التوسع الدولي</td></tr><tr><td>الهدف الذكي (12 شهرًا)</td><td></td></tr><tr><td>السوق التالي ولماذا</td><td></td></tr></table><h3>الركائز الخمس</h3><table><tr><th>الركيزة</th><th>الإجراء الرئيسي</th><th>المؤشر والرقم المستهدف</th><th>المسؤول</th><th>الموعد</th></tr>' + ['القنوات والأسواق', 'الدفع والتسعير', 'التنفيذ واللوجستيات', 'التسويق والعملاء', 'العمليات والبيانات', 'التمويل والدعم'].map(x => '<tr><td>' + x + '</td><td></td><td></td><td></td><td></td></tr>').join('') + '</table><h3>المراجعة الربع سنوية</h3><table><tr><th>الربع</th><th>ماذا تحقق؟</th><th>ماذا تعلمنا؟</th><th>ماذا نغير؟</th></tr>' + [1, 2, 3, 4].map(i => '<tr><td>الربع ' + i + '</td><td></td><td></td><td></td></tr>').join('') + '</table><p>الخطة البديلة إذا لم تتحقق المؤشرات القيادية خلال 6 أشهر: ______________________</p>' },
+  { id: 'returns', icon: '↩️', title: 'نموذج سياسة استرجاع واستبدال', desc: 'نص سياسة واضح يطمئن العميل، قابل للتعديل حسب نشاطك.',
+    body: '<h2>سياسة الاسترجاع والاستبدال — [اسم المتجر]</h2><p><b>مدة الاسترجاع:</b> يحق للعميل طلب استرجاع أو استبدال المنتج خلال [7/14] يومًا من تاريخ الاستلام.</p><p><b>شروط القبول:</b> أن يكون المنتج بحالته الأصلية وغير مستخدم، ومع عبوته الأصلية وفاتورة الشراء. [تُستثنى المنتجات: العطور المفتوحة، المنتجات الشخصية، المنتجات المصنوعة حسب الطلب].</p><p><b>المنتجات التالفة أو الخاطئة:</b> نتحمل كامل تكلفة الإرجاع ونرسل البديل أو نسترد المبلغ كاملًا خلال [3] أيام عمل من استلام المنتج.</p><p><b>طريقة طلب الاسترجاع:</b> [من صفحة «طلباتي» / عبر واتساب على الرقم ___ / البريد ___] مع ذكر رقم الطلب وسبب الإرجاع وصورة المنتج.</p><p><b>رسوم الإرجاع:</b> [مجانية / يتحمل العميل رسوم الشحن __ ر.ق في حالة تغيير الرأي].</p><p><b>طريقة الاسترداد:</b> يُعاد المبلغ بنفس وسيلة الدفع خلال [5–10] أيام عمل من فحص المنتج. [الدفع عند الاستلام: تحويل بنكي / رصيد في المتجر].</p><p><b>الاستبدال:</b> متاح لمقاس أو لون آخر حسب التوفر، دون رسوم إضافية [مرة واحدة].</p><p><b>التواصل:</b> لأي استفسار: ___ · ساعات العمل: ___</p><p style="color:#888">ملاحظة: راجع السياسة مع مستشار قانوني وتأكد من توافقها مع الأنظمة المعمول بها في دولة قطر.</p>' },
+  { id: 'matrix', icon: '🧭', title: 'ورقة مصفوفة اختيار المنصة', desc: 'جدول للمقارنة بين ثلاث منصات بمعايير موزونة.',
+    body: '<h2>مصفوفة اختيار المنصة</h2><table><tr><th>المعيار</th><th>الوزن %</th><th>المنصة (أ)</th><th>المنصة (ب)</th><th>المنصة (ج)</th></tr>' + MATRIX_CRIT.map(c => '<tr><td>' + c + '</td><td></td><td></td><td></td><td></td></tr>').join('') + '<tr><td><b>النتيجة الموزونة</b></td><td>100%</td><td></td><td></td><td></td></tr></table><p>قيّم كل منصة من 1 إلى 5، واضرب التقييم في الوزن، ثم اجمع. الخاصية التي لا يمكن التنازل عنها: ______________</p>' }
+];
+function tplDoc(t) { return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>' + h(t.title) + '</title><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;font-size:12pt;line-height:1.7}h2{color:#8A1538}h3{color:#1F3A5F;margin-top:14pt}table{border-collapse:collapse;width:100%;margin:6pt 0}td,th{border:1px solid #bbb;padding:6pt;vertical-align:top}th{background:#F3E9EC}</style></head><body dir="rtl">' + t.body + '<p style="color:#888;font-size:9pt">' + h(Content.courseTitle()) + '</p></body></html>'; }
+async function tplPdf(t) {
+  const pm = progressModal('📄 ' + t.title);
+  try { const css = '<style>.tp h2{font-family:Cairo;color:#8A1538;margin:0 0 8px}.tp h3{font-family:Cairo;color:#1F3A5F;margin:12px 0 4px;font-size:15px}.tp table{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0}.tp td,.tp th{border:1px solid #D9CBD0;padding:6px;text-align:right;vertical-align:top;height:18px}.tp th{background:#F3E9EC}.tp p{font-size:12.5px}</style>';
+    const doc = await PDFE.build([css + '<div class="fit tp" style="top:30px;bottom:40px;right:34px;left:34px;line-height:1.7">' + t.body + '</div>' + PP.foot(Content.courseTitle(), 1)], A4P, (i, n) => pm.set(i, n)); doc.save(t.title + '.pdf'); pm.close();
+  } catch (e) { pm.close(); UI.alert('تعذر إنشاء الملف: ' + h(e.message || e)); }
+}
+Views.tools = {
+  html() {
+    return Layout.crumbs('<span class="crumb-tag">صندوق أدوات المتجر</span>') + '<div class="ex-head"><div class="ico">🧰</div><div><h1>صندوق أدوات المتجر</h1><div class="muted" style="font-family:var(--f-ui)">حاسبات عملية ومكتبة قوالب تبقى معك بعد البرنامج. مدخلاتك تُحفظ على جهازك فقط.</div></div></div>' +
+      '<section class="section"><h2 class="sec-title">🧮 الحاسبات</h2><div class="tool-grid">' + matrixToolHtml() + TOOLS.map(toolCardHtml).join('') + '</div></section>' +
+      '<section class="section" id="library"><h2 class="sec-title">📚 مكتبة القوالب</h2><div class="tpl-grid">' + TEMPLATES.filter(t => !Content.isHidden('tpl_' + t.id)).map(t => '<div class="tpl-card"><div class="tpl-ico">' + t.icon + '</div><h3>' + h(t.title) + '</h3><p>' + h(t.desc) + '</p><div class="row"><button class="btn btn-primary btn-sm" data-act="tpl-doc" data-id="' + t.id + '">⬇️ Word قابل للتعديل</button><button class="btn btn-soft btn-sm" data-act="tpl-pdf" data-id="' + t.id + '">📄 PDF</button><button class="btn btn-ghost btn-sm" data-act="tpl-view" data-id="' + t.id + '">👁 معاينة</button></div></div>').join('') + '</div></section>';
+  }
+};
+
+// ================= النقاط ولوحة الصدارة =================
+const Points = {
+  cfg() { return Object.assign({ enabled: true, names: true }, (Store.site && Store.site.gamify) || {}); },
+  // نقاط كل مستخدم مع تفصيلها — تُحسب من البيانات الموجودة أصلًا
+  table() {
+    if (Points._cache && Points._cache.stamp === Points.stamp()) return Points._cache.data;
+    const users = Store.users || {}; const P = {}; Object.keys(users).forEach(u => { P[u] = { uid: u, pts: 0, ex: 0, likes: 0, first: 0, att: 0, as: 0 }; });
+    const exs = Content.allExercises().map(x => x.e).filter(Boolean);
+    exs.forEach(e => { const ps = Store.posts[e.id] || {}; let firstK = null, firstTs = Infinity;
+      Object.keys(ps).forEach(k => { const p = ps[k]; if (!p) return; const who = e.mode === 'group' ? Object.keys(p.members || {}) : [k]; const lk = Object.keys(p.likes || {}).length;
+        who.forEach(u => { if (!P[u]) return; P[u].ex++; P[u].pts += e.format === 'sim' ? 15 : 10; P[u].likes += lk; P[u].pts += lk * 2; });
+        if ((p.ts || Infinity) < firstTs && e.mode !== 'group') { firstTs = p.ts; firstK = k; } });
+      if (firstK && P[firstK]) { P[firstK].first++; P[firstK].pts += 5; } });
+    Object.keys(P).forEach(u => { const d = Attend.days().filter(x => Attend.hoursOf(u, x) > 0).length; P[u].att = d; P[u].pts += d * 20; ['pre', 'post'].forEach(ph => { const r = Assess.rec(ph, u); if (r && r.done) { P[u].as++; P[u].pts += 15; } }); });
+    const list = Object.values(P).sort((a, b) => b.pts - a.pts); const mostLiked = list.slice().sort((a, b) => b.likes - a.likes)[0];
+    const data = { map: P, list, mostLiked: mostLiked && mostLiked.likes ? mostLiked.uid : null };
+    Points._cache = { stamp: Points.stamp(), data }; return data;
+  },
+  stamp() { return [Store.users, Store.posts, Store.attendance, Store.assess].map(x => JSON.stringify(x || {}).length).join('|'); },
+  groups() { const t = Points.table(); const G = {}; Groups.list().forEach(g => { G[g] = { g, pts: 0, n: 0 }; }); Object.keys(t.map).forEach(u => { const g = Groups.assignedOf(u) || (Store.users[u] && +Store.users[u].group); if (g && G[g]) { G[g].pts += t.map[u].pts; G[g].n++; } }); return Object.values(G).filter(x => x.n).sort((a, b) => b.pts - a.pts); },
+  badges(uid) { const t = Points.table(); const x = t.map[uid]; if (!x) return []; const out = [];
+    if (x.first) out.push(['⚡', 'أول مشارك', 'كنت أول من شارك في ' + x.first + ' تمرين']); if (t.mostLiked === uid) out.push(['💖', 'الأكثر إعجابًا', x.likes + ' إعجاب على مشاركاتك']);
+    if (x.att >= Attend.cfg().days) out.push(['📍', 'حضور كامل', 'حضرت كل أيام البرنامج']); if (Progress.forUser(uid).pct >= BADGE_THRESHOLD) out.push(['🏅', 'مشارك نشط', 'أنجزت 80% من التمارين']); if (x.as === 2) out.push(['🧠', 'قياس كامل', 'أكملت التقييمين القبلي والبعدي']);
+    const rank = t.list.findIndex(y => y.uid === uid); if (rank > -1 && rank < 3 && x.pts) out.push([['🥇', '🥈', '🥉'][rank], 'من الثلاثة الأوائل', 'المركز ' + (rank + 1) + ' في لوحة الصدارة']); return out; }
+};
+function leaderboardHtml(limit = 10) {
+  const c = Points.cfg(); const t = Points.table(); const gs = Points.groups(); const me = Me.uid();
+  const ind = t.list.filter(x => x.pts).slice(0, limit);
+  return '<div class="lb-grid"><div class="card pad"><h3>🏆 المتصدرون</h3>' + (ind.length ? ind.map((x, i) => '<div class="lb-row ' + (x.uid === me ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + (c.names || x.uid === me ? h((Store.users[x.uid] || {}).name || '') : 'مشارك ' + (i + 1)) + '</span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">لا نقاط بعد — شارك في التمارين لتظهر هنا.</div>') + '</div>' +
+    '<div class="card pad"><h3>👥 المجموعات</h3>' + (gs.length ? gs.map((x, i) => '<div class="lb-row ' + (Me.group() === x.g ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + h(Groups.label(x.g)) + ' <span class="muted num">(' + x.n + ')</span></span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">تظهر عند اختيار المتدربين مجموعاتهم.</div>') + '</div></div>' +
+    '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:8px">النقاط: 10 لكل تمرين · 15 لكل محاكاة · 2 لكل إعجاب تتلقاه · 5 لأول مشارك في تمرين · 20 لكل يوم حضور · 15 لكل تقييم (قبلي/بعدي)</div>';
+}
+
+// ================= المتابعة بعد البرنامج (30 / 60 / 90 يومًا) =================
+const FU_DAYS = ['30', '60', '90'];
+const FU_ACTIONS = ['أطلقت متجرًا إلكترونيًا أو حسّنت متجري', 'أضفت وسيلة دفع محلية أو حسّنت صفحة الدفع', 'حسّنت الشحن أو المرتجعات', 'بدأت حملات تسويق مبنية على البيانات', 'أتمتت مهمة تشغيلية', 'بدأت متابعة لوحة مؤشرات أسبوعية', 'بعت في سوق إلكتروني أو دولة جديدة', 'تواصلت مع برامج بنك قطر للتنمية'];
+const FU_SALES = ['انخفضت', 'لم تتغير', 'زادت حتى 10%', 'زادت 10% – 30%', 'زادت أكثر من 30%', 'لا أستطيع التقدير بعد'];
+const Followup = {
+  cfg() { return Object.assign({ open: {} }, (Store.site && Store.site.followup) || {}); },
+  endDate() { const e = Cohort.cur().end; return e ? new Date(e + 'T00:00:00').getTime() : null; },
+  due(n) { const e = Followup.endDate(); return e ? e + (+n) * 86400000 : null; },
+  isOpen(n) { const f = Followup.cfg().open[n]; if (f === 'open') return true; if (f === 'closed') return false; const d = Followup.due(n); return !!(d && DB.now() >= d); },
+  rec(n, uid) { return (((Store.followups || {})['d' + n]) || {})[uid] || null; },
+  list(n) { const o = (Store.followups || {})['d' + n] || {}; return Object.keys(o).map(u => Object.assign({ uid: u }, o[u])); },
+  link(n) { return location.origin + location.pathname + '#v=followup&id=' + n; }
+};
+Views.followup = {
+  html() {
+    const n = FU_DAYS.indexOf(Router.cur.id) > -1 ? Router.cur.id : '30';
+    let out = Layout.crumbs('<span class="crumb-tag">متابعة الأثر</span>') + '<div class="ex-head"><div class="ico">📈</div><div><h1>متابعة ما بعد البرنامج — بعد <span class="num">' + n + '</span> يومًا</h1><div class="muted" style="font-family:var(--f-ui)">دقيقتان تساعدان الجهة المنظمة على قياس أثر البرنامج وتطويره.</div></div></div>';
+    if (!Me.isReg()) return out + '<div class="answer-box"><div class="locked-note">🔒 سجّل الدخول برقم العضوية لتعبئة المتابعة.</div><button class="btn btn-mint" data-act="member-login">الدخول برقم العضوية</button></div>';
+    if (!Followup.isOpen(n) && !Admin.ctl()) return out + '<div class="empty">⏳ هذه المتابعة تُفتح ' + (Followup.due(n) ? 'في ' + fmtDate(Followup.due(n)) : 'بعد انتهاء البرنامج') + '.</div>';
+    const r = Followup.rec(n, Me.uid()) || {}; const acts = arr(r.actions);
+    return out + '<div class="answer-box"><div class="field"><label>ما الذي طبقته من البرنامج حتى الآن؟ (اختر كل ما ينطبق)</label><div class="lead-progs">' + FU_ACTIONS.map((a, i) => '<label class="lead-prog"><input type="checkbox" data-fu-a="' + i + '" ' + (acts.indexOf(a) > -1 ? 'checked' : '') + '><span>' + h(a) + '</span></label>').join('') + '</div></div>' +
+      '<div class="grid2"><div class="field"><label>تغير المبيعات الإلكترونية منذ البرنامج</label><select id="fuSales"><option value="">— اختر —</option>' + FU_SALES.map(x => '<option ' + (x === r.sales ? 'selected' : '') + '>' + x + '</option>').join('') + '</select></div><div class="field"><label>فائدة البرنامج لمشروعك حتى الآن</label><select id="fuUse"><option value="">— اختر —</option>' + [5, 4, 3, 2, 1].map(x => '<option value="' + x + '" ' + (+r.useful === x ? 'selected' : '') + '>' + '★'.repeat(x) + ' (' + x + ')</option>').join('') + '</select></div></div>' +
+      '<div class="field"><label>أهم نتيجة أو قصة نجاح صغيرة حققتها</label><textarea id="fuWin" data-keep="fu-win">' + h(r.win || '') + '</textarea></div><div class="field"><label>ما العقبة التي تحتاج دعمًا فيها؟</label><textarea id="fuNeed" data-keep="fu-need">' + h(r.need || '') + '</textarea></div>' +
+      '<div class="save-row"><button class="btn btn-primary" data-act="fu-save" data-n="' + n + '">📤 إرسال المتابعة</button>' + (r.ts ? '<span class="status-note">✅ أُرسلت ' + ago(r.ts) + ' — يمكنك التحديث</span>' : '') + '</div></div>';
+  }
+};
+function followupCardsHtml() {
+  if (!Me.isReg()) return '';
+  const open = FU_DAYS.filter(n => Followup.isOpen(n)); if (!open.length) return '';
+  return '<div class="fu-cards">' + open.map(n => { const r = Followup.rec(n, Me.uid()); return '<button class="act-card" data-go="followup" data-id="' + n + '"><div class="act-ico">📈</div><div class="grow"><h3>متابعة بعد <span class="num">' + n + '</span> يومًا</h3><div class="muted" style="font-size:13px;font-family:var(--f-ui)">' + (r ? '✅ أرسلتها — يمكنك التحديث' : 'دقيقتان لقياس ما طبقته من البرنامج') + '</div></div></button>'; }).join('') + '</div>';
+}
+function followupMailto(n) {
+  const users = Store.users || {}; const done = Followup.list(n).map(x => x.uid);
+  const emails = Object.keys(users).filter(u => done.indexOf(u) === -1 && users[u].consent && users[u].consent.followup).map(u => RegFields.val(users[u], 'email')).filter(e => /@/.test(e));
+  if (!emails.length) { UI.alert('لا توجد عناوين بريد لمتدربين وافقوا على المتابعة ولم يرسلوها بعد.'); return; }
+  const subj = 'متابعة ' + n + ' يومًا — ' + Content.courseTitle();
+  const body = 'مرحبًا،\n\nمرّ ' + n + ' يومًا على برنامج «' + Content.courseTitle() + '». يسعدنا معرفة ما طبقته في مشروعك عبر نموذج قصير (دقيقتان):\n' + Followup.link(n) + '\n\nادخل برقم عضويتك إن طُلب منك.\n\nمع التحية';
+  const chunk = emails.slice(0, 45);
+  location.href = 'mailto:?bcc=' + encodeURIComponent(chunk.join(',')) + '&subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+  if (emails.length > chunk.length) UI.toast('فُتحت رسالة لأول ' + chunk.length + ' عنوانًا — كرر الإرسال بعد تسجيل ردودهم أو صدّر القائمة.', 5000);
+}
+
+
+/* ===== 06d-present.js ===== */
+// ---------------------------------------------------------------------
+// وضع العرض للمدرب: شاشة القاعة الكبيرة (رمز QR للانضمام، نتائج التصويت الحية، سحابة الكلمات، أفضل مشاركة، العدادات)
+// ما يُعرض يُحفظ في settings/present ليتحكم فيه المدرب من جواله بينما الشاشة الكبيرة تتبعه.
+// ---------------------------------------------------------------------
+const QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+const AR_STOP = new Set(('في من على إلى الى عن مع هذا هذه ذلك تلك التي الذي الذين أن ان إن او أو ثم كل قد لا ما لم لن هو هي هم نحن أنا انا كان كانت يكون تكون بعد قبل عند حتى إذا اذا كما لكن بل أي اي بين ايضا أيضا جدا جدًا فقط وهو وهي وفي ومن وعلى والى وان به بها له لها لهم منه منها عليه عليها فيه فيها عبر خلال حول دون غير أكثر اكثر أقل اقل كيف لماذا متى أين اين هل نعم يعني مثل ذات عدة بعض لدى لدي لديه لديها كذلك وأن وإن وكل فإن لأن لان حيث التي وهذا وهذه يمكن تم ليس ليست إلى').split(' '));
+function wordFreq(texts) {
+  const c = {};
+  texts.forEach(t => String(t || '').replace(/[ً-ْـ]/g, '').replace(/[^؀-ۿa-zA-Z0-9\s]/g, ' ').split(/\s+/).forEach(w => {
+    w = w.trim(); if (w.length < 3 || AR_STOP.has(w) || /^\d+$/.test(w)) return; const k = w.replace(/^(وال|بال|فال|كال|لل)/, 'ال'); c[k] = (c[k] || 0) + 1; }));
+  return Object.keys(c).map(k => ({ w: k, n: c[k] })).sort((a, b) => b.n - a.n).slice(0, 45);
+}
+function wordCloudHtml(texts) {
+  const list = wordFreq(texts); if (!list.length) return '<div class="pr-empty">تظهر سحابة الكلمات مع أول الإجابات…</div>';
+  const mx = list[0].n, mn = list[list.length - 1].n; const cols = ['#FF8FA3', '#8FF0C8', '#FFD98A', '#9CC8FF', '#FFB38A', '#C9A7FF', '#7FE0E0', '#F5F5F5'];
+  const shuffled = list.map((x, i) => Object.assign({ o: seededOrder(list.length, 'wc')[i] }, x)).sort((a, b) => a.o - b.o);
+  return '<div class="wcloud">' + shuffled.map((x, i) => { const s = mx === mn ? 1 : (x.n - mn) / (mx - mn); return '<span style="font-size:' + (18 + s * 46).toFixed(0) + 'px;color:' + cols[i % cols.length] + ';opacity:' + (.65 + s * .35).toFixed(2) + '">' + h(x.w) + '</span>'; }).join('') + '</div>';
+}
+function topPostOf(e) {
+  const ps = Store.posts[e.id] || {}; let best = null, bl = -1;
+  Object.keys(ps).forEach(k => { const p = ps[k]; if (!p) return; const l = Object.keys(p.likes || {}).length; if (l > bl || (l === bl && (p.ts || 0) > (best.ts || 0))) { bl = l; best = Object.assign({ k }, p); } });
+  return best ? { p: best, likes: bl } : null;
+}
+const Present = {
+  cfg() { return Object.assign({ ex: 'join', q: 0 }, Store.presentCfg || {}); },
+  options() {
+    const o = [['join', '📲 رمز الانضمام والعدادات'], ['leaderboard', '🏆 لوحة الصدارة'], ['assess', '📋 نتائج التقييم القبلي والبعدي']];
+    Content.activities().forEach(e => o.push([e.id, '⚡ ' + e.title]));
+    Content.eligibleAxes().forEach(a => Content.exercisesOf(a.id).forEach(e => o.push([e.id, (e.icon || '✍️') + ' ' + a.title.slice(0, 22) + ' — ' + e.title])));
+    const sv = Content.survey(); if (sv) o.push([sv.id, '💬 ' + sv.title]); return o;
+  },
+  panel(c) {
+    const users = Object.keys(Store.users || {}).length;
+    if (c.ex === 'join') {
+      const today = Attend.openDays()[0]; const cd = today ? Attend.cfg().codes['d' + today] : null;
+      return '<div class="pr-join"><div class="pr-qr" id="prQr"><div class="pr-empty">…</div></div><div><div class="pr-big">انضم الآن من جوالك</div><div class="pr-url num">' + h(location.host + location.pathname) + '</div><div class="pr-counters"><div><b class="num">' + users + '</b><span>مسجّل</span></div><div><b class="num">' + (today ? Object.keys(Store.users || {}).filter(u => Attend.hoursOf(u, today) > 0).length : '—') + '</b><span>حاضر اليوم</span></div>' + (cd ? '<div class="code"><b class="num notranslate" translate="no">' + h(cd.code) + '</b><span>رمز حضور اليوم ' + today + '</span></div>' : '') + '</div></div></div>';
+    }
+    if (c.ex === 'leaderboard') return '<div class="pr-title">🏆 لوحة الصدارة</div>' + leaderboardHtml(8);
+    if (c.ex === 'assess') { const A = Content.assess(); const pq = Assess.perQuestion('pre'), qq = Assess.perQuestion('post'); const pa = Assess.avg('pre'), qa = Assess.avg('post');
+      return '<div class="pr-title">📋 التقييم القبلي والبعدي</div><div class="pr-counters"><div><b class="num">' + (pa == null ? '—' : Math.round(pa) + '%') + '</b><span>متوسط القبلي · ' + Assess.list('pre').length + '</span></div><div><b class="num">' + (qa == null ? '—' : Math.round(qa) + '%') + '</b><span>متوسط البعدي · ' + Assess.list('post').length + '</span></div></div><div class="pr-bars">' + A.items.map((it, i) => '<div class="pr-qbar"><span class="num">' + (i + 1) + '</span><i><em class="pre" style="width:' + (pq[i] || 0) + '%"></em><em class="post" style="width:' + (qq[i] || 0) + '%"></em></i><b class="num">' + (pq[i] == null ? '—' : pq[i] + '%') + ' → ' + (qq[i] == null ? '—' : qq[i] + '%') + '</b></div>').join('') + '</div>'; }
+    const e = Content.ex(c.ex); if (!e) return '<div class="pr-empty">اختر ما تريد عرضه من القائمة.</div>';
+    const ps = Store.posts[e.id] || {}; const cnt = Object.keys(ps).filter(k => ps[k]).length;
+    let body = '';
+    if (e.format === 'mcq') {
+      const st = mcqStats(e); const qi = Math.max(0, Math.min(e.items.length - 1, +c.q || 0)); const it = e.items[qi]; const s = st[qi]; const rv = isRevealed(e);
+      body = '<div class="pr-q"><span class="num">' + (qi + 1) + '/' + e.items.length + '</span> ' + h(it.q) + '</div><div class="pr-poll">' + it.options.map((o, k) => { const pct = s.total ? Math.round(s.counts[k] / s.total * 100) : 0; return '<div class="pr-opt ' + (rv && k === +it.answer ? 'right' : '') + '"><em style="width:' + pct + '%"></em><span><b>' + LETTERS[k] + ')</b> ' + h(o) + '</span><b class="num">' + pct + '%</b></div>'; }).join('') + '</div><div class="pr-foot">👥 <span class="num">' + s.total + '</span> صوت على هذا السؤال' + (rv ? ' · 🔓 الإجابة الصحيحة: ' + LETTERS[it.answer] : '') + '</div>' +
+        '<div class="pr-nav"><button class="btn btn-ghost" data-act="pr-q" data-d="-1" ' + (qi === 0 ? 'disabled' : '') + '>→ السابق</button><button class="btn btn-mint" data-act="reveal" data-id="' + h(e.id) + '">' + (rv ? '🔒 إخفاء الإجابة' : '🔓 كشف الإجابة') + '</button><button class="btn btn-ghost" data-act="pr-q" data-d="1" ' + (qi >= e.items.length - 1 ? 'disabled' : '') + '>التالي ←</button></div>';
+    } else if (e.kind === 'survey') { const sv = SurveyStats.of(ps, e); body = '<div class="pr-counters"><div><b class="num">' + (sv.overall ? sv.overall.toFixed(1) : '—') + '</b><span>الرضا من 5</span></div><div><b class="num">' + (sv.nps == null ? '—' : sv.nps) + '</b><span>NPS</span></div></div>' + wordCloudHtml(sv.texts.map(p => p.text)); }
+    else if (e.format === 'sim') body = Sims.feed(e);
+    else if (e.format === 'text') body = wordCloudHtml(Object.keys(ps).map(k => ps[k] && ps[k].text));
+    else { const rv = isRevealed(e); body = '<div class="pr-bars">' + e.items.map((it, i) => { let ok = 0, tot = 0; Object.keys(ps).forEach(k => { const a = ansList(ps[k] && ps[k].answers, e.items.length)[i]; if (a == null || a === '') return; tot++; if (e.format === 'truefalse' ? ((a === true || a === 'true') === !!it.answer) : a === it.answer) ok++; }); const pct = tot ? Math.round(ok / tot * 100) : 0; return '<div class="pr-qbar"><span class="num">' + (i + 1) + '</span><i><em class="post" style="width:' + (rv ? pct : tot ? 100 : 0) + '%;' + (rv ? '' : 'background:#9AA4B8') + '"></em></i><b class="num">' + (rv ? pct + '% صحيح' : tot + ' إجابة') + '</b></div>'; }).join('') + '</div><div class="pr-nav"><button class="btn btn-mint" data-act="reveal" data-id="' + h(e.id) + '">' + (rv ? '🔒 إخفاء الإجابات' : '🔓 كشف نسبة الصحيح') + '</button></div>'; }
+    const top = e.format === 'text' || e.kind === 'survey' ? topPostOf(e) : null;
+    return '<div class="pr-title">' + h(e.icon || '') + ' ' + h(e.title) + ' <span class="pr-count">👥 <span class="num">' + cnt + '</span> ' + (e.mode === 'group' ? 'مجموعة' : 'مشاركة') + '</span></div>' + body +
+      (top && top.p.text ? '<div class="pr-top"><div class="lbl">⭐ الأكثر إعجابًا · 👍 <span class="num">' + top.likes + '</span></div><div class="txt">«' + h(clip(top.p.text, 260)) + '»</div><div class="who">— ' + h(top.p.k.charAt(0) === 'g' && e.mode === 'group' ? Groups.label(+top.p.k.slice(1)) : (top.p.name || '')) + '</div></div>' : '');
+  },
+  html() {
+    const c = Present.cfg();
+    return '<div class="present"><div class="pr-bar"><div class="pr-brand">' + iconSvg('store', 22, '#fff') + ' <b>' + h(Content.courseTitle()) + '</b></div><select id="prSel" class="pr-sel">' + Present.options().map(([k, l]) => '<option value="' + h(k) + '" ' + (k === c.ex ? 'selected' : '') + '>' + h(l) + '</option>').join('') + '</select><button class="btn btn-ghost btn-sm" data-act="pr-full">⛶ ملء الشاشة</button><button class="btn btn-ghost btn-sm" data-go="admin">↩ اللوحة</button></div><div class="pr-body">' + Present.panel(c) + '</div></div>';
+  },
+  after(root) {
+    const sel = $('#prSel', root); if (sel) sel.addEventListener('change', () => DB.set('settings/present', { ex: sel.value, q: 0 }));
+    const box = $('#prQr', root); if (box) loadScript(QR_LIB).then(() => { try { const q = window.qrcode(0, 'M'); q.addData(location.origin + location.pathname); q.make(); box.innerHTML = q.createSvgTag({ cellSize: 8, margin: 2, scalable: true }); } catch (e) { box.innerHTML = '<div class="pr-empty">تعذر إنشاء QR</div>'; } }).catch(() => { box.innerHTML = '<div class="pr-empty">QR غير متاح دون اتصال</div>'; });
+  }
+};
+Views.present = Present;
+
+
 /* ===== 07-admin.js ===== */
 // ---------------------------------------------------------------------
 // لوحة الأدمن — شاشة واحدة متصلة + نماذج الإنشاء/التعديل
@@ -2819,7 +3126,7 @@ const Bell = {
   }
 };
 function adminHeader(title) {
-  return '<div class="admin-top"><h1>' + h(title) + '</h1>' + Bell.html() + '<button class="btn btn-ghost btn-sm" data-go="home">🌐 عرض الموقع</button><button class="btn btn-danger btn-sm" data-act="admin-exit">خروج من الإدارة</button></div>';
+  return '<div class="admin-top"><h1>' + h(title) + '</h1>' + Bell.html() + '<button class="btn btn-primary btn-sm" data-go="present">🎤 وضع العرض</button><button class="btn btn-ghost btn-sm" data-go="home">🌐 عرض الموقع</button><button class="btn btn-danger btn-sm" data-act="admin-exit">خروج من الإدارة</button></div>';
 }
 function band(title, color, extra = '') { return '<div class="admin-band" style="--bc:' + color + '"><span class="bar"></span><h2>' + h(title) + '</h2><span class="grow"></span>' + extra + '</div>'; }
 function tool(key, icon, color, title, body, foot, cls = '') {
@@ -2890,6 +3197,15 @@ Views.admin = {
     out += drop('leadsList', lds.length ? '<div class="table-wrap"><table class="att-table"><thead><tr><th>الاسم</th><th>المشروع</th><th>البرامج</th><th>الاحتياج</th><th>التواصل</th><th>التاريخ</th></tr></thead><tbody>' + lds.map(l => { const u = Store.users[l.uid] || {}; return '<tr><td><b>' + h(l.name || u.name || '') + '</b></td><td>' + h(l.org || RegFields.val(u, 'org')) + '<div class="muted" style="font-size:11.5px">' + h(RegFields.val(u, 'sector')) + '</div></td><td>' + l.programs.map(h).join('<br>') + '</td><td>' + h(l.need || '') + '</td><td>' + h(l.method || '') + '<div class="num">' + h(l.contact || '') + '</div></td><td>' + fmtDate(l.ts) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="empty">لا توجد طلبات بعد.</div>');
     const lc = Leads.cfg();
     out += drop('leadsCfg', '<div class="field"><label>النص التعريفي</label><textarea id="lcIntro" data-keep="lc-intro" rows="2">' + h(lc.intro) + '</textarea></div><div class="field"><label>البرامج (سطر لكل برنامج)</label><textarea id="lcProgs" data-keep="lc-progs" rows="6">' + h(lc.programs.join('\n')) + '</textarea></div><div class="field"><label>نص الموافقة</label><input id="lcConsent" data-keep="lc-consent" value="' + h(lc.consent) + '"></div><div class="field"><label>يظهر النموذج أيضًا أسفل المحور</label><select id="lcAxis"><option value="">— لا يظهر في محور —</option>' + Content.axes({ all: true }).map(a => '<option value="' + h(a.id) + '" ' + (a.id === lc.axis ? 'selected' : '') + '>' + h(a.title) + '</option>').join('') + '</select><span class="help">ويظهر دائمًا في صفحة «حسابي».</span></div><div class="row"><button class="btn btn-primary btn-sm" data-act="leads-cfg-save">💾 حفظ</button><button class="btn btn-ghost btn-sm" data-act="leads-cfg-reset">↺ الافتراضي</button></div>');
+    const fuc = Followup.cfg(); const endD = Followup.endDate();
+    out += tool('followup', '📈', '#5B3A8A', 'المتابعة بعد البرنامج', 'نماذج قياس الأثر بعد 30 و60 و90 يومًا من تاريخ نهاية الدفعة' + (endD ? ' (<span class="num">' + fmtDate(endD) + '</span>)' : ' — <b>حدد تاريخ نهاية الدفعة أولًا</b>') + '.' + FU_DAYS.map(n => '<div class="att-day"><b>بعد <span class="num">' + n + '</span> يومًا</b><span class="pill ' + (Followup.isOpen(n) ? 'open-pill' : '') + '">' + (Followup.isOpen(n) ? 'مفتوحة' : 'مغلقة') + '</span><span class="muted num">' + Followup.list(n).length + ' رد</span></div>').join(''), '<button class="btn btn-soft btn-xs" data-act="drop" data-k="fuCtl">إدارة وإرسال التذكير</button><button class="btn btn-ghost btn-xs" data-act="fu-csv">⬇️ النتائج CSV</button>');
+    out += drop('fuCtl', '<p class="help muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:0">تُفتح كل متابعة تلقائيًا في موعدها، ويمكنك فتحها أو إغلاقها يدويًا. الإرسال الآلي للبريد يحتاج خادم بريد؛ لذلك يفتح زر البريد رسالة جاهزة في برنامج بريدك إلى من وافقوا على المتابعة ولم يردوا بعد (نسخة مخفية BCC)، ويمكنك نسخ رسالة واتساب لمجموعة البرنامج.</p>' +
+      FU_DAYS.map(n => { const st = fuc.open[n] || 'auto'; return '<div class="att-row"><b>بعد <span class="num">' + n + '</span> يومًا</b><span class="muted">' + (Followup.due(n) ? 'موعدها ' + fmtDate(Followup.due(n)) : 'بلا موعد') + '</span><button class="btn btn-ghost btn-xs" data-act="fu-state" data-n="' + n + '">الحالة: ' + ({ auto: '⏱ تلقائي', open: '🟢 مفتوحة يدويًا', closed: '🔒 مغلقة يدويًا' })[st] + '</button><button class="btn btn-primary btn-xs" data-act="fu-mail" data-n="' + n + '">📧 تذكير بالبريد</button><button class="btn btn-soft btn-xs" data-act="fu-wa" data-n="' + n + '">💬 رسالة واتساب</button><span class="pill num">' + Followup.list(n).length + ' رد</span></div>'; }).join(''));
+    const gm = Points.cfg();
+    out += tool('gamify', '🏆', '#D07A32', 'النقاط ولوحة الصدارة', 'نقاط للمشاركة والإعجابات والحضور والتقييمات، ولوحة صدارة للأفراد والمجموعات، وشارات خاصة (أول مشارك، الأكثر إعجابًا…).', '<button class="btn btn-xs ' + (gm.enabled ? 'btn-danger' : 'btn-primary') + '" data-act="gm-toggle" data-k="enabled">' + (gm.enabled ? 'إيقاف النقاط' : 'تفعيل النقاط') + '</button><button class="btn btn-ghost btn-xs" data-act="gm-toggle" data-k="names">' + (gm.names ? '🙈 إخفاء الأسماء في اللوحة' : '👁 إظهار الأسماء') + '</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="lbView">عرض اللوحة</button>');
+    out += drop('lbView', leaderboardHtml(20));
+    out += tool('tplTool', '📚', '#0E7C7B', 'صندوق الأدوات والقوالب', '7 حاسبات عملية و' + TEMPLATES.length + ' قوالب قابلة للتحميل للمتدربين.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="tplVis">إظهار/إخفاء القوالب</button><button class="btn btn-ghost btn-xs" data-go="tools">👀 فتح الصندوق</button>');
+    out += drop('tplVis', '<div class="people-list">' + TEMPLATES.map(t => '<div class="person"><span class="nm">' + t.icon + ' ' + h(t.title) + '</span><button class="btn btn-ghost btn-xs" data-act="tpl-vis" data-id="' + t.id + '">' + (Content.isHidden('tpl_' + t.id) ? '👁 إظهار' : '🙈 إخفاء') + '</button></div>').join('') + '</div>');
     out += tool('cohorts', '📦', '#9A7412', 'الدفعات والأرشيف', 'الدفعة الحالية: <b>' + h(coh.name) + '</b> · في الأرشيف: <b class="num">' + cl.length + '</b> دفعة', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="cohList">المقارنة والأرشيف</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="cohEdit">بيانات الدفعة</button><button class="btn btn-danger btn-xs" data-act="cohort-close">📦 إغلاق وأرشفة</button>');
     out += drop('cohEdit', '<div class="grid2"><div class="field"><label>اسم الدفعة</label><input id="cohName" data-keep="coh-name" value="' + h(coh.name) + '"></div><div class="field"><label>تاريخ البداية</label><input id="cohStart" type="date" data-keep="coh-start" value="' + h(coh.start) + '"></div><div class="field"><label>تاريخ النهاية</label><input id="cohEnd" type="date" data-keep="coh-end" value="' + h(coh.end) + '"></div></div><button class="btn btn-primary btn-sm" data-act="cohort-save">💾 حفظ</button>');
     if (UIState.openDrop.has('cohList')) { const live = cohortSummary(reportData()); const rows = cl.map(c => ({ c, s: c.summary || {} })).concat([{ c: Object.assign({ id: '' }, coh), s: live, live: true }]); const v = x => x == null ? '—' : x;
@@ -3831,13 +4147,42 @@ function exportLeadsCsv() {
   downloadBlob(csvBlob(rows), 'المهتمون ببرامج بنك قطر للتنمية.csv');
 }
 
+// ---------- خطتي للنمو: ملف شخصي من إجابات المتدرب ومخرجات مجموعته ----------
+async function buildPlanPdf(uid) {
+  const pm = progressModal('📘 خطتي للنمو');
+  try {
+    const u = Store.users[uid] || {}; const C = '#8A1538'; const T = Content.courseTitle(); const pages = [];
+    const ans = id => { const e = Content.ex(id); if (!e) return ''; const r = myPostOf(e, uid); return r && r.p ? (r.p.text || r.p.summary || '') : ''; };
+    const head = t => '<div style="position:absolute;top:0;left:0;right:0;height:84px;background:linear-gradient(120deg,#8A1538,#1F3A5F)"><div style="position:absolute;top:18px;right:34px;left:34px;color:#fff"><div style="font-family:IBM Plex Sans Arabic;font-size:12px;opacity:.85">' + h(T) + ' · ' + h(u.name || '') + '</div><div style="font-family:Cairo;font-weight:800;font-size:21px">' + h(t) + '</div></div></div>';
+    const page = (t, body) => pages.push('<div style="position:absolute;inset:0;background:#FBFAF9"></div>' + head(t) + '<div class="fit" style="top:104px;bottom:46px;right:34px;left:34px;line-height:1.8">' + body + '</div>' + PP.foot(T + ' — خطتي للنمو', pages.length + 1));
+    const box = (t, inner, col) => '<div style="background:#fff;border:1px solid #EADDE1;border-right:5px solid ' + (col || C) + ';border-radius:14px;padding:10px 14px;margin-bottom:10px"><div style="font-family:Cairo;font-weight:800;color:' + (col || C) + ';margin-bottom:4px">' + t + '</div>' + inner + '</div>';
+    const txt = v => v ? '<div class="j" style="white-space:pre-wrap;font-size:13px">' + h(v) + '</div>' : '<div style="color:#9AA4B8;font-size:12.5px">— لم تُكتب بعد. أكمل التمرين في المنصة ثم أعد إنشاء الملف. —</div>';
+    const pre = Assess.rec('pre', uid), post = Assess.rec('post', uid); const n = Content.assess().items.length; const pr = Progress.forUser(uid); const lead = (Store.leads || {})[uid];
+    pages.push(PP.multiBg() + '<div style="position:absolute;left:80px;right:80px;top:300px;background:#fff;border-radius:30px;box-shadow:0 20px 50px rgba(20,40,70,.16);padding:44px 36px;text-align:center"><div style="font-size:54px">🚀</div><div style="font-family:IBM Plex Sans Arabic;font-weight:700;color:' + C + '">خطتي للنمو</div><h1 style="font-size:32px;font-weight:800;margin-top:6px">' + h(u.name || '') + '</h1><p style="color:#4A5470;font-size:16px">' + h(RegFields.val(u, 'org') || u.role || '') + '</p><p style="color:#4A5470;font-size:14px;margin-top:10px">' + h(T) + '</p><div style="display:flex;justify-content:center;gap:12px;margin-top:16px;font-family:IBM Plex Sans Arabic;font-size:13px"><span>الإنجاز <b class="num">' + Math.round(pr.pct * 100) + '%</b></span><span>الحضور <b class="num">' + Attend.pct(uid) + '%</b></span>' + (pre && pre.done && post && post.done ? '<span>المعرفة <b class="num">' + Assess.score(pre.answers) + '→' + Assess.score(post.answers) + '/' + n + '</b></span>' : '') + '</div><div class="num" style="margin-top:14px;font-size:12px;color:#7D879C">' + fmtDate(Date.now()) + '</div></div>');
+    page('خطة النمو لمدة 12 شهرًا', box('🎯 خطة نمو مشروعك في صفحة', txt(ans('a12e3'))) + box('🗺️ خريطة قنوات مشروعك', txt(ans('a1e3')), '#1F3A5F') + box('✅ أولويات جاهزية الإطلاق', txt(ans('a2e4')), '#0E7C7B'));
+    const sims = ['a2e5', 'a4e5'].map(id => { const e = Content.ex(id); const r = e && myPostOf(e, uid); return e && r ? '<li>' + h(e.title) + ': <b>' + h(r.p.summary || '') + '</b></li>' : ''; }).join('');
+    page('التشغيل والأدوات', box('⚙️ أتمتتي الأولى', txt(ans('a9e1')), '#5B3A8A') + box('🤖 طلبي للمساعد الذكي', txt(ans('a13e1')), '#0F6E8C') + (sims ? box('🎮 نتائجي في المحاكيات', '<ul style="margin:0;font-size:13px">' + sims + '</ul>', '#B5582A') : '') +
+      (lead && arr(lead.programs).length ? box('🤝 برامج بنك قطر للتنمية التي تهمني', '<ul style="margin:0;font-size:13px">' + arr(lead.programs).map(p => '<li>' + h(p) + '</li>').join('') + '</ul>' + (lead.need ? '<div style="font-size:12.5px;margin-top:4px">الاحتياج: ' + h(lead.need) + '</div>' : ''), '#138A5E') : ''));
+    const g = Groups.assignedOf(uid) || +(u.group || 0); const ga = g ? (Store.labAnswers['g' + g] || {}) : {}; const L = Content.lab();
+    if (Object.keys(ga).length) page('مخرجات مجموعتي في المختبر الختامي', '<div style="font-size:12px;color:#7D879C;margin-bottom:8px">' + h(L.title) + ' · ' + h(Groups.label(g)) + '</div>' + L.stages.map((s, i) => ga['s' + i] ? box(h(s.icon + ' ' + s.title), txt(ga['s' + i].text), AXIS_COLORS[(i * 2) % AXIS_COLORS.length]) : '').join(''));
+    const rows = n2 => [1, 2, 3, 4].map(() => '<tr><td style="height:30px"></td><td></td><td></td><td>☐</td></tr>').join('');
+    page('خطة العمل: 30 / 60 / 90 يومًا', ['30', '60', '90'].map((d, i) => box('خلال ' + d + ' يومًا', '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:#F3E9EC"><th style="padding:5px;text-align:right">الإجراء</th><th style="text-align:right">المسؤول</th><th style="text-align:right">المؤشر</th><th style="width:40px">تم</th></tr>' + rows() + '</table>', ['#8A1538', '#1F3A5F', '#0E7C7B'][i])).join('') + '<div style="font-size:12px;color:#4A5470">سيصلك في هذه المواعيد نموذج متابعة قصير على المنصة لقياس ما طبقته.</div>');
+    const doc = await PDFE.build(pages, A4P, (i, k) => pm.set(i, k)); doc.save('خطتي للنمو - ' + safeName(u.name) + '.pdf'); pm.close();
+  } catch (e) { pm.close(); UI.alert('تعذر إنشاء الملف: ' + h(e.message || e)); }
+}
+function exportFollowupCsv() {
+  const rows = [['المرحلة', 'المتدرب', 'المشروع', 'ما طبقه', 'تغير المبيعات', 'الفائدة (1-5)', 'أهم نتيجة', 'العقبات', 'التاريخ']];
+  FU_DAYS.forEach(n => Followup.list(n).forEach(r => { const u = Store.users[r.uid] || {}; rows.push([n + ' يومًا', u.name || r.name || '', RegFields.val(u, 'org'), arr(r.actions).join(' | '), r.sales || '', r.useful || '', r.win || '', r.need || '', r.ts ? fmtTime(r.ts) : '']); }));
+  downloadBlob(csvBlob(rows), 'متابعة الأثر بعد البرنامج.csv');
+}
+
 
 /* ===== 09-main.js ===== */
 // ---------------------------------------------------------------------
 // التطبيق: الرسم، المراقبات الحية، والتفاعلات
 // ---------------------------------------------------------------------
 const FORM_VIEWS = ['axisEdit', 'exEdit', 'actEdit', 'secEdit', 'labEdit', 'assessEdit', 'storyEdit'];
-const ADMIN_VIEWS = ['admin'].concat(FORM_VIEWS);
+const ADMIN_VIEWS = ['admin', 'present'].concat(FORM_VIEWS);
 const App = {
   inIframe: (() => { try { return window.self !== window.top; } catch (e) { return true; } })(),
   render() {
@@ -3848,7 +4193,7 @@ const App = {
     const view = needLogin ? Views.login : (Views[v] || Views.home);
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
-    const html = Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
+    const html = v === 'present' && view === Views.present ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
       (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
@@ -3874,7 +4219,7 @@ function watchAll() {
   W('assess', v => { Store.assess = v || {}; });
   W('attendance', v => { Store.attendance = v || {}; });
   W('site', v => { Store.site = v || {}; });
-  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.monitorCfg = v.monitor || {}; Store.cohortCfg = v.cohort || {}; });
+  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.monitorCfg = v.monitor || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; });
   W('assign', v => { Store.assign = v || {}; });
   W('users', v => { Store.users = v || {}; });
   W('posts', v => { Store.posts = v || {}; });
@@ -4159,6 +4504,24 @@ document.addEventListener('click', async ev => {
     case 'assess-reset-content': { if (await UI.confirm('استرجاع الأسئلة الافتراضية؟', { ok: 'استرجاع' })) { await DB.remove('content/assess'); FormState.exId = null; Router.go('admin'); } break; }
     case 'report-pdf': buildReportPdf(t.getAttribute('data-lang') || 'ar'); break;
     case 'leads-csv': exportLeadsCsv(); break;
+    case 'plan-pdf': buildPlanPdf(Me.uid()); break;
+    case 'tpl-doc': { const tp = TEMPLATES.find(x => x.id === id); downloadBlob(new Blob(['\ufeff' + tplDoc(tp)], { type: 'application/msword' }), tp.title + '.doc'); break; }
+    case 'tpl-pdf': tplPdf(TEMPLATES.find(x => x.id === id)); break;
+    case 'tpl-view': { const tp = TEMPLATES.find(x => x.id === id); UI.modal('<div class="tpl-preview">' + tp.body + '</div><div class="actions"><button class="btn btn-primary btn-sm" data-act="tpl-doc" data-id="' + tp.id + '">⬇️ Word</button></div>', { wide: true }); break; }
+    case 'fu-save': {
+      const n = t.getAttribute('data-n'); const acts = $$('[data-fu-a]').filter(x => x.checked).map(x => FU_ACTIONS[+x.getAttribute('data-fu-a')]);
+      if (!acts.length && !$('#fuSales').value) { UI.alert('اختر ما طبقته أو تغير المبيعات على الأقل.'); break; }
+      await DB.set('followups/d' + n + '/' + Me.uid(), { actions: acts, sales: $('#fuSales').value, useful: +$('#fuUse').value || null, win: $('#fuWin').value.trim(), need: $('#fuNeed').value.trim(), name: Me.data.name, ts: DB.now() });
+      UI.toast('✅ شكرًا! أُرسلت المتابعة'); App.render(); break;
+    }
+    case 'fu-mail': followupMailto(t.getAttribute('data-n')); break;
+    case 'fu-wa': { const n = t.getAttribute('data-n'); const msg = 'مرحبًا 👋 مرّ ' + n + ' يومًا على برنامج «' + Content.courseTitle() + '». شاركنا ما طبقته في مشروعك عبر نموذج قصير (دقيقتان): ' + Followup.link(n); try { await navigator.clipboard.writeText(msg); UI.toast('📋 نُسخت رسالة واتساب — الصقها في مجموعة البرنامج'); } catch (e) { UI.prompt('انسخ الرسالة:', { value: msg }); } break; }
+    case 'fu-state': { const n = t.getAttribute('data-n'); const cur = Followup.cfg().open[n] || 'auto'; const nx = cur === 'auto' ? 'open' : cur === 'open' ? 'closed' : 'auto'; await DB.set('site/followup/open/' + n, nx === 'auto' ? null : nx); break; }
+    case 'fu-csv': exportFollowupCsv(); break;
+    case 'gm-toggle': { const c = Points.cfg(); await DB.set('site/gamify/' + t.getAttribute('data-k'), !c[t.getAttribute('data-k')]); break; }
+    case 'tpl-vis': DB.set('visibility/tpl_' + id, Content.isHidden('tpl_' + id) ? null : false); break;
+    case 'pr-q': { const c = Present.cfg(); DB.set('settings/present/q', Math.max(0, (+c.q || 0) + (+t.getAttribute('data-d')))); break; }
+    case 'pr-full': { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {} break; }
     case 'logo-save': { await DB.set('site/brandLogo', ImgPick.val('brandLogo') || null); UI.toast('✅ حُفظ الشعار'); break; }
     case 'lead-edit': UIState.editing.lead = true; App.render(); break;
     case 'lead-withdraw': { if (await UI.confirm('سحب اهتمامك ببرامج البنك؟', { ok: 'سحب' })) DB.remove('leads/' + Me.uid()); break; }

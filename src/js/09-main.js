@@ -2,7 +2,7 @@
 // التطبيق: الرسم، المراقبات الحية، والتفاعلات
 // ---------------------------------------------------------------------
 const FORM_VIEWS = ['axisEdit', 'exEdit', 'actEdit', 'secEdit', 'labEdit', 'assessEdit', 'storyEdit'];
-const ADMIN_VIEWS = ['admin'].concat(FORM_VIEWS);
+const ADMIN_VIEWS = ['admin', 'present'].concat(FORM_VIEWS);
 const App = {
   inIframe: (() => { try { return window.self !== window.top; } catch (e) { return true; } })(),
   render() {
@@ -13,7 +13,7 @@ const App = {
     const view = needLogin ? Views.login : (Views[v] || Views.home);
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
-    const html = Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
+    const html = v === 'present' && view === Views.present ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
       (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
@@ -39,7 +39,7 @@ function watchAll() {
   W('assess', v => { Store.assess = v || {}; });
   W('attendance', v => { Store.attendance = v || {}; });
   W('site', v => { Store.site = v || {}; });
-  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.monitorCfg = v.monitor || {}; Store.cohortCfg = v.cohort || {}; });
+  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.monitorCfg = v.monitor || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; });
   W('assign', v => { Store.assign = v || {}; });
   W('users', v => { Store.users = v || {}; });
   W('posts', v => { Store.posts = v || {}; });
@@ -324,6 +324,24 @@ document.addEventListener('click', async ev => {
     case 'assess-reset-content': { if (await UI.confirm('استرجاع الأسئلة الافتراضية؟', { ok: 'استرجاع' })) { await DB.remove('content/assess'); FormState.exId = null; Router.go('admin'); } break; }
     case 'report-pdf': buildReportPdf(t.getAttribute('data-lang') || 'ar'); break;
     case 'leads-csv': exportLeadsCsv(); break;
+    case 'plan-pdf': buildPlanPdf(Me.uid()); break;
+    case 'tpl-doc': { const tp = TEMPLATES.find(x => x.id === id); downloadBlob(new Blob(['\ufeff' + tplDoc(tp)], { type: 'application/msword' }), tp.title + '.doc'); break; }
+    case 'tpl-pdf': tplPdf(TEMPLATES.find(x => x.id === id)); break;
+    case 'tpl-view': { const tp = TEMPLATES.find(x => x.id === id); UI.modal('<div class="tpl-preview">' + tp.body + '</div><div class="actions"><button class="btn btn-primary btn-sm" data-act="tpl-doc" data-id="' + tp.id + '">⬇️ Word</button></div>', { wide: true }); break; }
+    case 'fu-save': {
+      const n = t.getAttribute('data-n'); const acts = $$('[data-fu-a]').filter(x => x.checked).map(x => FU_ACTIONS[+x.getAttribute('data-fu-a')]);
+      if (!acts.length && !$('#fuSales').value) { UI.alert('اختر ما طبقته أو تغير المبيعات على الأقل.'); break; }
+      await DB.set('followups/d' + n + '/' + Me.uid(), { actions: acts, sales: $('#fuSales').value, useful: +$('#fuUse').value || null, win: $('#fuWin').value.trim(), need: $('#fuNeed').value.trim(), name: Me.data.name, ts: DB.now() });
+      UI.toast('✅ شكرًا! أُرسلت المتابعة'); App.render(); break;
+    }
+    case 'fu-mail': followupMailto(t.getAttribute('data-n')); break;
+    case 'fu-wa': { const n = t.getAttribute('data-n'); const msg = 'مرحبًا 👋 مرّ ' + n + ' يومًا على برنامج «' + Content.courseTitle() + '». شاركنا ما طبقته في مشروعك عبر نموذج قصير (دقيقتان): ' + Followup.link(n); try { await navigator.clipboard.writeText(msg); UI.toast('📋 نُسخت رسالة واتساب — الصقها في مجموعة البرنامج'); } catch (e) { UI.prompt('انسخ الرسالة:', { value: msg }); } break; }
+    case 'fu-state': { const n = t.getAttribute('data-n'); const cur = Followup.cfg().open[n] || 'auto'; const nx = cur === 'auto' ? 'open' : cur === 'open' ? 'closed' : 'auto'; await DB.set('site/followup/open/' + n, nx === 'auto' ? null : nx); break; }
+    case 'fu-csv': exportFollowupCsv(); break;
+    case 'gm-toggle': { const c = Points.cfg(); await DB.set('site/gamify/' + t.getAttribute('data-k'), !c[t.getAttribute('data-k')]); break; }
+    case 'tpl-vis': DB.set('visibility/tpl_' + id, Content.isHidden('tpl_' + id) ? null : false); break;
+    case 'pr-q': { const c = Present.cfg(); DB.set('settings/present/q', Math.max(0, (+c.q || 0) + (+t.getAttribute('data-d')))); break; }
+    case 'pr-full': { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {} break; }
     case 'logo-save': { await DB.set('site/brandLogo', ImgPick.val('brandLogo') || null); UI.toast('✅ حُفظ الشعار'); break; }
     case 'lead-edit': UIState.editing.lead = true; App.render(); break;
     case 'lead-withdraw': { if (await UI.confirm('سحب اهتمامك ببرامج البنك؟', { ok: 'سحب' })) DB.remove('leads/' + Me.uid()); break; }

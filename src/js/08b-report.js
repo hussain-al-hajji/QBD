@@ -126,3 +126,32 @@ function exportLeadsCsv() {
   Leads.list().forEach(l => { const u = Store.users[l.uid] || {}; rows.push([l.name || u.name || '', u.role || '', RegFields.val(u, 'org'), RegFields.val(u, 'sector'), RegFields.val(u, 'stage'), l.programs.join(' | '), l.need || '', l.method || '', l.contact || '', l.ts ? fmtTime(l.ts) : '']); });
   downloadBlob(csvBlob(rows), 'المهتمون ببرامج بنك قطر للتنمية.csv');
 }
+
+// ---------- خطتي للنمو: ملف شخصي من إجابات المتدرب ومخرجات مجموعته ----------
+async function buildPlanPdf(uid) {
+  const pm = progressModal('📘 خطتي للنمو');
+  try {
+    const u = Store.users[uid] || {}; const C = '#8A1538'; const T = Content.courseTitle(); const pages = [];
+    const ans = id => { const e = Content.ex(id); if (!e) return ''; const r = myPostOf(e, uid); return r && r.p ? (r.p.text || r.p.summary || '') : ''; };
+    const head = t => '<div style="position:absolute;top:0;left:0;right:0;height:84px;background:linear-gradient(120deg,#8A1538,#1F3A5F)"><div style="position:absolute;top:18px;right:34px;left:34px;color:#fff"><div style="font-family:IBM Plex Sans Arabic;font-size:12px;opacity:.85">' + h(T) + ' · ' + h(u.name || '') + '</div><div style="font-family:Cairo;font-weight:800;font-size:21px">' + h(t) + '</div></div></div>';
+    const page = (t, body) => pages.push('<div style="position:absolute;inset:0;background:#FBFAF9"></div>' + head(t) + '<div class="fit" style="top:104px;bottom:46px;right:34px;left:34px;line-height:1.8">' + body + '</div>' + PP.foot(T + ' — خطتي للنمو', pages.length + 1));
+    const box = (t, inner, col) => '<div style="background:#fff;border:1px solid #EADDE1;border-right:5px solid ' + (col || C) + ';border-radius:14px;padding:10px 14px;margin-bottom:10px"><div style="font-family:Cairo;font-weight:800;color:' + (col || C) + ';margin-bottom:4px">' + t + '</div>' + inner + '</div>';
+    const txt = v => v ? '<div class="j" style="white-space:pre-wrap;font-size:13px">' + h(v) + '</div>' : '<div style="color:#9AA4B8;font-size:12.5px">— لم تُكتب بعد. أكمل التمرين في المنصة ثم أعد إنشاء الملف. —</div>';
+    const pre = Assess.rec('pre', uid), post = Assess.rec('post', uid); const n = Content.assess().items.length; const pr = Progress.forUser(uid); const lead = (Store.leads || {})[uid];
+    pages.push(PP.multiBg() + '<div style="position:absolute;left:80px;right:80px;top:300px;background:#fff;border-radius:30px;box-shadow:0 20px 50px rgba(20,40,70,.16);padding:44px 36px;text-align:center"><div style="font-size:54px">🚀</div><div style="font-family:IBM Plex Sans Arabic;font-weight:700;color:' + C + '">خطتي للنمو</div><h1 style="font-size:32px;font-weight:800;margin-top:6px">' + h(u.name || '') + '</h1><p style="color:#4A5470;font-size:16px">' + h(RegFields.val(u, 'org') || u.role || '') + '</p><p style="color:#4A5470;font-size:14px;margin-top:10px">' + h(T) + '</p><div style="display:flex;justify-content:center;gap:12px;margin-top:16px;font-family:IBM Plex Sans Arabic;font-size:13px"><span>الإنجاز <b class="num">' + Math.round(pr.pct * 100) + '%</b></span><span>الحضور <b class="num">' + Attend.pct(uid) + '%</b></span>' + (pre && pre.done && post && post.done ? '<span>المعرفة <b class="num">' + Assess.score(pre.answers) + '→' + Assess.score(post.answers) + '/' + n + '</b></span>' : '') + '</div><div class="num" style="margin-top:14px;font-size:12px;color:#7D879C">' + fmtDate(Date.now()) + '</div></div>');
+    page('خطة النمو لمدة 12 شهرًا', box('🎯 خطة نمو مشروعك في صفحة', txt(ans('a12e3'))) + box('🗺️ خريطة قنوات مشروعك', txt(ans('a1e3')), '#1F3A5F') + box('✅ أولويات جاهزية الإطلاق', txt(ans('a2e4')), '#0E7C7B'));
+    const sims = ['a2e5', 'a4e5'].map(id => { const e = Content.ex(id); const r = e && myPostOf(e, uid); return e && r ? '<li>' + h(e.title) + ': <b>' + h(r.p.summary || '') + '</b></li>' : ''; }).join('');
+    page('التشغيل والأدوات', box('⚙️ أتمتتي الأولى', txt(ans('a9e1')), '#5B3A8A') + box('🤖 طلبي للمساعد الذكي', txt(ans('a13e1')), '#0F6E8C') + (sims ? box('🎮 نتائجي في المحاكيات', '<ul style="margin:0;font-size:13px">' + sims + '</ul>', '#B5582A') : '') +
+      (lead && arr(lead.programs).length ? box('🤝 برامج بنك قطر للتنمية التي تهمني', '<ul style="margin:0;font-size:13px">' + arr(lead.programs).map(p => '<li>' + h(p) + '</li>').join('') + '</ul>' + (lead.need ? '<div style="font-size:12.5px;margin-top:4px">الاحتياج: ' + h(lead.need) + '</div>' : ''), '#138A5E') : ''));
+    const g = Groups.assignedOf(uid) || +(u.group || 0); const ga = g ? (Store.labAnswers['g' + g] || {}) : {}; const L = Content.lab();
+    if (Object.keys(ga).length) page('مخرجات مجموعتي في المختبر الختامي', '<div style="font-size:12px;color:#7D879C;margin-bottom:8px">' + h(L.title) + ' · ' + h(Groups.label(g)) + '</div>' + L.stages.map((s, i) => ga['s' + i] ? box(h(s.icon + ' ' + s.title), txt(ga['s' + i].text), AXIS_COLORS[(i * 2) % AXIS_COLORS.length]) : '').join(''));
+    const rows = n2 => [1, 2, 3, 4].map(() => '<tr><td style="height:30px"></td><td></td><td></td><td>☐</td></tr>').join('');
+    page('خطة العمل: 30 / 60 / 90 يومًا', ['30', '60', '90'].map((d, i) => box('خلال ' + d + ' يومًا', '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:#F3E9EC"><th style="padding:5px;text-align:right">الإجراء</th><th style="text-align:right">المسؤول</th><th style="text-align:right">المؤشر</th><th style="width:40px">تم</th></tr>' + rows() + '</table>', ['#8A1538', '#1F3A5F', '#0E7C7B'][i])).join('') + '<div style="font-size:12px;color:#4A5470">سيصلك في هذه المواعيد نموذج متابعة قصير على المنصة لقياس ما طبقته.</div>');
+    const doc = await PDFE.build(pages, A4P, (i, k) => pm.set(i, k)); doc.save('خطتي للنمو - ' + safeName(u.name) + '.pdf'); pm.close();
+  } catch (e) { pm.close(); UI.alert('تعذر إنشاء الملف: ' + h(e.message || e)); }
+}
+function exportFollowupCsv() {
+  const rows = [['المرحلة', 'المتدرب', 'المشروع', 'ما طبقه', 'تغير المبيعات', 'الفائدة (1-5)', 'أهم نتيجة', 'العقبات', 'التاريخ']];
+  FU_DAYS.forEach(n => Followup.list(n).forEach(r => { const u = Store.users[r.uid] || {}; rows.push([n + ' يومًا', u.name || r.name || '', RegFields.val(u, 'org'), arr(r.actions).join(' | '), r.sales || '', r.useful || '', r.win || '', r.need || '', r.ts ? fmtTime(r.ts) : '']); }));
+  downloadBlob(csvBlob(rows), 'متابعة الأثر بعد البرنامج.csv');
+}

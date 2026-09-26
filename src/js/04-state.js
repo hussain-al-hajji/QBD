@@ -154,7 +154,9 @@ const HOME_BUILTINS = [
   { key: 'activities', icon: '⚡', kicker: 'قبل أن نبدأ', title: '⚡ أنشطة' },
   { key: 'axes', icon: '🗺️', kicker: 'خارطة البرنامج', title: '🗺️ محاور البرنامج' },
   { key: 'lab', icon: '🧪', kicker: 'مشروع تطبيقي شامل', title: '' },
-  { key: 'survey', icon: '🎓', kicker: 'نهاية الرحلة', title: '🎓 ختام البرنامج' }
+  { key: 'survey', icon: '🎓', kicker: 'نهاية الرحلة', title: '🎓 ختام البرنامج' },
+  { key: 'leaderboard', icon: '🏆', kicker: 'التحفيز', title: '🏆 لوحة الصدارة' },
+  { key: 'tools', icon: '🧰', kicker: 'تبقى معك بعد البرنامج', title: '🧰 صندوق أدوات المتجر ومكتبة القوالب' }
 ];
 const SECTION_TYPES = { text: 'نص منسّق', video: 'فيديو', image: 'صورة وإعلان', cta: 'بطاقة رابط / زر' };
 
