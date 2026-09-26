@@ -378,6 +378,14 @@ document.addEventListener('click', async ev => {
     case 'sec-copy': { const k = t.getAttribute('data-k'); const cur = ((Store.site || {}).sections || {})[k]; if (!cur) break; await DB.set('site/sections/c' + genId(), Object.assign({}, cur, { title: (cur.title || '') + ' (نسخة)', ts: DB.now() })); UI.toast('🧬 تم نسخ القسم'); break; }
     case 'sec-del': { const k = t.getAttribute('data-k'); if (await UI.confirm('حذف هذا القسم نهائيًا من الصفحة الرئيسية؟', { danger: true, ok: 'حذف' })) DB.update('', { ['site/sections/' + k]: null, ['visibility/home_' + k]: null }); break; }
     case 'sec-reset-order': DB.remove('site/homeOrder'); break;
+    case 'home-layout': DB.set('site/homeLayout', t.getAttribute('data-v')); UI.toast(t.getAttribute('data-v') === 'classic' ? 'عادت الرئيسية إلى التخطيط الطويل' : 'فُعّل تخطيط القائمة الجانبية'); break;
+    case 'home-sec': {
+      UIState.homeSec = t.getAttribute('data-k'); SafeLS.set('ec_home_sec', UIState.homeSec); App.render();
+      const pane = document.getElementById('homePane'); const nav = document.querySelector('.home-nav');
+      if (pane) { const top = pane.getBoundingClientRect().top + window.scrollY - (window.innerWidth <= 860 && nav ? nav.offsetHeight + 76 : 84); if (window.scrollY > top || t.classList.contains('hn-next') || window.innerWidth <= 860) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
+      const act = document.querySelector('.hn-item.active'); if (act && act.scrollIntoView && window.innerWidth <= 860) act.scrollIntoView({ block: 'nearest', inline: 'center' });
+      break;
+    }
     case 'sec-save': Views.secEdit.save(root); break;
     case 'sec-label-reset': { await DB.remove('site/labels/' + Router.cur.id); UI.toast('تم الاسترجاع'); Router.go('admin'); break; }
     case 'units-save': { const o = {}; UNIT_IDS.forEach(n => { const k = $('[data-unit-k="' + n + '"]').value.trim(), nm = $('[data-unit-n="' + n + '"]').value.trim(); if (k !== UNIT_KICKERS[n] || nm !== UNIT_NAMES[n]) o[n] = { kicker: k, name: nm }; }); await DB.set('site/units', Object.keys(o).length ? o : null); UI.toast('✅ حُفظت أسماء الوحدات'); break; }

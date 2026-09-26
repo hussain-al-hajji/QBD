@@ -72,8 +72,38 @@ Views.home = {
       '<h1>' + h(s.heroTitle) + '</h1><div class="hero-desc">' + richHtml(s.heroDesc) + '</div>' +
       '<div class="stats"><div class="stat"><b class="num">' + Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length + '</b><span>وحدات</span></div><div class="stat"><b class="num">' + axes.length + '</b><span>محور</span></div><div class="stat"><b class="num">' + exCount + '</b><span>تمرين تفاعلي</span></div><div class="stat"><b class="num">' + (Number(Store.registered) || 0) + '</b><span>مسجّل حتى الآن</span></div></div></div></section>';
     const fu = followupCardsHtml(); if (fu) out += '<section class="section">' + fu + '</section>';
+    if (HomeNav.layout() === 'sidebar') return out.replace('<section class="hero">', '<section class="hero hero-compact">') + HomeNav.html();
     Content.homeSections().forEach(sec => { try { out += homeSectionHtml(sec); } catch (e) { console.error(e); } });
     return out;
+  }
+};
+
+// ============ تخطيط الرئيسية بالقائمة الجانبية (تجريبي — قابل للتبديل من لوحة الإدارة) ============
+const HomeNav = {
+  layout() { return (Store.site && Store.site.homeLayout) === 'classic' ? 'classic' : 'sidebar'; },
+  label(sec) { return String(stripHtml(sec.title || '') || (sec.key === 'lab' ? Content.lab().title : '') || 'قسم').replace(/^[^\p{L}\p{N}]+/u, '').trim(); },
+  icon(sec) { return sec.icon || (sec.type === 'video' ? '🎬' : sec.type === 'image' ? '🖼️' : sec.type === 'cta' ? '🔗' : '📝'); },
+  count(sec) {
+    const k = sec.key;
+    if (k === 'stories') return Content.stories().length;
+    if (k === 'assess') return 2;
+    if (k === 'activities') return Content.activities().length;
+    if (k === 'axes') return Content.axes().length;
+    if (k === 'lab') return Content.lab().stages.length;
+    if (k === 'tools') return TOOLS.length;
+    return '';
+  },
+  html() {
+    const items = [];
+    Content.homeSections().forEach(sec => { let body = ''; try { body = homeSectionHtml(sec); } catch (e) { console.error(e); } if (body) items.push({ sec, body }); });
+    if (!items.length) return '';
+    let cur = UIState.homeSec || SafeLS.get('ec_home_sec');
+    let i = items.findIndex(x => x.sec.key === cur); if (i < 0) i = 0;
+    const next = items[i + 1];
+    return '<div class="home-shell"><aside class="home-nav" aria-label="أقسام الصفحة الرئيسية"><div class="hn-title">أقسام البرنامج</div><nav>' +
+      items.map((x, j) => { const c = HomeNav.count(x.sec); return '<button class="hn-item ' + (j === i ? 'active' : '') + '" data-act="home-sec" data-k="' + h(x.sec.key) + '" ' + (j === i ? 'aria-current="true"' : '') + '><span class="hn-ico">' + h(HomeNav.icon(x.sec)) + '</span><span class="hn-txt"><b>' + h(HomeNav.label(x.sec)) + '</b>' + (x.sec.kicker ? '<small>' + h(x.sec.kicker) + '</small>' : '') + '</span>' + (c !== '' ? '<span class="hn-count num">' + c + '</span>' : '') + '</button>'; }).join('') +
+      '</nav></aside><div class="home-pane" id="homePane">' + items[i].body +
+      (next ? '<button class="hn-next" data-act="home-sec" data-k="' + h(next.sec.key) + '"><span>القسم التالي</span><b>' + h(HomeNav.icon(next.sec)) + ' ' + h(HomeNav.label(next.sec)) + ' ←</b></button>' : '') + '</div></div>';
   }
 };
 
