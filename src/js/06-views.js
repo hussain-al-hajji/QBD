@@ -22,7 +22,7 @@ Views.login = {
 // ============ الرئيسية ============
 function axisArt(a, big) {
   const col = Content.color(a);
-  if (a.image) return '<div class="axis-art"><img src="' + a.image + '" alt=""></div>';
+  if (a.image) return '<div class="axis-art"><img src=\"' + imgSrc(a.image) + '\" alt=""></div>';
   return '<div class="axis-art" style="background:linear-gradient(135deg,' + col + ',' + shade(col, -0.35) + ')">' + decorShapes(a.id) + '<div class="axis-icon">' + iconSvg(a.icon || 'star', big ? 44 : 38, '#fff', 1.8) + '</div></div>';
 }
 function decorShapes(seed, op = .16) {
@@ -40,7 +40,7 @@ function assessCardHtml(ph) {
 }
 function storyCard(st) {
   const col = AXIS_COLORS[st.color % AXIS_COLORS.length];
-  return '<button class="story-card" data-go="story" data-id="' + h(st.id) + '" style="--ac:' + col + '"><div class="story-art">' + (st.image ? '<img src="' + st.image + '" alt="">' : Scenes.render(st.scene || 'idea', col)) + '<span class="story-flag">' + h(st.flag || '') + ' ' + h(st.country || '') + '</span></div><div class="story-body"><span class="story-sector">' + h(st.sector || '') + (st.year ? ' · <span class="num">' + h(st.year) + '</span>' : '') + '</span><h3>' + h(st.title) + '</h3><p>' + h(clip(stripHtml(st.summary), 150)) + '</p><span class="story-more">اقرأ القصة ←</span></div></button>';
+  return '<button class="story-card" data-go="story" data-id="' + h(st.id) + '" style="--ac:' + col + '"><div class="story-art">' + (st.image ? '<img src=\"' + imgSrc(st.image) + '\" alt="">' : Scenes.render(st.scene || 'idea', col)) + '<span class="story-flag">' + h(st.flag || '') + ' ' + h(st.country || '') + '</span></div><div class="story-body"><span class="story-sector">' + h(st.sector || '') + (st.year ? ' · <span class="num">' + h(st.year) + '</span>' : '') + '</span><h3>' + h(st.title) + '</h3><p>' + h(clip(stripHtml(st.summary), 150)) + '</p><span class="story-more">اقرأ القصة ←</span></div></button>';
 }
 function homeSectionHtml(sec) {
   const k = sec.key;
@@ -59,7 +59,7 @@ function homeSectionHtml(sec) {
   // الأقسام المخصّصة
   let body = '';
   if (sec.type === 'video') { const em = toEmbed(sec.videoUrl); body = em ? '<div class="video-box"><iframe src="' + h(em) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>' : (sec.videoUrl ? '<a class="btn btn-soft" href="' + h(sec.videoUrl) + '" target="_blank" rel="noopener">' + iconSvg('play', 16) + ' مشاهدة الفيديو</a>' : ''); }
-  if (sec.image) body = '<img class="sec-img" src="' + sec.image + '" alt="">' + body;
+  if (sec.image) body = '<img class="sec-img" src=\"' + imgSrc(sec.image) + '\" alt="">' + body;
   if (sec.body) body += '<div class="custom-body">' + richHtml(sec.body) + '</div>';
   if (sec.btnUrl) body += '<div style="margin-top:12px"><a class="btn btn-primary" href="' + h(/^https?:|^mailto:|^tel:/.test(sec.btnUrl) ? sec.btnUrl : 'https://' + sec.btnUrl) + '" target="_blank" rel="noopener">' + h(sec.btnLabel || 'افتح الرابط') + ' ←</a></div>';
   return '<section class="section">' + secHead(sec) + '<div class="card pad custom-sec custom-' + h(sec.type || 'text') + '">' + body + '</div></section>';
@@ -68,7 +68,7 @@ Views.home = {
   html() {
     const s = Content.site(); const axes = Content.axes();
     const exCount = Content.eligibleAxes().reduce((n, a) => n + Content.exercisesOf(a.id).length, 0);
-    let out = '<section class="hero"><div class="hero-cover">' + (s.heroImage ? '<img src="' + s.heroImage + '" alt="">' : Scenes.render('hero')) + '</div><div class="hero-body">' +
+    let out = '<section class="hero"><div class="hero-cover">' + (s.heroImage ? '<img src=\"' + imgSrc(s.heroImage) + '\" alt="">' : Scenes.render('hero')) + '</div><div class="hero-body">' +
       '<h1>' + h(s.heroTitle) + '</h1><div class="hero-desc">' + richHtml(s.heroDesc) + '</div>' +
       '<div class="stats"><div class="stat"><b class="num">' + Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length + '</b><span>وحدات</span></div><div class="stat"><b class="num">' + axes.length + '</b><span>محور</span></div><div class="stat"><b class="num">' + exCount + '</b><span>تمرين تفاعلي</span></div><div class="stat"><b class="num">' + (Number(Store.registered) || 0) + '</b><span>مسجّل حتى الآن</span></div></div></div></section>';
     const fu = followupCardsHtml(); if (fu) out += '<section class="section">' + fu + '</section>';
@@ -85,7 +85,7 @@ Views.story = {
     const col = AXIS_COLORS[st.color % AXIS_COLORS.length]; const list = Content.stories(); const i = list.findIndex(x => x.id === st.id);
     const prev = i > 0 ? list[i - 1] : null, next = i > -1 && i < list.length - 1 ? list[i + 1] : null; const ax = st.axis ? Content.axis(st.axis) : null;
     let out = Layout.crumbs('<span class="crumb-tag">قصص نجاح</span>') + '<article class="story-page" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' +
-      '<div class="story-hero"><div class="story-hero-art">' + (st.image ? '<img src="' + st.image + '" alt="">' : Scenes.render(st.scene || 'idea', col)) + '</div><div class="story-hero-body"><span class="story-flag big">' + h(st.flag || '') + ' ' + h(st.country || '') + '</span><div class="story-sector">' + h(st.sector || '') + (st.year ? ' · تأسست <span class="num">' + h(st.year) + '</span>' : '') + '</div><h1>' + h(st.title) + '</h1><p class="story-summary">' + h(stripHtml(st.summary)) + '</p></div></div>' +
+      '<div class="story-hero"><div class="story-hero-art">' + (st.image ? '<img src=\"' + imgSrc(st.image) + '\" alt="">' : Scenes.render(st.scene || 'idea', col)) + '</div><div class="story-hero-body"><span class="story-flag big">' + h(st.flag || '') + ' ' + h(st.country || '') + '</span><div class="story-sector">' + h(st.sector || '') + (st.year ? ' · تأسست <span class="num">' + h(st.year) + '</span>' : '') + '</div><h1>' + h(st.title) + '</h1><p class="story-summary">' + h(stripHtml(st.summary)) + '</p></div></div>' +
       (st.numbers.length ? '<div class="story-numbers">' + st.numbers.map(n => '<div><b class="' + (/[\u0600-\u06FF]/.test(n.v) ? '' : 'num') + '">' + h(n.v) + '</b><span>' + h(n.l) + '</span></div>').join('') + '</div>' : '') +
       '<div class="ex-block"><div class="lbl">📖 القصة</div><div class="story-text">' + richHtml(st.story) + '</div></div>' +
       (st.lessons.length ? '<div class="ex-block principle"><div class="lbl">💡 دروس لمشروعك</div><ul class="points">' + st.lessons.map((l, k) => '<li><span class="n num">' + (k + 1) + '</span><span>' + boldTerm(l) + '</span></li>').join('') + '</ul></div>' : '') +
@@ -352,7 +352,7 @@ Views.ex = {
     if (a && (a._hidden || (a._disabled && !Admin.ctl()))) return Layout.crumbs() + '<div class="empty" style="margin-top:20px">🔒 هذا التمرين غير متاح بعد.</div>';
     const col = exColor(e); const isSurvey = e.kind === 'survey';
     let out = '<div style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + Layout.crumbs(a ? '<span class="crumb-tag">' + h(a.title) + '</span>' : '<span class="crumb-tag">' + (isSurvey ? 'ختام البرنامج' : 'أنشطة') + '</span>') +
-      (e.image ? '<img class="ex-img" src="' + e.image + '" alt="">' : '') +
+      (e.image ? '<img class="ex-img" src=\"' + imgSrc(e.image) + '\" alt="">' : '') +
       '<div class="ex-head"><div class="ico">' + h(e.icon || '✍️') + '</div><div><h1>' + h(e.title) + '</h1><div class="row" style="margin-top:4px"><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + '</span>' + (e.format !== 'text' ? '<span class="pill">' + h(FORMATS[e.format]) + '</span>' : '') + '</div></div></div>';
     if (isSurvey) {
       out += '<div class="ex-block task"><div class="lbl">📝 قيّم تجربتك</div>' + richHtml(e.task) + '</div>' + '<div id="ansZone">' + surveyFormHtml(e) + '</div><div id="feedZone">' + surveyFeedHtml(e) + '</div></div>';

@@ -47,6 +47,7 @@ const Layout = {
       '<div class="top-actions">' +
       (me ? '<div class="user-chip" title="' + h(me.name) + '"><span class="av">' + h(initials(me.name)) + '</span><span class="nm">' + h(me.name) + '</span></div><button class="btn btn-soft btn-sm" data-go="account">' + iconSvg('user', 16) + '<span class="lbl">حسابي</span></button>' : (Me.guest ? '<span class="pill">👀 زائر</span>' : '')) +
       '<button class="btn btn-ghost btn-sm" data-act="switch-user" title="تبديل المستخدم / تسجيل مستخدم جديد">' + iconSvg('users', 16) + '<span class="lbl">تبديل المستخدم</span></button>' +
+      '<button class="btn btn-ghost btn-sm notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض">Aa</button>' +
       Translate.button() +
       '<button class="icon-btn" data-act="admin-enter" title="لوحة الإدارة">' + iconSvg('gear', 18) + '</button>' +
       '</div></div></header>';
@@ -85,6 +86,26 @@ const Layout = {
     return '<div class="crumbs">' + (b ? '<button class="back-btn" data-back>→ رجوع</button>' : '') + '<button class="back-btn" data-go="home">' + iconSvg('home', 15) + ' الرئيسية</button>' + extra + '</div>';
   }
 };
+
+// ---------- تفضيلات العرض لسهولة الوصول (تُحفظ على جهاز المستخدم فقط) ----------
+const Prefs = {
+  get() { try { return Object.assign({ theme: 'auto', fs: 'md', contrast: 'normal', motion: 'normal' }, JSON.parse(SafeLS.get('ec_prefs') || '{}')); } catch (e) { return { theme: 'auto', fs: 'md', contrast: 'normal', motion: 'normal' }; } },
+  set(k, v) { const p = Prefs.get(); p[k] = v; SafeLS.set('ec_prefs', JSON.stringify(p)); Prefs.apply(); },
+  apply() {
+    const p = Prefs.get(); const r = document.documentElement; let dark = p.theme === 'dark';
+    if (p.theme === 'auto') { try { dark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) {} }
+    r.setAttribute('data-theme', dark ? 'dark' : 'light'); r.setAttribute('data-fs', p.fs); r.setAttribute('data-contrast', p.contrast);
+    let red = p.motion === 'reduce'; if (p.motion === 'normal') { try { red = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} } r.setAttribute('data-motion', red ? 'reduce' : 'normal');
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', dark ? '#11141C' : '#8A1538');
+  },
+  menu() {
+    const seg = (k, opts) => { const v = Prefs.get()[k]; return '<div class="sim-seg">' + opts.map(([val, l]) => '<label class="' + (v === val ? 'on' : '') + '" data-pref="' + k + '" data-v="' + val + '">' + l + '</label>').join('') + '</div>'; };
+    const body = () => '<h3>Aa إعدادات العرض</h3><div class="prefs-grid"><div><b>المظهر</b><br>' + seg('theme', [['light', '☀️ فاتح'], ['dark', '🌙 داكن'], ['auto', '🖥 حسب الجهاز']]) + '</div><div><b>حجم الخط</b><br>' + seg('fs', [['sm', 'صغير'], ['md', 'عادي'], ['lg', 'كبير'], ['xl', 'كبير جدًا']]) + '</div><div><b>التباين</b><br>' + seg('contrast', [['normal', 'عادي'], ['high', 'عالٍ']]) + '</div><div><b>الحركة</b><br>' + seg('motion', [['normal', 'عادية'], ['reduce', 'مخففة']]) + '</div></div><p class="muted" style="font-size:12.5px;margin-top:12px">تُحفظ هذه الإعدادات على هذا الجهاز فقط.</p><div class="actions"><button class="btn btn-primary" data-x>تم</button></div>';
+    const m = UI.modal(body()); const wire = () => { $$('[data-pref]', m.el).forEach(l => l.onclick = () => { Prefs.set(l.getAttribute('data-pref'), l.getAttribute('data-v')); m.el.innerHTML = body(); wire(); }); $('[data-x]', m.el).onclick = () => m.close(); }; wire();
+  }
+};
+Prefs.apply();
+try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => Prefs.apply()); } catch (e) {}
 
 // ---------- الترجمة الآلية (Google Translate) — تُحمَّل عند الطلب فقط ----------
 // المحتوى الأصلي عربي بالكامل؛ الزر يترجم الصفحة الحالية وكل ما يُرسم لاحقًا، و«العربية» تعيدها كما كانت.
@@ -188,7 +209,7 @@ function renderSlide(s, a, i, n) {
   }
   return '<div class="slide" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' +
     '<span class="slide-type">' + h(SLIDE_TYPES[type]) + ' · <span class="num">' + (i + 1) + '/' + n + '</span></span>' +
-    (s.image ? '<img class="slide-img" src="' + s.image + '" alt="">' : '') +
+    (s.image ? '<img class="slide-img" src=\"' + imgSrc(s.image) + '\" alt="">' : '') +
     '<h2>' + h(s.title) + '</h2>' +
     '<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual">' + visual + '</div></div></div>';
 }
@@ -224,7 +245,30 @@ const RTE = {
   val(root, key) { const a = $('[data-rte-area="' + key + '"]', root); if (!a) return ''; const v = sanitize(a.innerHTML).trim(); return stripHtml(v) ? v : ''; }
 };
 
-// ---------- رفع الصور (Base64 داخل قاعدة البيانات) — البيانات في متغيّر JS لا في خاصية HTML ----------
+// ---------- الصور: ضغط تلقائي عند الرفع + حفظ في مسار مستقل media/ يُحمَّل عند الحاجة ----------
+// المحتوى يحمل مرجعًا قصيرًا «media:المعرف» بدل الصورة نفسها، فتبقى مزامنة المحتوى خفيفة وسريعة.
+const MediaCache = {
+  data: {}, pending: {},
+  get(id) {
+    if (MediaCache.data[id] !== undefined) return MediaCache.data[id];
+    if (!MediaCache.pending[id]) { MediaCache.pending[id] = DB.get('media/' + id).then(v => { MediaCache.data[id] = v || ''; App.onData(); }); }
+    return '';
+  },
+  async loadAll() { const all = (await DB.get('media')) || {}; Object.keys(all).forEach(k => { MediaCache.data[k] = all[k]; }); }
+};
+function imgSrc(v) { if (!v) return ''; v = String(v); return v.indexOf('media:') === 0 ? MediaCache.get(v.slice(6)) : v; }
+function compressImage(file, o = {}) {
+  const max = o.max || 1600, q = o.q || 0.82;
+  return new Promise((res, rej) => {
+    const rd = new FileReader(); rd.onerror = rej;
+    rd.onload = () => { const im = new Image(); im.onerror = () => res(rd.result); im.onload = () => {
+      const keepPng = /png|gif|svg/.test(file.type) && file.size < 350 * 1024 && im.width <= max; if (keepPng) return res(rd.result);
+      const k = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      const x = c.getContext('2d'); if (/png|gif/.test(file.type)) { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); } x.drawImage(im, 0, 0, c.width, c.height);
+      let out = c.toDataURL('image/webp', q); if (out.indexOf('data:image/webp') !== 0) out = c.toDataURL('image/jpeg', q); res(out.length < rd.result.length ? out : rd.result); }; im.src = rd.result; };
+    rd.readAsDataURL(file);
+  });
+}
 const ImgPick = {
   data: {},
   html(key, current) {
@@ -234,13 +278,19 @@ const ImgPick = {
   mount(root) {
     $$('[data-img]', root).forEach(box => {
       const key = box.getAttribute('data-img'); const th = $('[data-img-thumb]', box), err = $('[data-img-err]', box);
-      const show = () => { const v = ImgPick.data[key]; if (v) { th.src = v; th.style.display = ''; } else { th.removeAttribute('src'); th.style.display = 'none'; } };
-      show();
-      $('[data-img-file]', box).addEventListener('change', e => {
+      const show = () => { const v = imgSrc(ImgPick.data[key]); if (v) { th.src = v; th.style.display = ''; } else { th.removeAttribute('src'); th.style.display = 'none'; } };
+      show(); if (String(ImgPick.data[key] || '').indexOf('media:') === 0) setTimeout(show, 900);
+      $('[data-img-file]', box).addEventListener('change', async e => {
         const f = e.target.files && e.target.files[0]; err.textContent = ''; if (!f) return;
         if (!/^image\//.test(f.type)) { err.textContent = 'نوع الملف غير صالح — الصور فقط.'; e.target.value = ''; return; }
         if (f.size > MAX_IMG_MB * 1024 * 1024) { err.textContent = 'تجاوز الحجم المسموح (' + MAX_IMG_MB + ' ميجابايت كحد أقصى).'; e.target.value = ''; return; }
-        const rd = new FileReader(); rd.onload = () => { ImgPick.data[key] = rd.result; show(); }; rd.readAsDataURL(f);
+        err.textContent = '⏳ جارٍ ضغط الصورة ورفعها…';
+        try {
+          const data = await compressImage(f, key === 'brandLogo' ? { max: 800 } : {});
+          if (key === 'brandLogo') { ImgPick.data[key] = data; }
+          else { const id = genId('img'); await DB.set('media/' + id, data); MediaCache.data[id] = data; ImgPick.data[key] = 'media:' + id; }
+          err.textContent = '✅ ' + Math.round(f.size / 1024) + ' KB ← ' + Math.round(data.length * 0.75 / 1024) + ' KB بعد الضغط'; show();
+        } catch (x) { err.textContent = 'تعذر معالجة الصورة.'; }
       });
       $('[data-img-clear]', box).addEventListener('click', () => { ImgPick.data[key] = ''; show(); });
     });

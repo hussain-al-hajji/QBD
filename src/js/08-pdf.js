@@ -112,7 +112,7 @@ function pageHeader(a, label) {
 function slidePage(a, s, i, n, pageNo) {
   const col = Content.color(a); const t = SLIDE_TYPES[s.type] ? s.type : 'principle';
   let body = '<div style="display:inline-block;padding:3px 12px;border-radius:999px;background:' + tint(col, .14) + ';color:' + shade(col, -.3) + ';font-family:IBM Plex Sans Arabic;font-weight:700;font-size:11.5px">' + h(SLIDE_TYPES[t]) + '</div>' +
-    (s.image ? '<img src="' + s.image + '" style="width:100%;max-height:190px;object-fit:cover;border-radius:14px;margin-top:10px;display:block">' : '') +
+    (s.image ? '<img src=\"' + imgSrc(s.image) + '\" style="width:100%;max-height:190px;object-fit:cover;border-radius:14px;margin-top:10px;display:block">' : '') +
     '<h2 style="font-size:1.45em;font-weight:800;margin:10px 0 8px">' + h(s.title) + '</h2>';
   const rule = s.rule ? '<div class="rule j" style="background:' + tint(col, .1) + ';border-right:4px solid ' + col + '">' + sanitize(richHtml(s.rule)) + '</div>' : '';
   if (t === 'opening' || t === 'summary') body += '<div class="j">' + withLede(richHtml(s.text)) + '</div>' + rule;
@@ -125,6 +125,7 @@ function slidePage(a, s, i, n, pageNo) {
 async function buildContentPdf() {
   const pm = progressModal('📄 استخراج المحتوى');
   try {
+    await MediaCache.loadAll();
     const p = Content.pdf(); const axes = Content.eligibleAxes(); const title = p.coverTitle || Content.courseTitle();
     const pages = [frontCover(title, p.coverSub, axes)];
     tocPages(axes, title).forEach(x => pages.push(x));

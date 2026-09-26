@@ -140,7 +140,7 @@ async function copyEx(id) {
   await DB.set('added/ex/n' + genId(), ne); UI.toast('🧬 تم نسخ التمرين');
 }
 function backupData() {
-  return { app: 'qdb-ecom', version: 1, exportedAt: new Date().toISOString(), data: { content: { axes: Store.contentAxes, ex: Store.contentEx, lab: Store.contentLab, assess: Store.contentAssess, stories: Store.contentStories }, added: { axes: Store.addedAxes, ex: Store.addedEx, stories: Store.addedStories }, visibility: Store.visibility, enabled: Store.enabled, order: { axes: Store.order, ex: Store.exOrder, stories: Store.storyOrder }, site: Store.site, settings: { groups: { count: Groups.count() }, groupNames: Store.groupNames, assess: Store.assessCfg, attendance: Store.attCfg } } };
+  return { app: 'qdb-ecom', version: 1, exportedAt: new Date().toISOString(), data: { content: { axes: Store.contentAxes, ex: Store.contentEx, lab: Store.contentLab, assess: Store.contentAssess, stories: Store.contentStories }, added: { axes: Store.addedAxes, ex: Store.addedEx, stories: Store.addedStories }, visibility: Store.visibility, enabled: Store.enabled, order: { axes: Store.order, ex: Store.exOrder, stories: Store.storyOrder }, media: MediaCache.data, site: Store.site, settings: { groups: { count: Groups.count() }, groupNames: Store.groupNames, assess: Store.assessCfg, attendance: Store.attCfg } } };
 }
 async function importBackup(file) {
   try {
@@ -148,7 +148,7 @@ async function importBackup(file) {
     if (!obj || obj.app !== 'qdb-ecom' || !obj.data) { UI.alert('الملف ليس نسخة احتياطية صالحة لهذا الموقع.'); return; }
     const ok = await UI.confirm('سيستبدل الاستيراد كل تعديلات وإضافات المحتوى الحالية بما في الملف (' + h(obj.exportedAt || '') + '). مشاركات المتدربين لن تتأثر. متابعة؟', { danger: true, ok: 'استبدال المحتوى' });
     if (!ok) return; const d = obj.data;
-    await DB.update('', { content: d.content || null, added: d.added || null, visibility: d.visibility || null, enabled: d.enabled || null, order: d.order || null, site: d.site || null, settings: d.settings || null });
+    await DB.update('', { media: d.media || null, content: d.content || null, added: d.added || null, visibility: d.visibility || null, enabled: d.enabled || null, order: d.order || null, site: d.site || null, settings: d.settings || null });
     UI.toast('✅ تم استيراد المحتوى');
   } catch (e) { UI.alert('تعذر قراءة الملف: ' + h(e.message || e)); }
 }
@@ -262,6 +262,7 @@ document.addEventListener('click', async ev => {
     }
     case 'content-pdf': buildContentPdf(); break;
     case 'translate': Translate.menu(); break;
+    case 'prefs': Prefs.menu(); break;
     case 'save-card': saveMemberCard(Object.assign({}, Me.data, { member: Me.data.member || ((Store.users[Me.uid()] || {}).member) })); break;
     case 'my-filter': UIState.myFilter = t.getAttribute('data-k'); App.render(); break;
     case 'checkin': {
@@ -299,7 +300,7 @@ document.addEventListener('click', async ev => {
     case 'person-csv': { const u = t.getAttribute('data-uid'); downloadBlob(personCsvBlob(u), 'مشاركات - ' + safeName((Store.users[u] || {}).name) + '.csv'); break; }
     case 'export-all-pdf': exportAllPersons('pdf'); break;
     case 'export-all-csv': exportAllPersons('csv'); break;
-    case 'backup': downloadBlob(new Blob([JSON.stringify(backupData(), null, 2)], { type: 'application/json' }), 'نسخة احتياطية للمحتوى ' + fmtDate(Date.now()).replace(/\//g, '-') + '.json'); break;
+    case 'backup': await MediaCache.loadAll(); downloadBlob(new Blob([JSON.stringify(backupData(), null, 2)], { type: 'application/json' }), 'نسخة احتياطية للمحتوى ' + fmtDate(Date.now()).replace(/\//g, '-') + '.json'); break;
     case 'home-save': { const o = {}; $$('[data-home]', root).forEach(i => { o[i.getAttribute('data-home')] = i.value.trim(); }); o.heroDesc = RTE.val(root, 'heroDesc'); o.heroImage = ImgPick.val('heroImage'); await DB.set('site/home', o); UI.toast('✅ حُفظت الواجهة ونُشرت حيًا'); break; }
     case 'home-reset': { if (await UI.confirm('استرجاع كل عناصر الواجهة لنصوصها ورسمها الأصلي؟', { ok: 'استرجاع' })) { await DB.remove('site/home'); UI.toast('تم الاسترجاع'); } break; }
     case 'reg-set': { const n = parseInt($('#regCountIn').value, 10); if (!(n >= 0)) break; await DB.set('stats/registered', n); UI.toast('✅ تم تحديث الرقم'); break; }

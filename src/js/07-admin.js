@@ -310,7 +310,7 @@ Views.axisEdit = {
       '<div class="field"><label>🎯 مخرج التعلم (يظهر في دليل المدرب)</label><input id="axOutcome" data-keep="ax-out" value="' + h(a.outcome || '') + '"></div>' +
       '<div class="field"><label>أبرز النقاط (سطر لكل نقطة)</label><textarea id="axHl" data-keep="ax-hl" rows="4">' + h(arr(a.highlights).join('\n')) + '</textarea></div>' +
       '<div class="field"><label>صورة المحور (اختيارية — تظهر في بطاقته بالرئيسية بدل الرسم التلقائي)</label>' + ImgPick.html('axImg', a.image) + '</div>' +
-      '<div class="notice">⚠️ تُحفظ الصور كنص Base64 داخل قاعدة البيانات نفسها (حد أقصى 5 ميجابايت للصورة)؛ هذا يُكبّر حجم قاعدة البيانات تدريجيًا مع كل صورة، وربط Firebase Storage خطوة منفصلة يمكن إضافتها لاحقًا عند الحاجة.<br>📊 الرسوم البيانية داخل الشرائح ليست جزءًا من هذا التعديل في هذه النسخة، وتبقى قابلة للتعديل عبر الكود فقط.</div></div>' +
+      '<div class="notice">🖼 تُضغط الصور تلقائيًا عند الرفع (حتى 1600 بكسل بصيغة WebP) وتُحفظ في مسار مستقل يُحمَّل عند الحاجة فقط، فلا تُبطئ مزامنة المحتوى (حد الرفع 5 ميجابايت للصورة الأصلية).<br>📊 الرسوم البيانية داخل الشرائح ليست جزءًا من هذا التعديل في هذه النسخة، وتبقى قابلة للتعديل عبر الكود فقط.</div></div>' +
       '<h3 style="margin:22px 0 10px">🎞️ الشرائح <span class="pill num">' + FormState.slides.length + '</span></h3><div id="slidesEd">' + FormState.slides.map((s, i) => slideEditorHtml(s, i, FormState.slides.length)).join('') + '</div>' +
       '<div class="row"><select id="newSlideType" style="border:1px solid var(--line);border-radius:10px;padding:8px">' + Object.keys(SLIDE_TYPES).map(x => '<option value="' + x + '">' + SLIDE_TYPES[x] + '</option>').join('') + '</select><button class="btn btn-soft btn-sm" data-act="se-add">➕ إضافة شريحة</button></div>';
     if (!isNew) {
