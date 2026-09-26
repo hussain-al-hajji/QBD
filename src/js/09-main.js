@@ -188,6 +188,9 @@ document.addEventListener('click', async ev => {
       break;
     }
     case 'save-inter': saveInter(exId); break;
+    case 'sim-save': Sims.save(exId); break;
+    case 'sim-step': { const e = Content.ex(exId); Sims.state(e).step = +t.getAttribute('data-i'); App.render(); break; }
+    case 'sim-reset': { const e = Content.ex(exId); if (await UI.confirm('إعادة المحاكاة إلى البداية؟ (لن تُحذف النتيجة المحفوظة إلا إذا حفظت من جديد)', { ok: 'إعادة' })) { UIState.sim[exId] = Sims.of(e).def(); App.render(); } break; }
     case 'save-text': saveText(exId); break;
     case 'edit-ans': { UIState.editing[exId] = true; const e = Content.ex(exId); if (e) { const p = (Store.posts[exId] || {})[postKey(e)]; if (p && p.answers) UIState.draft[exId] = ansList(p.answers, e.items.length); } App.render(); break; }
     case 'cancel-edit': UIState.editing[exId] = false; delete UIState.draft[exId]; App.render(); break;

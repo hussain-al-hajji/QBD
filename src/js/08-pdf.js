@@ -164,6 +164,7 @@ function participationOf(uid) {
   return sections;
 }
 function answerPdfHtml(e, p) {
+  if (e.format === 'sim') return '<div class="j" style="background:#F7FAFB;border:1px solid #E1E9EC;border-radius:12px;padding:10px 12px">🎮 ' + h(p.summary || '') + '</div>';
   if (e.format === 'text') return '<div class="j" style="white-space:pre-wrap;background:#F7FAFB;border:1px solid #E1E9EC;border-radius:12px;padding:10px 12px">' + h(p.text || '') + '</div>';
   const a = ansList(p.answers, e.items.length);
   return '<div class="nl">' + e.items.map((it, i) => {
@@ -203,6 +204,7 @@ function csvEsc(v) { const s = String(v == null ? '' : v); return /[",\n\r]/.tes
 function csvBlob(rows) { return new Blob(['﻿' + rows.map(r => r.map(csvEsc).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }); }
 function answerText(e, p) {
   if (e.format === 'text') return p.text || '';
+  if (e.format === 'sim') return p.summary || '';
   const a = ansList(p.answers, e.items.length);
   return e.items.map((it, i) => { const v = a[i]; let t = '—'; if (v != null && v !== '') { if (e.format === 'mcq') t = LETTERS[v] + ') ' + (it.options[v] || ''); else if (e.format === 'truefalse') t = (v === true || v === 'true') ? 'صح' : 'خطأ'; else if (e.format === 'fillblank') t = v; else t = '(' + (v === 'a' ? 'أ' : 'ب') + ') ' + it[v]; } return (i + 1) + ': ' + t; }).join(' | ');
 }
@@ -211,7 +213,7 @@ function exportAllCsv() {
   Content.allExercises().forEach(({ e, section }) => {
     const ps = Store.posts[e.id] || {};
     Object.keys(ps).forEach(k => { const p = ps[k]; if (!p) return; const isG = k.charAt(0) === 'g' && e.mode === 'group';
-      rows.push([section, e.title, FORMATS[e.format] || '', e.mode === 'group' ? 'جماعي' : 'فردي', isG ? Groups.label(+k.slice(1)) + ' (' + (p.name || '') + ')' : (p.name || ''), isG ? '' : (p.role || ''), answerText(e, p), e.format === 'text' ? '' : exCorrectness(e, p.answers) + ' من ' + e.items.length, Object.keys(p.likes || {}).length, p.ts ? fmtTime(p.ts) : '']); });
+      rows.push([section, e.title, FORMATS[e.format] || '', e.mode === 'group' ? 'جماعي' : 'فردي', isG ? Groups.label(+k.slice(1)) + ' (' + (p.name || '') + ')' : (p.name || ''), isG ? '' : (p.role || ''), answerText(e, p), e.format === 'text' ? '' : e.format === 'sim' ? (p.metric != null ? p.metric : '') : exCorrectness(e, p.answers) + ' من ' + e.items.length, Object.keys(p.likes || {}).length, p.ts ? fmtTime(p.ts) : '']); });
   });
   Object.keys(Store.labAnswers || {}).forEach(g => { const ga = Store.labAnswers[g] || {}; Content.lab().stages.forEach((s, i) => { const a = ga['s' + i]; if (a) rows.push(['المختبر الختامي', (i + 1) + '. ' + s.title, 'نصية حرة', 'جماعي', Groups.label(+g.slice(1)) + ' (' + (a.name || '') + ')', '', a.text || '', '', Object.keys(a.likes || {}).length, a.ts ? fmtTime(a.ts) : '']); }); });
   const A = Content.assess(); ['pre', 'post'].forEach(ph => Assess.list(ph).forEach(x => rows.push([ph === 'pre' ? 'التقييم القبلي' : 'التقييم البعدي', A.title || '', 'اختيار من متعدد', 'فردي', x.name || '', x.role || '', answerText(A, x), x.score + ' من ' + A.items.length, '', x.ts ? fmtTime(x.ts) : ''])));
@@ -219,7 +221,7 @@ function exportAllCsv() {
 }
 function personCsvBlob(uid) {
   const u = Store.users[uid] || {}; const rows = [['المتدرب', 'القسم', 'التمرين', 'النموذج', 'السياق', 'الإجابة', 'النتيجة', 'التاريخ']];
-  participationOf(uid).forEach(sec => sec.list.forEach(({ e, r }) => rows.push([u.name || '', sec.a.title, e.title, FORMATS[e.format] || '', r.group ? 'ضمن ' + Groups.label(r.group) : 'فردي', answerText(e, r.p), e.format === 'text' ? '' : exCorrectness(e, r.p.answers) + ' من ' + e.items.length, r.p.ts ? fmtTime(r.p.ts) : ''])));
+  participationOf(uid).forEach(sec => sec.list.forEach(({ e, r }) => rows.push([u.name || '', sec.a.title, e.title, FORMATS[e.format] || '', r.group ? 'ضمن ' + Groups.label(r.group) : 'فردي', answerText(e, r.p), e.format === 'text' || e.format === 'sim' ? '' : exCorrectness(e, r.p.answers) + ' من ' + e.items.length, r.p.ts ? fmtTime(r.p.ts) : ''])));
   if (rows.length === 1) rows.push([u.name || '', '—', '—', '—', '—', 'لا توجد مشاركات مسجلة لهذا المتدرب حتى الآن', '', fmtDate(Date.now())]);
   return csvBlob(rows);
 }

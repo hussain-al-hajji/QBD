@@ -30,7 +30,7 @@ const UNIT_NAMES = {1:'اختيار منصات التجارة الإلكترون
 const UNIT_KICKERS = {1:'الوحدة الأولى',2:'الوحدة الثانية',3:'الوحدة الثالثة',4:'الوحدة الرابعة',5:'الوحدة الخامسة',6:'الوحدة السادسة',7:'فصل خاص'};
 const UNIT_IDS = [1, 2, 3, 4, 5, 6, 7];
 const SLIDE_TYPES = {opening:'افتتاحية',principle:'مبدأ علمي',examples:'أمثلة',mistakes:'أخطاء وتصحيحات',tools:'أدوات',summary:'خلاصة'};
-const FORMATS = {text:'نصية حرة',mcq:'اختيار من متعدد',truefalse:'صح أم خطأ',fillblank:'إكمال الفراغ',comparePairs:'مقارنة نقيضين'};
+const FORMATS = {text:'نصية حرة',mcq:'اختيار من متعدد',truefalse:'صح أم خطأ',fillblank:'إكمال الفراغ',comparePairs:'مقارنة نقيضين',sim:'محاكاة تفاعلية'};
 const FORMAT_MODE = {mcq:'individual',truefalse:'individual',fillblank:'group',comparePairs:'group'};
 
 // ---------------------------------------------------------------------

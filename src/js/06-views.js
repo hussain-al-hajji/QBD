@@ -189,6 +189,7 @@ const DEFAULT_STEPS = {
   truefalse: ['اقرأ كل عبارة بدقة.', 'حدد «صح» أو «خطأ» لكل عبارة.', 'اضغط «حفظ الإجابات» ثم تابع إجابات زملائك مباشرة.'],
   fillblank: ['اختر مجموعتك أولًا من البطاقة أعلاه.', 'اضغط كلمة من البنك ثم اضغط الفراغ المناسب لها.', 'لتصحيح فراغ ممتلئ، اضغط عليه فيُفرَغ وتعود كلمته إلى البنك.', 'اضغط «حفظ وإرسال إجابات المجموعة».'],
   comparePairs: ['اختر مجموعتك أولًا من البطاقة أعلاه.', 'في كل زوج اختر العبارة الأدق: (أ) أو (ب).', 'اضغط «حفظ وإرسال إجابات المجموعة».'],
+  sim: ['اقرأ الموقف وحدد هدفك.', 'غيّر الإعدادات وراقب أثرها المباشر على النتيجة والمعاينة.', 'جرّب أكثر من سيناريو، ثم احفظ أفضل نتيجة وقارنها بنتائج الآخرين.'],
   text: ['اقرأ الموقف جيدًا.', 'اكتب إجابتك في الصندوق.', 'اضغط «حفظ» وتابع مشاركات زملائك مباشرة.']
 };
 function exColor(e) { const ax = Content.axisOfEx(e.id); const a = ax && Content.axis(ax); return a ? Content.color(a) : (e.kind === 'survey' ? '#C8702A' : '#C8702A'); }
@@ -357,7 +358,7 @@ Views.ex = {
     if (e.mode === 'group') out += '<div id="groupZone">' + groupPickerHtml(e) + '</div>';
     if (e.format === 'text' || !e.hint) out += '<div class="ex-block task"><div class="lbl">📝 المطلوب منك</div>' + richHtml(e.task || 'اكتب إجابتك.') + '</div>';
     else out += '<div class="ex-block hint"><div class="lbl">💡 تلميح عام</div>' + richHtml(e.hint) + '</div>';
-    out += '<div id="ansZone">' + answerBoxHtml(e) + '</div><div id="feedZone">' + feedHtml(e) + '</div>';
+    out += e.format === 'sim' ? '<div id="simZone">' + Sims.html(e) + '</div><div id="feedZone">' + Sims.feed(e) + '</div>' : '<div id="ansZone">' + answerBoxHtml(e) + '</div><div id="feedZone">' + feedHtml(e) + '</div>';
     // النموذج المساعد (تلميح بمثال موجز) للتمارين النصية فقط؛ ويُحذف كليًا من النماذج التفاعلية
     const whyBox = '<div class="ex-block" style="margin-top:0"><div class="lbl">🎯 لماذا هذا النشاط؟</div>' + richHtml(e.why || 'لتطبيق مفاهيم المحور عمليًا.') + '</div>';
     if (e.format === 'text') out += '<div class="two-col">' + whyBox +
@@ -439,7 +440,7 @@ function myPostsHtml(uid) {
       const op = UIState.openAcc.has('my-' + g.title);
       return '<div class="acc ' + (op ? 'open' : '') + '" style="--ac:' + g.color + ';--acg:' + tint(g.color, .07) + '"><div class="acc-head" data-act="acc" data-k="my-' + h(g.title) + '"><h3>' + h(g.title) + ' <span class="pill num">' + dn + ' / ' + g.list.length + '</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (op ? items.map(({ e, r }) =>
         '<div class="my-post ' + (r ? '' : 'todo') + '"><div class="row"><span style="font-size:18px">' + h(e.icon || '✍️') + '</span><b class="grow">' + h(e.title) + '</b><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + ' · ' + h(FORMATS[e.format] || '') + '</span><button class="btn btn-soft btn-xs" data-go="ex" data-id="' + h(e.id) + '">' + (r ? 'فتح / تعديل' : 'ابدأ الآن') + '</button></div>' +
-        (r ? '<div class="muted" style="font-family:var(--f-ui);font-size:12px;margin:4px 0">' + (r.group ? '(ضمن ' + h(Groups.label(r.group)) + ') · ' : '') + ago(r.p.ts || 0) + ' · 👍 <span class="num">' + Object.keys(r.p.likes || {}).length + '</span></div>' + (e.format === 'text' ? '<div class="answer-view">' + h(r.p.text || '') + '</div>' : '<div>' + answersSummary(e, r.p.answers, isRevealed(e)) + '</div>') : '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:4px">لم تشارك بعد</div>') + '</div>').join('') : '') + '</div></div>'; }).join('');
+        (r ? '<div class="muted" style="font-family:var(--f-ui);font-size:12px;margin:4px 0">' + (r.group ? '(ضمن ' + h(Groups.label(r.group)) + ') · ' : '') + ago(r.p.ts || 0) + ' · 👍 <span class="num">' + Object.keys(r.p.likes || {}).length + '</span></div>' + (e.format === 'text' ? '<div class="answer-view">' + h(r.p.text || '') + '</div>' : e.format === 'sim' ? '<div class="answer-view">🎮 ' + h(r.p.summary || '') + '</div>' : '<div>' + answersSummary(e, r.p.answers, isRevealed(e)) + '</div>') : '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:4px">لم تشارك بعد</div>') + '</div>').join('') : '') + '</div></div>'; }).join('');
 }
 Views.account = {
   html() {

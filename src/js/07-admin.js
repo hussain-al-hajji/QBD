@@ -32,10 +32,11 @@ function exSummary(e) {
   const ps = Store.posts[e.id] || {}; const keys = Object.keys(ps).filter(k => ps[k]).sort((a, b) => (ps[b].ts || 0) - (ps[a].ts || 0));
   if (!keys.length) return '<div class="summary">لا مشاركات بعد.</div>';
   const reveal = isRevealed(e);
-  return '<div class="summary"><b class="num">' + keys.length + '</b> مشاركة' + (e.format !== 'text' ? ' · ' + (reveal ? '🔓 مكشوفة' : '🔒 غير مكشوفة') : '') +
+  return '<div class="summary"><b class="num">' + keys.length + '</b> مشاركة' + (e.format !== 'text' && e.format !== 'sim' ? ' · ' + (reveal ? '🔓 مكشوفة' : '🔒 غير مكشوفة') : '') +
     keys.slice(0, 30).map(k => { const p = ps[k]; const who = k.charAt(0) === 'g' && e.mode === 'group' ? Groups.label(+k.slice(1)) : (p.name || 'مشارك');
       let brief = '';
       if (e.format === 'text') brief = h(String(p.text || '').slice(0, 140)) + (String(p.text || '').length > 140 ? '…' : '');
+      else if (e.format === 'sim') brief = h(p.summary || '');
       else { const a = ansList(p.answers, e.items.length); let sc = 0; e.items.forEach((it, i) => { const v = a[i]; if (v == null) return; if (e.format === 'mcq' ? +v === +it.answer : e.format === 'truefalse' ? ((v === true || v === 'true') === !!it.answer) : v === it.answer) sc++; }); brief = 'الصحيح: ' + sc + ' من ' + e.items.length; }
       return '<div class="it"><b>' + h(who) + ':</b><span class="grow">' + brief + '</span><button class="del-btn" data-act="del-post" data-ex="' + h(e.id) + '" data-k="' + h(k) + '" title="حذف هذه المشاركة وحدها">🗑</button></div>'; }).join('') + '</div>';
 }
@@ -48,7 +49,7 @@ function exRow(e, o = {}) {
     (o.kind !== 'survey' ? '<button class="btn btn-ghost btn-xs" data-act="copy-ex" data-id="' + h(e.id) + '">🧬 نسخ</button>' : '') +
     (isDef ? (e._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-ex" data-id="' + h(e.id) + '">↺ استرجاع الافتراضي</button>' : '') : '<button class="btn btn-danger btn-xs" data-act="delete-ex" data-id="' + h(e.id) + '">🗑 حذف نهائي</button>') +
     '<button class="btn btn-danger btn-xs" data-act="clear-posts" data-id="' + h(e.id) + '">🧹 مسح المشاركات</button>' +
-    (e.format !== 'text' ? '<button class="btn btn-mint btn-xs" data-act="reveal" data-id="' + h(e.id) + '">' + (isRevealed(e) ? '🔒 إخفاء الإجابات' : '🔓 كشف الإجابات الصحيحة') + '</button>' : '') +
+    (e.format !== 'text' && e.format !== 'sim' ? '<button class="btn btn-mint btn-xs" data-act="reveal" data-id="' + h(e.id) + '">' + (isRevealed(e) ? '🔒 إخفاء الإجابات' : '🔓 كشف الإجابات الصحيحة') + '</button>' : '') +
     '</div>' + exSummary(e) + '</div>';
 }
 
@@ -323,6 +324,7 @@ function exFormHtml(kind) {
   if (!isSurvey) {
     out += '<div class="grid2"><div class="field"><label>نموذج الإجابة</label><select id="exFormat">' + Object.keys(FORMATS).map(x => '<option value="' + x + '" ' + (x === fmt ? 'selected' : '') + '>' + FORMATS[x] + '</option>').join('') + '</select></div>' +
       '<div class="field"><label>نوع العمل</label><select id="exMode" ' + (locked ? 'disabled' : '') + '><option value="individual" ' + ((locked || e.mode) === 'individual' ? 'selected' : '') + '>فردي</option><option value="group" ' + ((locked || e.mode) === 'group' ? 'selected' : '') + '>جماعي</option></select>' + (locked ? '<span class="help">🔒 مقفل تلقائيًا على «' + (locked === 'group' ? 'جماعي' : 'فردي') + '» ليتوافق مع آلية هذا النموذج.</span>' : '') + '</div></div>';
+    out += '<div class="field" id="simField" ' + (fmt === 'sim' ? '' : 'style="display:none"') + '><label>نوع المحاكاة</label><select id="exSim">' + Object.keys(SIM_TYPES).map(k => '<option value="' + k + '" ' + (k === (e.sim || 'store') ? 'selected' : '') + '>' + SIM_TYPES[k] + '</option>').join('') + '</select><span class="help">المحاكاة تعمل بنموذج مبني في الكود؛ يمكنك تعديل النصوص حولها ونوع العمل.</span></div>';
     out += '<div class="field"><label>السيناريو / الموقف' + (isAct ? ' (اختياري)' : '') + '</label>' + RTE.html('exScenario', e.scenario) + '</div>';
     if (!isAct) out += '<div class="field"><label>المبدأ العلمي باختصار</label><textarea id="exPrinciple" data-keep="ex-pr" rows="2">' + h(stripHtml(e.principle || '')) + '</textarea></div><div class="field"><label>خطوات «كيف تنجز التمرين؟» (سطر لكل خطوة)</label><textarea id="exSteps" data-keep="ex-steps" rows="4">' + h(arr(e.steps).join('\n')) + '</textarea></div>';
   }
@@ -346,8 +348,9 @@ function exFormAfter(root) {
     const m = $('#exMode', root); const lk = FORMAT_MODE[f.value];
     if (lk) { m.value = lk; m.disabled = true; } else m.disabled = false;
     const hf = $('#hintField', root); if (hf) hf.style.display = f.value === 'text' ? 'none' : '';
+    const sf = $('#simField', root); if (sf) sf.style.display = f.value === 'sim' ? '' : 'none';
     const mf = $('#modelField', root); if (mf) mf.style.display = f.value === 'text' ? '' : 'none';
-    if (!FormState.items.length && f.value !== 'text') FormState.items = [{}];
+    if (!FormState.items.length && f.value !== 'text' && f.value !== 'sim') FormState.items = [{}];
     $('#itemsEd', root).innerHTML = itemsEditorHtml(f.value, FormState.items);
     const help = m.parentNode.querySelector('.help'); if (help) help.remove();
     if (lk) m.insertAdjacentHTML('afterend', '<span class="help">🔒 مقفل تلقائيًا على «' + (lk === 'group' ? 'جماعي' : 'فردي') + '» ليتوافق مع آلية هذا النموذج.</span>');
@@ -362,8 +365,9 @@ async function exFormSave(root, kind) {
     data.format = fmt; data.mode = FORMAT_MODE[fmt] || $('#exMode', root).value;
     data.scenario = RTE.val(root, 'exScenario'); data.hint = RTE.val(root, 'exHint'); data.model = fmt === 'text' ? RTE.val(root, 'exModel') : ''; data.image = ImgPick.val('exImg');
     if ($('#exPrinciple', root)) { data.principle = $('#exPrinciple', root).value.trim(); data.steps = $('#exSteps', root).value.split('\n').map(x => x.trim()).filter(Boolean); data.why = $('#exWhy', root).value.trim(); }
-    data.items = fmt === 'text' ? [] : collectItems(root, fmt).filter(it => it.q || it.text || it.a);
-    if (fmt !== 'text' && !data.items.length) { UI.alert('أضف عنصرًا واحدًا على الأقل للنموذج التفاعلي.'); return; }
+    data.items = fmt === 'text' || fmt === 'sim' ? [] : collectItems(root, fmt).filter(it => it.q || it.text || it.a);
+    if (fmt === 'sim') data.sim = $('#exSim', root).value;
+    if (fmt !== 'text' && fmt !== 'sim' && !data.items.length) { UI.alert('أضف عنصرًا واحدًا على الأقل للنموذج التفاعلي.'); return; }
     if (fmt === 'fillblank') { const ans = data.items.map(i => i.answer); if (ans.some(x => !x)) { UI.alert('اكتب الكلمة الصحيحة لكل فراغ.'); return; } }
   }
   if (isNew) {
