@@ -9,7 +9,7 @@ const App = {
     const root = document.getElementById('app'); if (!root) return;
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
-    const needLogin = !Me.isReg() && !Me.guest && ADMIN_VIEWS.indexOf(v) === -1;
+    const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1;
     const view = needLogin ? Views.login : (Views[v] || Views.home);
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
@@ -283,6 +283,9 @@ document.addEventListener('click', async ev => {
     case 'assessform-save': Views.assessEdit.save(root); break;
     case 'assess-reset-content': { if (await UI.confirm('استرجاع الأسئلة الافتراضية؟', { ok: 'استرجاع' })) { await DB.remove('content/assess'); FormState.exId = null; Router.go('admin'); } break; }
     case 'report-pdf': buildReportPdf(); break;
+    case 'guide-pdf': buildGuidePdf(); break;
+    case 'guide-save': { const L = id2 => ($(id2).value || '').split('\n').map(x => x.trim()).filter(Boolean); const day = id2 => L(id2).map(x => { const p = x.split('|').map(y => y.trim()); return { t: p[0] || '', min: +p[1] || 0, act: p[2] || '', note: p[3] || '' }; }); await DB.set('site/guide', { objectives: L('#gObj'), methodology: L('#gMeth'), days: [day('#gDay0'), day('#gDay1')] }); UI.toast('✅ حُفظ الدليل'); break; }
+    case 'guide-reset': { if (await UI.confirm('استرجاع بيانات الدليل الافتراضية؟', { ok: 'استرجاع' })) DB.remove('site/guide'); break; }
     case 'report-csv': exportReportCsv(); break;
     // ----- أقسام الرئيسية -----
     case 'sec-move': { const k = t.getAttribute('data-k'); const ids = Content.homeSections({ all: true }).map(x => x.key); const i = ids.indexOf(k), j = i + (+t.getAttribute('data-d')); if (j < 0 || j >= ids.length) break; [ids[i], ids[j]] = [ids[j], ids[i]]; DB.set('site/homeOrder', ids); break; }

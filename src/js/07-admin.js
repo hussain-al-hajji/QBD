@@ -83,6 +83,8 @@ Views.admin = {
     out += band('التصدير والنسخ', '#138A5E') + '<div class="tools-grid">';
     out += tool('pdf', '📄', '#00827F', 'ملف المحتوى PDF', 'A5 مصمَّم: أغلفة، فهرس، وشرائح كل محور. ' + (pdf.enabled === false ? '<span class="tag off">معطّل للمتدربين</span>' : '<span class="tag added">متاح للمتدربين</span>'), '<button class="btn btn-soft btn-xs" data-act="drop" data-k="pdfEdit">بيانات الملف</button><button class="btn btn-primary btn-xs" data-act="content-pdf">معاينة الآن</button>');
     out += drop('pdfEdit', Views.admin.pdfEditor());
+    out += tool('guide', '📘', '#1F3A5F', 'دليل المدرب', 'ملف PDF يضم أهداف البرنامج ومنهجيته وجدول اليومين ومخرجات كل محور وملاحظة لكل شريحة، إضافة إلى التمارين ومفتاح إجابات التقييم — جاهز للتسليم قبل التدريب.', '<button class="btn btn-primary btn-xs" data-act="guide-pdf">📘 تصدير الدليل PDF</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="guideEdit">تعديل الأهداف والجدول</button>');
+    out += drop('guideEdit', Views.admin.guideEditor());
     out += tool('report', '📑', '#8A1538', 'تقرير ختام البرنامج', 'ملخص جاهز لتقرير الختام: المسجّلون، الحضور، الشهادات، نتائج التقييم القبلي والبعدي لكل سؤال، المشاركة في المحاور، وآراء المتدربين.', '<button class="btn btn-primary btn-xs" data-act="report-pdf">📑 PDF</button><button class="btn btn-soft btn-xs" data-act="report-csv">📊 CSV</button>');
     out += tool('csv', '📊', '#138A5E', 'تصدير المشاركات', 'كل إجابات المحاور والأنشطة والاستطلاع والمختبر والتقييمين في ملف CSV واحد يفتح في Excel.', '<button class="btn btn-primary btn-xs" data-act="export-csv">⬇️ تصدير CSV</button>');
     out += tool('person', '🗂️', '#1F3A5F', 'مشاركات فردية', 'ملف PDF وCSV لمشاركات كل متدرب على حدة، أو للجميع في ملف ZIP.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="persons">' + (UIState.openDrop.has('persons') ? 'إخفاء' : 'فتح') + ' القائمة</button>');
@@ -144,6 +146,12 @@ Views.admin = {
       '<div class="field"><label>الفقرات</label><div data-cg-paras>' + c.paragraphs.map((p, i) => '<div class="row" style="margin-bottom:6px"><textarea data-cg-para rows="2" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-family:var(--f-body)">' + h(p) + '</textarea><button class="btn btn-danger btn-xs" data-act="cg-del-para">🗑</button></div>').join('') + '</div><button class="btn btn-soft btn-xs" data-act="cg-add-para">➕ فقرة</button></div>' +
       '<div class="grid2"><div class="field"><label>تذييل يمين</label><input data-cg="footerRight" data-keep="' + K + 'fr" value="' + h(c.footerRight) + '"></div><div class="field"><label>تذييل يسار</label><input data-cg="footerLeft" data-keep="' + K + 'fl" value="' + h(c.footerLeft) + '"></div></div>' +
       '<div class="field"><label>نص الإشعار أسفل ' + (kind === 'cert' ? 'الشهادة' : 'التهنئة') + '</label><textarea data-cg="notice" data-keep="' + K + 'notice" rows="2">' + h(c.notice) + '</textarea></div><div class="row"><button class="btn btn-primary btn-sm" data-act="cg-save" data-kind="' + kind + '">💾 حفظ</button><button class="btn btn-ghost btn-sm" data-act="cg-reset" data-kind="' + kind + '">↺ استرجاع الافتراضي</button></div>';
+  },
+  guideEditor() {
+    const g = Content.guide(); const dayTxt = d => d.map(x => [x.t, x.min, x.act, x.note].join(' | ')).join('\n');
+    return '<div class="field"><label>أهداف البرنامج (سطر لكل هدف)</label><textarea id="gObj" data-keep="g-obj" rows="5">' + h(g.objectives.join('\n')) + '</textarea></div><div class="field"><label>المنهجية (سطر لكل بند)</label><textarea id="gMeth" data-keep="g-meth" rows="5">' + h(g.methodology.join('\n')) + '</textarea></div>' +
+      [0, 1].map(i => '<div class="field"><label>جدول اليوم ' + (i + 1) + ' (سطر لكل فقرة: الوقت | الدقائق | النشاط | ملاحظة)</label><textarea id="gDay' + i + '" data-keep="g-day' + i + '" rows="8" dir="auto">' + h(dayTxt(g.days[i])) + '</textarea><span class="help num">المجموع: ' + g.days[i].reduce((a, b) => a + (+b.min || 0), 0) + ' دقيقة</span></div>').join('') +
+      '<div class="row"><button class="btn btn-primary btn-sm" data-act="guide-save">💾 حفظ</button><button class="btn btn-ghost btn-sm" data-act="guide-reset">↺ استرجاع الافتراضي</button></div><p class="help muted" style="font-family:var(--f-ui);font-size:12.5px">مخرجات المحاور وملاحظات الشرائح تُعدَّل من صفحة تعديل كل محور.</p>';
   },
   attCtl() {
     const c = Attend.cfg();
@@ -223,6 +231,7 @@ function slideEditorHtml(s, i, n) {
   f += '<div class="field"><label>صورة الشريحة (اختيارية، تظهر أعلى محتواها)</label>' + ImgPick.html(k + 'img', s.image) + '</div>' +
     '<div class="grid2"><div class="field"><label>رابط مصدر للتوسع (اختياري)</label><input data-sf="srcUrl" value="' + h(s.srcUrl || '') + '" placeholder="https://"></div><div class="field"><label>نص الرابط</label><input data-sf="srcLabel" value="' + h(s.srcLabel || '') + '" placeholder="مصدر للتوسع"></div></div>' +
     '<div class="field"><label>رابط فيديو (يوتيوب أو Google Drive)</label><input data-sf="videoUrl" value="' + h(s.videoUrl || '') + '" placeholder="الصق رابط المشاركة كما هو"></div>' +
+    '<div class="field"><label>🎤 ملاحظات المدرب لهذه الشريحة (تظهر للأدمن فقط وفي دليل المدرب)</label><textarea data-sf="note" rows="2">' + h(s.note || '') + '</textarea></div>' +
     (s.chart ? '<div class="notice" style="margin-top:0">📊 لهذه الشريحة رسم بياني مبني في الكود؛ يبقى كما هو ولا يُعدَّل من هنا.</div>' : '') + '</div>';
   return f;
 }
@@ -236,7 +245,7 @@ function collectSlides(root) {
     else { s.items = g('items').split('\n').map(x => x.trim()).filter(Boolean).map(x => x.replace(/\s*::\s*/, '::')); s.rule = RTE.val(box, k + 'rule'); }
     // الحقول الخاصة بالأنواع الأخرى تُحفظ من الحالة القديمة عند تبديل النوع حتى لا تضيع
     ['text', 'intro', 'points', 'items', 'rule'].forEach(x => { if (s[x] === undefined && old[x] !== undefined) s[x] = old[x]; });
-    s.image = ImgPick.val(k + 'img'); s.srcUrl = g('srcUrl').trim(); s.srcLabel = g('srcLabel').trim(); s.videoUrl = g('videoUrl').trim();
+    s.note = g('note').trim(); s.image = ImgPick.val(k + 'img'); s.srcUrl = g('srcUrl').trim(); s.srcLabel = g('srcLabel').trim(); s.videoUrl = g('videoUrl').trim();
     if (old.chart) s.chart = old.chart;
     return s;
   });
@@ -252,6 +261,7 @@ Views.axisEdit = {
       '<div class="field"><label>الوصف</label>' + RTE.html('axDesc', a.desc) + '</div>' +
       '<div class="grid2"><div class="field"><label>المدة</label><input id="axDur" data-keep="ax-dur" value="' + h(a.duration || '') + '" placeholder="مثال: 90 دقيقة"></div><div class="field"><label>الأيقونة</label><select id="axIcon">' + AXIS_ICON_CHOICES.map(x => '<option value="' + x + '" ' + (x === a.icon ? 'selected' : '') + '>' + x + '</option>').join('') + '</select><span id="axIconPrev" style="display:inline-flex;margin-top:6px;width:44px;height:44px;border-radius:12px;background:' + col + ';align-items:center;justify-content:center">' + iconSvg(a.icon || 'star', 24, '#fff') + '</span></div></div>' +
       '<div class="field"><label>الوحدة التي ينتمي إليها المحور</label><select id="axUnit">' + ['<option value="0">بدون وحدة (محاور إضافية)</option>'].concat(UNIT_IDS.map(n => '<option value="' + n + '" ' + (+a.unit === n ? 'selected' : '') + '>' + h(Content.unitKicker(n) + ' — ' + Content.unitName(n)) + '</option>')).join('') + '</select></div>' +
+      '<div class="field"><label>🎯 مخرج التعلم (يظهر في دليل المدرب)</label><input id="axOutcome" data-keep="ax-out" value="' + h(a.outcome || '') + '"></div>' +
       '<div class="field"><label>أبرز النقاط (سطر لكل نقطة)</label><textarea id="axHl" data-keep="ax-hl" rows="4">' + h(arr(a.highlights).join('\n')) + '</textarea></div>' +
       '<div class="field"><label>صورة المحور (اختيارية — تظهر في بطاقته بالرئيسية بدل الرسم التلقائي)</label>' + ImgPick.html('axImg', a.image) + '</div>' +
       '<div class="notice">⚠️ تُحفظ الصور كنص Base64 داخل قاعدة البيانات نفسها (حد أقصى 5 ميجابايت للصورة)؛ هذا يُكبّر حجم قاعدة البيانات تدريجيًا مع كل صورة، وربط Firebase Storage خطوة منفصلة يمكن إضافتها لاحقًا عند الحاجة.<br>📊 الرسوم البيانية داخل الشرائح ليست جزءًا من هذا التعديل في هذه النسخة، وتبقى قابلة للتعديل عبر الكود فقط.</div></div>' +
@@ -277,7 +287,7 @@ Views.axisEdit = {
   async save(root) {
     const id = Router.cur.id; const isNew = id === 'new';
     const slides = collectSlides(root).map(s => { const o = Object.assign({}, s); delete o.chart; return o; });
-    const data = { title: $('#axTitle', root).value.trim(), classic: $('#axClassic', root).value.trim(), desc: RTE.val(root, 'axDesc'), duration: $('#axDur', root).value.trim(), icon: $('#axIcon', root).value, highlights: $('#axHl', root).value.split('\n').map(x => x.trim()).filter(Boolean), image: ImgPick.val('axImg'), unit: +(($('#axUnit', root) || {}).value || 0), slides };
+    const data = { title: $('#axTitle', root).value.trim(), classic: $('#axClassic', root).value.trim(), desc: RTE.val(root, 'axDesc'), duration: $('#axDur', root).value.trim(), icon: $('#axIcon', root).value, highlights: $('#axHl', root).value.split('\n').map(x => x.trim()).filter(Boolean), image: ImgPick.val('axImg'), unit: +(($('#axUnit', root) || {}).value || 0), outcome: (($('#axOutcome', root) || {}).value || '').trim(), slides };
     if (!data.title) { UI.alert('اكتب عنوان المحور أولًا.'); return; }
     if (isNew) {
       const nid = 'x' + genId(); data.ts = DB.now(); data.color = Content.axisIds().length % AXIS_COLORS.length; data.scene = 'idea';

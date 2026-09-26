@@ -135,15 +135,38 @@ function finalize(data) {
     st.numbers = st.numbers.map(x => { const i = x.indexOf('::'); return { v: x.slice(0, i).trim(), l: x.slice(i + 2).trim() }; });
     st.sources = st.sources.map(x => { const i = x.lastIndexOf(' :: '); return { label: x.slice(0, i).trim(), url: x.slice(i + 4).trim() }; });
   });
-  if (data.lab) { data.lab.intro = toHtml(data.lab.intro); data.lab.minutes = 10; }
+  if (data.lab) { data.lab.intro = toHtml(data.lab.intro); data.lab.minutes = 6; }
   if (data.assessment) { delete data.assessment.steps; data.assessment.id = 'assess'; shuffleOpts(data.assessment); }
   return data;
+}
+
+// ملف دليل المدرب: أهداف ومنهجية وجدول اليومين ومخرجات المحاور + ملاحظة لكل شريحة
+function parseNotes(txt, data) {
+  const guide = { objectives: [], methodology: [], days: [[], []], outcomes: {} }; const notes = {}; let sec = null, key = null;
+  txt.split('\n').forEach(raw => {
+    const line = raw.trim(); if (!line) return; let m;
+    if (line === '=== GUIDE') { sec = 'g'; return; } if (line === '=== NOTES') { sec = 'n'; return; }
+    if (sec === 'n' && (m = line.match(/^(\w+):\s*(.*)$/))) { notes[m[1]] = m[2]; return; }
+    if (sec === 'g') {
+      if ((m = line.match(/^(objectives|methodology|day1|day2|outcomes):$/))) { key = m[1]; return; }
+      if ((m = line.match(/^-\s+(.*)$/))) {
+        const v = m[1];
+        if (key === 'day1' || key === 'day2') { const p = v.split('|').map(x => x.trim()); guide.days[key === 'day1' ? 0 : 1].push({ t: p[0], min: +p[1] || 0, act: p[2] || '', note: p[3] || '' }); }
+        else if (key === 'outcomes') { const i = v.indexOf('::'); guide.outcomes[v.slice(0, i).trim()] = v.slice(i + 2).trim(); }
+        else if (key) guide[key].push(v);
+      }
+    }
+  });
+  data.axes.forEach(a => { a.slides.forEach(sl => { if (notes[sl.id]) sl.note = notes[sl.id]; }); if (guide.outcomes[a.id]) a.outcome = guide.outcomes[a.id]; });
+  delete guide.outcomes; data.guide = guide;
 }
 
 function parseAll(dir) {
   const data = { axes: [], activities: [], survey: null, lab: null, assessment: null, stories: [] };
   for (const f of ['stories.txt', 'u1.txt', 'u2.txt', 'u3.txt', 'u4.txt', 'u5.txt', 'u6.txt', 'extra.txt']) parseFile(fs.readFileSync(path.join(dir, f), 'utf8'), data);
-  return finalize(data);
+  finalize(data);
+  if (fs.existsSync(path.join(dir, 'notes.txt'))) parseNotes(fs.readFileSync(path.join(dir, 'notes.txt'), 'utf8'), data);
+  return data;
 }
 
 module.exports = { parseAll };

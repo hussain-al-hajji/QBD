@@ -134,6 +134,7 @@ Views.axis = {
       out += '<div class="deck" style="--ac:' + col + '" data-deck="' + h(a.id) + '"><div class="deck-bar"><div class="deck-dots">' + a.slides.map((_, i) => '<span class="deck-dot ' + (i <= idx ? 'on' : '') + '" data-slide="' + i + '"></span>').join('') + '</div><span class="deck-count num">' + (idx + 1) + ' / ' + n + '</span></div>' +
         '<div class="deck-viewport"><div class="deck-track" style="transform:translateX(' + (idx * 100) + '%)">' + a.slides.map((s, i) => renderSlide(s, a, i, n)).join('') + '</div></div>' +
         '<div class="deck-nav"><button class="deck-arrow" data-deck-go="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="السابقة">→</button><span class="swipe-hint">اسحب يمينًا أو يسارًا للتنقل بين الشرائح</span><button class="deck-arrow" data-deck-go="1" ' + (idx >= n - 1 ? 'disabled' : '') + ' title="التالية">←</button></div></div>';
+      if (Admin.ctl()) out += '<div class="trainer-note" id="tnote">' + trainerNoteHtml(a, idx) + '</div>';
     } else out += '<div class="empty" style="margin-top:18px">لا توجد شرائح في هذا المحور بعد.</div>';
     out += '<section class="section" style="--ac:' + col + ';--acg:' + tint(col, .1) + '"><div class="sec-head"><h2 class="sec-title">✍️ تمارين هذا المحور</h2><span class="pill"><span class="num">' + exs.length + '</span> تمرين</span></div>' +
       (exs.length ? '<div class="ex-list">' + exs.map(e => '<button class="ex-item" data-go="ex" data-id="' + h(e.id) + '"><span class="ico">' + h(e.icon || '✍️') + '</span><span><h4>' + h(e.title) + '</h4><span class="muted" style="font-family:var(--f-ui);font-size:12.5px">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + ' · ' + h(FORMATS[e.format] || '') + '</span></span>' + (Progress.exDone(e, Me.uid()) ? '<span class="done">✔</span>' : '') + '</button>').join('') + '</div>' : '<div class="empty">لا توجد تمارين لهذا المحور.</div>') +
@@ -151,6 +152,7 @@ Views.axis = {
     vp.addEventListener('pointerup', e => { if (mx == null) return; const dx = e.clientX - mx; mx = null; if (Math.abs(dx) > 80) Deck.move(id, dx > 0 ? 1 : -1); });
   }
 };
+function trainerNoteHtml(a, i) { const sl = a.slides[i] || {}; return '<div class="tn-head">🎤 ملاحظات المدرب <span class="muted">(تظهر للأدمن فقط) · الشريحة <span class="num">' + (i + 1) + '</span></span></div><div class="tn-body">' + (sl.note ? h(sl.note) : '<span class="muted">لا توجد ملاحظة لهذه الشريحة — أضفها من تعديل المحور.</span>') + '</div>' + (a.outcome ? '<div class="tn-out">🎯 مخرج المحور: ' + h(a.outcome) + '</div>' : ''); }
 const Deck = {
   move(id, d) { const a = Content.axis(id); if (!a) return; const n = a.slides.length; Deck.to(id, Math.max(0, Math.min(n - 1, (UIState.deck[id] || 0) + d))); },
   to(id, i) {
@@ -160,6 +162,7 @@ const Deck = {
     $('.deck-count', deck).textContent = (i + 1) + ' / ' + n;
     const [prev, next] = $$('[data-deck-go]', deck); prev.disabled = i === 0; next.disabled = i >= n - 1;
     Deck.fitHeight(id);
+    const tn = $('#tnote'); if (tn) { const a = Content.axis(id); if (a) tn.innerHTML = trainerNoteHtml(a, i); }
   },
   fitHeight(id) { const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const s = $$('.slide', deck)[UIState.deck[id] || 0]; if (s) $('.deck-viewport', deck).style.height = s.offsetHeight + 'px'; }
 };

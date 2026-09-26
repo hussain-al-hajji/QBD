@@ -313,3 +313,41 @@ async function buildReportPdf() {
     doc.save('تقرير ختام البرنامج - ' + fmtDate(Date.now()).replace(/\//g, '-') + '.pdf'); pm.close();
   } catch (e) { pm.close(); UI.alert('تعذر إنشاء التقرير: ' + h(e.message || e)); }
 }
+
+// ---------- دليل المدرب (A4 عمودي) ----------
+async function buildGuidePdf() {
+  const pm = progressModal('📘 دليل المدرب');
+  try {
+    const g = Content.guide(); const C = '#8A1538'; const T = Content.courseTitle(); const axes = Content.eligibleAxes(); const pages = [];
+    const head = (t, sub) => '<div style="position:absolute;top:0;left:0;right:0;height:98px;background:linear-gradient(120deg,#1F3A5F,#8A1538)"><div style="position:absolute;top:14px;right:34px;left:34px;color:#fff"><div style="font-family:IBM Plex Sans Arabic;font-size:12px;opacity:.85">' + h(T) + ' · دليل المدرب</div><div style="font-family:Cairo;font-weight:800;font-size:21px">' + h(t) + '</div>' + (sub ? '<div style="font-family:IBM Plex Sans Arabic;font-size:11.5px;opacity:.9">' + h(sub) + '</div>' : '') + '</div></div>';
+    const page = (t, body, sub) => pages.push('<div style="position:absolute;inset:0;background:#FBFAF9"></div>' + head(t, sub) + '<div class="fit" style="top:116px;bottom:46px;right:34px;left:34px;line-height:1.8">' + body + '</div>' + PP.foot(T + ' — دليل المدرب', pages.length + 1));
+    const tbl = (heads, rows, w) => '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr>' + heads.map((x, i) => '<th style="background:' + C + ';color:#fff;padding:7px;text-align:right;' + (w && w[i] ? 'width:' + w[i] : '') + '">' + x + '</th>').join('') + '</tr>' + rows.map((r, i) => '<tr>' + r.map(c => '<td style="padding:6px 7px;border-bottom:1px solid #EADDE1;vertical-align:top;background:' + (i % 2 ? '#fff' : '#F8EEF1') + '">' + c + '</td>').join('') + '</tr>').join('') + '</table>';
+    const box = (t, inner) => '<div style="background:#fff;border:1px solid #EADDE1;border-radius:14px;padding:12px 14px;margin-bottom:12px"><div style="font-family:Cairo;font-weight:800;color:' + C + ';margin-bottom:4px">' + t + '</div>' + inner + '</div>';
+    // الغلاف
+    pages.push(PP.multiBg() + PP.scatter(axes, 0).replace(/left:(\d+)px/g, (m, x) => 'left:' + Math.round(x * 1.35) + 'px').replace(/top:(\d+)px/g, (m, y) => 'top:' + Math.round(y * 1.4) + 'px') +
+      '<div style="position:absolute;left:80px;right:80px;top:330px;background:#fff;border-radius:30px;box-shadow:0 20px 50px rgba(20,40,70,.16);padding:44px 36px;text-align:center"><div style="width:84px;height:84px;margin:0 auto 16px;border-radius:24px;background:linear-gradient(120deg,#1F3A5F,#8A1538);display:flex;align-items:center;justify-content:center">' + iconSvg('file', 44, '#fff', 2) + '</div>' +
+      '<div style="font-family:IBM Plex Sans Arabic;font-weight:700;color:' + C + ';font-size:16px">دليل المدرب</div><h1 style="font-size:32px;font-weight:800;margin-top:6px">' + h(T) + '</h1><p style="margin-top:14px;color:#4A5470;font-size:16px">يومان تدريبيان · <span class="num">4</span> ساعات يوميًا · <span class="num">' + axes.length + '</span> محورًا</p><p style="color:#4A5470;font-size:14px">الأهداف · المنهجية · الجدول الزمني · ملاحظات كل شريحة · مفتاح التقييم</p><div class="num" style="margin-top:14px;font-size:12px;color:#7D879C">' + fmtDate(Date.now()) + '</div></div>');
+    // الأهداف والمنهجية والفئة المستهدفة
+    page('نظرة عامة على البرنامج', box('أهداف التعلم', PP.numbered(g.objectives.map(h), C)) + box('المنهجية', PP.numbered(g.methodology.map(h), '#1F3A5F')) +
+      box('الفئة المستهدفة', '<ul style="margin:0">' + ['أصحاب المشاريع الصغيرة والمتوسطة ورواد الأعمال الراغبون في التوسع في البيع عبر الإنترنت', 'مؤسسو المشاريع القائمة على المنتجات أو الخدمات', 'رواد الأعمال المستعدون لإطلاق متاجرهم الرقمية', 'فرق التحول الرقمي والتسويق والعمليات'].map(x => '<li>' + x + '</li>').join('') + '</ul>') +
+      box('التقييم والشهادة', '<ul style="margin:0"><li>تقييم قبلي وبعدي من <span class="num">' + Content.assess().items.length + '</span> أسئلة اختيار من متعدد تطبيقية، بترتيب مختلف لكل متدرب.</li><li>شهادة مشاركة لمن يحضر <span class="num">' + Attend.cfg().threshold + '%</span> على الأقل من مدة البرنامج (تسجيل حضور برمز يومي).</li><li>تقييم البرنامج بعد التدريب بالنجوم ومؤشر صافي التوصية، وتقرير ختام آلي من لوحة الإدارة.</li></ul>'));
+    // جدولا اليومين
+    g.days.forEach((d, i) => { if (!d.length) return; page('جدول اليوم ' + (i + 1), tbl(['الوقت', 'الدقائق', 'الفقرة', 'ملاحظات التنفيذ'], d.map(x => ['<span class="num">' + h(x.t) + '</span>', '<span class="num">' + x.min + '</span>', h(x.act), h(x.note)]), ['60px', '56px', '', '34%']) + '<div style="margin-top:8px;font-family:IBM Plex Sans Arabic;font-size:12px;color:#7D879C">المجموع: <span class="num">' + d.reduce((a, b) => a + (+b.min || 0), 0) + '</span> دقيقة</div>'); });
+    // المحاور
+    axes.forEach(a => {
+      const exs = Content.exercisesOf(a.id);
+      page(a.title, (a.outcome ? '<div style="background:#EEF7F2;border-right:4px solid #138A5E;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px"><b>🎯 مخرج التعلم: </b>' + h(a.outcome) + '</div>' : '') +
+        tbl(['#', 'الشريحة', 'ملاحظات المدرب'], a.slides.map((sl, k) => ['<span class="num">' + (k + 1) + '</span>', '<b>' + h(sl.title) + '</b><div style="font-size:11px;color:#7D879C">' + h(SLIDE_TYPES[sl.type] || '') + '</div>', h(sl.note || '—')]), ['26px', '36%', '']) +
+        (exs.length ? '<div style="margin-top:10px;font-family:Cairo;font-weight:800;color:' + C + '">التمارين</div>' + tbl(['التمرين', 'النموذج', 'النوع'], exs.map(e => [h((e.icon || '') + ' ' + e.title), h(FORMATS[e.format] || '') + (e.format === 'sim' ? ' — ' + h(SIM_TYPES[e.sim] || '') : ''), e.mode === 'group' ? 'جماعي' : 'فردي'])) : ''),
+        (Content.unitKicker(a.unit) ? Content.unitKicker(a.unit) + ' — ' + Content.unitName(a.unit) : '') + (a.duration ? ' · ' + a.duration : ''));
+    });
+    // الملاحق: مفتاح التقييم، المختبر، التقييم
+    const A = Content.assess();
+    page('ملحق: مفتاح إجابات التقييم القبلي والبعدي', '<div style="font-size:12px;color:#A12A2E;margin-bottom:8px">سري — للمدرب فقط. ترتيب الأسئلة والخيارات يختلف على أجهزة المتدربين.</div>' + tbl(['#', 'السؤال', 'الإجابة الصحيحة'], A.items.map((it, i) => ['<span class="num">' + (i + 1) + '</span>', h(it.q), '<b style="color:#138A5E">' + h(it.options[it.answer] || '') + '</b>']), ['26px', '', '34%']));
+    const L = Content.lab(); const sv = Content.survey({ all: true });
+    page('ملحق: المختبر الختامي وتقييم البرنامج', box(h(L.title) + ' · <span class="num">' + L.stages.length + '</span> مراحل × <span class="num">' + L.minutes + '</span> دقائق', '<div class="j" style="font-size:12.5px">' + h(stripHtml(L.intro)) + '</div>' + PP.numbered(L.stages.map(x => '<b>' + h(x.icon + ' ' + x.title) + ':</b> ' + h(x.task)), C)) +
+      (sv ? box('بنود تقييم البرنامج', '<ul style="margin:0">' + sv.rates.map(r => '<li>' + h(r) + ' (1–5 نجوم)</li>').join('') + (sv.nps ? '<li>' + h(sv.nps) + ' (0–10)</li>' : '') + '<li>' + h(stripHtml(sv.task)) + '</li></ul>') : ''));
+    const doc = await PDFE.build(pages, A4P, (i, n) => pm.set(i, n));
+    doc.save('دليل المدرب - ' + safeName(T) + '.pdf'); pm.close();
+  } catch (e) { pm.close(); UI.alert('تعذر إنشاء الدليل: ' + h(e.message || e)); }
+}

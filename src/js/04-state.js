@@ -47,6 +47,7 @@ const Content = {
   congrats() { const c = Object.assign({}, DEFAULT_CONGRATS, Store.site.congrats || {}); c.paragraphs = arr(c.paragraphs); return c; },
   cert() { const c = Object.assign({}, DEFAULT_CERT, Store.site.cert || {}); c.paragraphs = arr(c.paragraphs); return c; },
   doc(kind) { return kind === 'cert' ? Content.cert() : Content.congrats(); },
+  guide() { const g = Object.assign({}, COURSE.guide || { objectives: [], methodology: [], days: [[], []] }, (Store.site && Store.site.guide) || {}); g.objectives = arr(g.objectives); g.methodology = arr(g.methodology); g.days = arr(g.days).map(arr); while (g.days.length < 2) g.days.push([]); return g; },
   unitName(n) { const u = (Store.site.units || {})[n]; return (u && u.name) || UNIT_NAMES[n] || ''; },
   unitKicker(n) { const u = (Store.site.units || {})[n]; return (u && u.kicker) || UNIT_KICKERS[n] || ''; },
   // قصص النجاح: الافتراضي في الكود + تراكب + إضافات + ترتيب + إظهار
