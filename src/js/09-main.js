@@ -9,7 +9,7 @@ const App = {
     const root = document.getElementById('app'); if (!root) return;
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
-    const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1;
+    const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor';
     const view = needLogin ? Views.login : (Views[v] || Views.home);
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
@@ -39,7 +39,7 @@ function watchAll() {
   W('assess', v => { Store.assess = v || {}; });
   W('attendance', v => { Store.attendance = v || {}; });
   W('site', v => { Store.site = v || {}; });
-  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; });
+  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.monitorCfg = v.monitor || {}; Store.cohortCfg = v.cohort || {}; });
   W('assign', v => { Store.assign = v || {}; });
   W('users', v => { Store.users = v || {}; });
   W('posts', v => { Store.posts = v || {}; });
@@ -47,6 +47,9 @@ function watchAll() {
   W('lab', v => { v = v || {}; Store.labTimers = v.timers || {}; Store.labAnswers = v.answers || {}; });
   W('broadcast', v => { Store.broadcast = v; });
   W('backupIndex', v => { Store.backupIndex = v || {}; });
+  W('leads', v => { Store.leads = v || {}; });
+  W('followups', v => { Store.followups = v || {}; });
+  W('cohortIndex', v => { Store.cohortIndex = v || {}; });
   W('stats/registered', v => { Store.registered = Number(v) || 0; });
   W('meta/resetStamp', v => {
     Store.resetStamp = Number(v) || 0;
@@ -319,7 +322,33 @@ document.addEventListener('click', async ev => {
     case 'as-clear': { const ph = t.getAttribute('data-ph'); if (await UI.confirm('مسح كل نتائج ' + (ph === 'pre' ? 'التقييم القبلي' : 'التقييم البعدي') + '؟', { danger: true, ok: 'مسح' })) DB.remove('assess/' + ph); break; }
     case 'assessform-save': Views.assessEdit.save(root); break;
     case 'assess-reset-content': { if (await UI.confirm('استرجاع الأسئلة الافتراضية؟', { ok: 'استرجاع' })) { await DB.remove('content/assess'); FormState.exId = null; Router.go('admin'); } break; }
-    case 'report-pdf': buildReportPdf(); break;
+    case 'report-pdf': buildReportPdf(t.getAttribute('data-lang') || 'ar'); break;
+    case 'leads-csv': exportLeadsCsv(); break;
+    case 'logo-save': { await DB.set('site/brandLogo', ImgPick.val('brandLogo') || null); UI.toast('✅ حُفظ الشعار'); break; }
+    case 'lead-edit': UIState.editing.lead = true; App.render(); break;
+    case 'lead-withdraw': { if (await UI.confirm('سحب اهتمامك ببرامج البنك؟', { ok: 'سحب' })) DB.remove('leads/' + Me.uid()); break; }
+    case 'lead-save': {
+      const w = t.getAttribute('data-w'); const box = t.closest('.lead-box'); const c = Leads.cfg();
+      const programs = $$('[data-lead-p]', box).filter(x => x.checked).map(x => c.programs[+x.getAttribute('data-lead-p')]);
+      if (!programs.length) { UI.alert('اختر برنامجًا واحدًا على الأقل.'); break; }
+      if (!($('#leadConsent_' + w) || {}).checked) { UI.alert('يلزم الموافقة على مشاركة بياناتك مع البنك.'); break; }
+      const contact = $('#leadContact_' + w).value.trim(); if (!contact) { UI.alert('اكتب رقم الهاتف أو البريد للتواصل.'); break; }
+      const u = Store.users[Me.uid()] || {};
+      await DB.set('leads/' + Me.uid(), { programs, need: $('#leadNeed_' + w).value.trim(), method: $('#leadMethod_' + w).value, contact, name: Me.data.name, org: RegFields.val(u, 'org'), consent: DB.now(), ts: DB.now() });
+      UIState.editing.lead = false; UI.toast('🤝 سُجّل اهتمامك وسيصل إلى الجهة المنظمة'); App.render(); break;
+    }
+    case 'leads-cfg-save': { const progs = $('#lcProgs').value.split('\n').map(x => x.trim()).filter(Boolean); await DB.set('site/leads', { intro: $('#lcIntro').value.trim(), consent: $('#lcConsent').value.trim(), programs: progs, axis: $('#lcAxis').value }); UI.toast('✅ حُفظ'); break; }
+    case 'leads-cfg-reset': { if (await UI.confirm('استرجاع الإعدادات الافتراضية لنموذج الاهتمام؟', { ok: 'استرجاع' })) DB.remove('site/leads'); break; }
+    case 'mon-toggle': { const c = Monitor.cfg(); await DB.set('settings/monitor', { enabled: !c.enabled, token: c.token || genId('m') }); break; }
+    case 'mon-new': { if (await UI.confirm('إنشاء رابط جديد؟ سيتوقف الرابط القديم عن العمل.', { ok: 'إنشاء' })) await DB.set('settings/monitor', { enabled: true, token: genId('m') }); break; }
+    case 'mon-copy': { const u = Monitor.url(); try { await navigator.clipboard.writeText(u); UI.toast('📋 نُسخ الرابط'); } catch (e) { UI.prompt('انسخ الرابط:', { value: u, title: 'رابط المتابعة' }); } break; }
+    case 'mon-open': Router.go('monitor', { id: Monitor.cfg().token }); break;
+    case 'cohort-save': { await DB.update('settings/cohort', { name: $('#cohName').value.trim() || 'الدفعة', start: $('#cohStart').value, end: $('#cohEnd').value }); UI.toast('✅ حُفظت بيانات الدفعة'); break; }
+    case 'cohort-close': closeCohort(); break;
+    case 'coh-report': { const cid = t.getAttribute('data-cid'); const c = await DB.get('cohorts/' + cid); if (!c) break; buildReportPdf(t.getAttribute('data-lang') || 'ar', c.data, c.meta && c.meta.name); break; }
+    case 'coh-csv': { const cid = t.getAttribute('data-cid'); const c = await DB.get('cohorts/' + cid); if (c) exportReportCsv(c.data, c.meta && c.meta.name); break; }
+    case 'coh-json': { const cid = t.getAttribute('data-cid'); const c = await DB.get('cohorts/' + cid); downloadBlob(new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' }), 'أرشيف ' + safeName(c && c.meta && c.meta.name) + '.json'); break; }
+    case 'coh-del': { const cid = t.getAttribute('data-cid'); if (await UI.confirm('حذف أرشيف هذه الدفعة نهائيًا؟', { danger: true, ok: 'حذف' })) DB.update('', { ['cohorts/' + cid]: null, ['cohortIndex/' + cid]: null }); break; }
     case 'guide-pdf': buildGuidePdf(); break;
     case 'guide-save': { const L = id2 => ($(id2).value || '').split('\n').map(x => x.trim()).filter(Boolean); const day = id2 => L(id2).map(x => { const p = x.split('|').map(y => y.trim()); return { t: p[0] || '', min: +p[1] || 0, act: p[2] || '', note: p[3] || '' }; }); await DB.set('site/guide', { objectives: L('#gObj'), methodology: L('#gMeth'), days: [day('#gDay0'), day('#gDay1')] }); UI.toast('✅ حُفظ الدليل'); break; }
     case 'guide-reset': { if (await UI.confirm('استرجاع بيانات الدليل الافتراضية؟', { ok: 'استرجاع' })) DB.remove('site/guide'); break; }
@@ -412,6 +441,22 @@ async function restoreBackup(day) {
   if (!(await UI.confirm('استعادة مدخلات المتدربين كما كانت في نسخة ' + h(day) + '؟ ستُستبدل البيانات الحالية (التسجيل، المشاركات، التقييمات، الحضور، المختبر). المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'استعادة' }))) return;
   const b = await DB.get('backups/' + day); if (!b || !b.data) { UI.alert('النسخة غير موجودة.'); return; }
   const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd); UI.toast('✅ تمت الاستعادة');
+}
+
+// ---------- إغلاق الدفعة الحالية وأرشفتها ثم تجهيز المنصة لدفعة جديدة ----------
+function cohortSummary(d) { return { participants: d.uids.length, attAvg: d.attAvg, certs: d.certs, preAvg: d.preAvg == null ? null : Math.round(d.preAvg), postAvg: d.postAvg == null ? null : Math.round(d.postAvg), gain: d.gain == null ? null : Math.round(d.gain), sat: d.survey.overall == null ? null : Math.round(d.survey.overall * 100) / 100, nps: d.survey.nps, leads: d.leads.length, labGroups: d.labGroups }; }
+async function closeCohort() {
+  const cur = Cohort.cur(); const num = Cohort.list().length + 2;
+  if (!(await UI.confirm('سيتم أرشفة كل مدخلات «' + h(cur.name) + '» (المسجّلون، المشاركات، التقييمات، الحضور، المختبر، الاهتمامات، المتابعات) في أرشيف الدفعات مع ملخص مؤشراتها، ثم تفريغ المنصة لاستقبال دفعة جديدة. المحتوى وتعديلاته لا تتأثر.', { ok: 'أرشفة وبدء دفعة جديدة', title: 'إغلاق الدفعة' }))) return;
+  const pm = progressModal('📦 أرشفة الدفعة');
+  try {
+    pm.set(1, 3, 'جارٍ جمع البيانات…'); const data = await snapshotData();
+    const summary = cohortSummary(reportData(data)); const id = 'c' + genId(); const meta = Object.assign({}, cur, { closedAt: DB.now() });
+    pm.set(2, 3, 'جارٍ الحفظ في الأرشيف…'); await DB.set('cohorts/' + id, { meta, data }); await DB.set('cohortIndex/' + id, Object.assign({}, meta, { summary }));
+    pm.set(3, 3, 'جارٍ تجهيز الدفعة الجديدة…'); const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = null; }); upd['meta/resetStamp'] = DB.now(); upd['stats/registered'] = 0; upd['settings/attendance/codes'] = null; upd.reveal = null;
+    upd['settings/cohort'] = { name: 'الدفعة ' + num, start: '', end: '' };
+    await DB.update('', upd); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
+  } catch (e) { pm.close(); UI.alert('تعذرت الأرشفة: ' + h(e.message || e)); }
 }
 
 // ---------- الإقلاع ----------

@@ -271,49 +271,6 @@ function exportAttendanceCsv() {
   downloadBlob(csvBlob(rows), 'سجل الحضور.csv'); UI.toast('✅ تم التصدير (الحد المطلوب ' + c.threshold + '%)');
 }
 
-// ---------- تقرير ختام البرنامج ----------
-function reportData() {
-  const users = Store.users || {}; const uids = Object.keys(users); const A = Content.assess(); const n = A.items.length || 1;
-  const pre = Assess.list('pre'), post = Assess.list('post'); const preM = {}; pre.forEach(x => { preM[x.uid] = x; });
-  const paired = post.filter(x => preM[x.uid]); const gain = paired.length ? paired.reduce((s, x) => s + (x.score - preM[x.uid].score), 0) / paired.length / n * 100 : null;
-  const axes = Content.eligibleAxes().map(a => { const exs = Content.exercisesOf(a.id); const posts = exs.reduce((s, e) => s + Object.keys(Store.posts[e.id] || {}).length, 0); const people = new Set(); exs.forEach(e => Object.keys(Store.posts[e.id] || {}).forEach(k => { const p = Store.posts[e.id][k]; if (e.mode === 'group') Object.keys(p.members || {}).forEach(m => people.add(m)); else people.add(k); })); return { a, exs: exs.length, posts, people: people.size }; });
-  const sv = Content.survey({ all: true }); const svPosts = sv ? Object.keys(Store.posts[sv.id] || {}).map(k => Store.posts[sv.id][k]).filter(p => p && p.text) : [];
-  const attAvg = uids.length ? Math.round(uids.reduce((s, u) => s + Attend.pct(u), 0) / uids.length) : 0;
-  return { uids, A, pre, post, paired, gain, preAvg: Assess.avg('pre'), postAvg: Assess.avg('post'), pq: Assess.perQuestion('pre'), qq: Assess.perQuestion('post'), axes, svPosts, attAvg, certs: Attend.holders().length, achievers: Progress.achievers().length, labGroups: Object.keys(Store.labAnswers || {}).length, cfg: Attend.cfg() };
-}
-function exportReportCsv() {
-  const d = reportData(); const r = v => v == null ? '—' : Math.round(v) + '%';
-  const rows = [['البند', 'القيمة'], ['البرنامج', Content.courseTitle()], ['تاريخ التقرير', fmtDate(Date.now())], ['عدد المسجّلين', d.uids.length], ['متوسط نسبة الحضور', d.attAvg + '%'], ['المستحقون لشهادة المشاركة (حضور ≥ ' + d.cfg.threshold + '%)', d.certs], ['المنجزون لـ 80% من التمارين', d.achievers], ['عدد من أجاب التقييم القبلي', d.pre.length], ['عدد من أجاب التقييم البعدي', d.post.length], ['متوسط التقييم القبلي', r(d.preAvg)], ['متوسط التقييم البعدي', r(d.postAvg)], ['متوسط التحسن لمن أجاب التقييمين (' + d.paired.length + ')', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain) + ' نقطة'], ['مجموعات شاركت في المختبر الختامي', d.labGroups], [], ['السؤال', 'صحيح قبلي', 'صحيح بعدي']];
-  d.A.items.forEach((it, i) => rows.push([(i + 1) + '. ' + it.q, r(d.pq[i]), r(d.qq[i])]));
-  rows.push([], ['المحور', 'عدد التمارين', 'عدد المشاركات', 'عدد المشاركين']); d.axes.forEach(x => rows.push([x.a.title, x.exs, x.posts, x.people]));
-  rows.push([], ['آراء المتدربين (الاستطلاع الختامي)', '']); d.svPosts.forEach(p => rows.push([p.name || '', p.text || '']));
-  downloadBlob(csvBlob(rows), 'تقرير ختام البرنامج.csv');
-}
-const A4P = { w: 794, h: 1123, mmW: 210, mmH: 297, format: 'a4', orientation: 'portrait' };
-async function buildReportPdf() {
-  const pm = progressModal('📑 تقرير ختام البرنامج');
-  try {
-    const d = reportData(); const r = v => v == null ? '—' : Math.round(v) + '%'; const C = '#8A1538';
-    const head = t => '<div style="position:absolute;top:0;left:0;right:0;height:84px;background:linear-gradient(120deg,#8A1538,#1F3A5F)"><div style="position:absolute;top:22px;right:34px;left:34px;color:#fff;display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:IBM Plex Sans Arabic;font-size:12px;opacity:.85">' + h(Content.courseTitle()) + '</div><div style="font-family:Cairo;font-weight:800;font-size:22px">' + h(t) + '</div></div><div class="num" style="font-family:IBM Plex Sans Arabic;font-size:12px">' + fmtDate(Date.now()) + '</div></div></div>';
-    const kpi = (lbl, v, sub) => '<div style="flex:1 1 30%;min-width:200px;background:#fff;border:1px solid #EADDE1;border-radius:18px;padding:14px 16px"><div style="font-family:IBM Plex Sans Arabic;font-size:12.5px;color:#7D879C">' + lbl + '</div><div class="num" style="font-family:Cairo;font-weight:800;font-size:30px;color:' + C + '">' + v + '</div>' + (sub ? '<div style="font-size:11.5px;color:#7D879C">' + sub + '</div>' : '') + '</div>';
-    const pages = [];
-    pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('تقرير ختام البرنامج') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px"><h2 style="font-size:20px;margin-bottom:10px">ملخص المؤشرات</h2><div style="display:flex;flex-wrap:wrap;gap:12px">' +
-      kpi('المسجّلون', d.uids.length) + kpi('متوسط نسبة الحضور', d.attAvg + '%') + kpi('مستحقو شهادة المشاركة', d.certs, 'حضور ≥ ' + d.cfg.threshold + '%') +
-      kpi('متوسط التقييم القبلي', r(d.preAvg), d.pre.length + ' مشارك') + kpi('متوسط التقييم البعدي', r(d.postAvg), d.post.length + ' مشارك') + kpi('متوسط التحسن (نقطة مئوية)', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain), 'لمن أجاب التقييمين (' + d.paired.length + ')') +
-      kpi('أنجزوا 80% من التمارين', d.achievers) + kpi('مجموعات المختبر الختامي', d.labGroups) + kpi('آراء في الاستطلاع الختامي', d.svPosts.length) + '</div></div>' + PP.foot(Content.courseTitle(), 1));
-    pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('المشاركة في المحاور') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px"><h2 style="font-size:20px;margin:0 0 10px">المشاركة في المحاور</h2><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="background:' + C + ';color:#fff"><th style="padding:8px;text-align:right">المحور</th><th>التمارين</th><th>المشاركات</th><th>المشاركون</th></tr>' +
-      d.axes.map((x, i) => '<tr style="background:' + (i % 2 ? '#fff' : '#F8EEF1') + '"><td style="padding:7px 8px">' + h(x.a.title) + '</td><td class="num" style="text-align:center">' + x.exs + '</td><td class="num" style="text-align:center">' + x.posts + '</td><td class="num" style="text-align:center">' + x.people + '</td></tr>').join('') + '</table></div>' + PP.foot(Content.courseTitle(), 2));
-    for (let q0 = 0; q0 < d.A.items.length; q0 += 5) pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('نتائج التقييم القبلي والبعدي لكل سؤال') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px">' +
-      '<div style="font-family:IBM Plex Sans Arabic;font-size:12px;color:#7D879C;margin-bottom:10px"><span style="display:inline-block;width:14px;height:10px;background:#DCC3CB;border-radius:3px"></span> قبلي &nbsp; <span style="display:inline-block;width:14px;height:10px;background:' + C + ';border-radius:3px"></span> بعدي — نسبة من أجابوا إجابة صحيحة</div>' +
-      d.A.items.slice(q0, q0 + 5).map((it, j) => { const i = q0 + j; return  '<div style="margin-bottom:12px;background:#fff;border:1px solid #EADDE1;border-radius:14px;padding:10px 12px"><div style="font-weight:700;font-size:13px"><span class="num">' + (i + 1) + '.</span> ' + h(it.q) + '</div><div style="font-size:11.5px;color:#138A5E;margin-top:3px">الإجابة الصحيحة: ' + h(it.options[it.answer] || '') + '</div>' +
-        ['pq', 'qq'].map(k => { const v = d[k][i]; return '<div style="display:flex;align-items:center;gap:8px;margin-top:5px"><span style="width:44px;font-size:11px;color:#7D879C">' + (k === 'pq' ? 'قبلي' : 'بعدي') + '</span><div style="flex:1;height:12px;background:#F3E9EC;border-radius:6px;overflow:hidden"><div style="height:100%;width:' + (v || 0) + '%;background:' + (k === 'pq' ? '#DCC3CB' : C) + '"></div></div><span class="num" style="width:40px;font-size:12px;font-weight:700">' + (v == null ? '—' : v + '%') + '</span></div>'; }).join('') + '</div>'; }).join('') + '</div>' + PP.foot(Content.courseTitle(), pages.length + 1));
-    const sv = d.svPosts; const per = 9;
-    for (let i = 0; i < Math.max(1, Math.ceil(sv.length / per)); i++) pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('آراء المتدربين في الاستطلاع الختامي') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px">' + (sv.length ? sv.slice(i * per, i * per + per).map(p => '<div style="margin-bottom:10px;background:#fff;border-right:4px solid ' + C + ';border-radius:12px;padding:10px 14px"><div class="j" style="font-size:13.5px;white-space:pre-wrap">«' + h(p.text) + '»</div><div style="font-size:11.5px;color:#7D879C;margin-top:4px">— ' + h(p.name || '') + (p.role ? '، ' + h(p.role) : '') + '</div></div>').join('') : '<div style="text-align:center;color:#7D879C;margin-top:80px">لا توجد آراء مسجلة بعد.</div>') + '</div>' + PP.foot(Content.courseTitle(), pages.length + 1));
-    const doc = await PDFE.build(pages, A4P, (i, n) => pm.set(i, n));
-    doc.save('تقرير ختام البرنامج - ' + fmtDate(Date.now()).replace(/\//g, '-') + '.pdf'); pm.close();
-  } catch (e) { pm.close(); UI.alert('تعذر إنشاء التقرير: ' + h(e.message || e)); }
-}
-
 // ---------- دليل المدرب (A4 عمودي) ----------
 async function buildGuidePdf() {
   const pm = progressModal('📘 دليل المدرب');

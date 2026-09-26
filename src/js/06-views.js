@@ -140,6 +140,7 @@ Views.axis = {
     out += '<section class="section" style="--ac:' + col + ';--acg:' + tint(col, .1) + '"><div class="sec-head"><h2 class="sec-title">✍️ تمارين هذا المحور</h2><span class="pill"><span class="num">' + exs.length + '</span> تمرين</span></div>' +
       (exs.length ? '<div class="ex-list">' + exs.map(e => '<button class="ex-item" data-go="ex" data-id="' + h(e.id) + '"><span class="ico">' + h(e.icon || '✍️') + '</span><span><h4>' + h(e.title) + '</h4><span class="muted" style="font-family:var(--f-ui);font-size:12.5px">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + ' · ' + h(FORMATS[e.format] || '') + '</span></span>' + (Progress.exDone(e, Me.uid()) ? '<span class="done">✔</span>' : '') + '</button>').join('') + '</div>' : '<div class="empty">لا توجد تمارين لهذا المحور.</div>') +
       '<div class="nav-row"><button class="btn btn-dark" ' + (next ? 'data-act="open-axis" data-id="' + h(next.id) + '"' : 'disabled') + '>الفصل القادم ▶</button><button class="btn btn-ghost" data-go="home">🏠 الرئيسية</button></div></section>';
+    if (Leads.cfg().axis === a.id) out += '<section class="section">' + leadFormHtml('axis') + '</section>';
     return out;
   },
   after(root) {
@@ -487,6 +488,7 @@ Views.account = {
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📝 مشاركاتي في التمارين</h2><span class="pill">راجع إجاباتك وافتح أي تمرين لتعديلها</span></div>' + myPostsHtml(me.uid) + '</section>';
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🏅 أوسمتي</h2><span class="pill">يُفتح الوسام عند إنجاز <span class="num">80%</span> من تمارين المحور</span></div><div class="badges">' +
       pr.axes.map(x => { const ok = x.pct >= BADGE_THRESHOLD; return '<div class="badge ' + (ok ? '' : 'locked') + '">' + (ok ? '' : '<span class="lock">🔒</span>') + medalSvg(x.a) + '<h5>' + h(x.a.title) + '</h5><div class="pct num">' + Math.round(x.pct * 100) + '% · ' + x.done + ' من ' + x.total + '</div></div>'; }).join('') + '</div></section>';
+    out += '<section class="section">' + leadFormHtml('acc') + '</section>';
     // شهادة المشاركة (بالحضور)
     const cc = Content.cert();
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🎓 شهادة المشاركة</h2><span class="pill">تُمنح عند حضور <span class="num">' + ac.threshold + '%</span> من مدة البرنامج</span></div>';
@@ -499,5 +501,26 @@ Views.account = {
     out += '</section>';
     if (pdf.enabled !== false) out += '<section class="section"><div class="card pad row"><div class="grow"><h3>📄 استخراج المحتوى (PDF)</h3><p class="muted" style="font-family:var(--f-ui);font-size:14px">ملف مصمَّم بمقاس A5 يضم كل شرائح البرنامج بأحدث نسخة، جاهز للطباعة.</p></div><button class="btn btn-dark" data-act="content-pdf">📄 استخراج المحتوى (PDF)</button></div></section>';
     return out;
+  }
+};
+
+// ============ لوحة المشرف (قراءة فقط) ============
+Views.monitor = {
+  html() {
+    const c = Monitor.cfg(); const tok = Router.cur.id || '';
+    if (!Admin.ok() && (!c.enabled || !c.token || tok !== c.token)) return '<div class="empty" style="margin-top:30px">🔒 رابط المتابعة غير صالح أو غير مفعّل. اطلب رابطًا محدثًا من إدارة البرنامج.</div>';
+    const d = reportData(); const pct = v => v == null ? '—' : Math.round(v) + '%';
+    const kpi = (l, v, s) => '<div class="mon-kpi"><span>' + l + '</span><b class="num">' + v + '</b>' + (s ? '<em>' + s + '</em>' : '') + '</div>';
+    const bars = (items, max, col) => '<div class="mon-bars">' + items.map(x => '<div class="mon-bar"><span>' + h(x.l) + '</span><i><em style="width:' + Math.max(0, Math.min(100, (x.v || 0) / (max || 1) * 100)) + '%;background:' + (x.c || col || 'var(--brand)') + '"></em></i><b class="num">' + h(x.t != null ? x.t : x.v) + '</b></div>').join('') + '</div>';
+    const dist = o => { const k = Object.keys(o).sort((a, b) => o[b] - o[a]); return k.length ? bars(k.map(x => ({ l: x, v: o[x] })), Math.max(...k.map(x => o[x])), '#1F3A5F') : '<div class="muted">لا توجد بيانات</div>'; };
+    const ev = Bell.events().slice(0, 12);
+    return '<div class="mon-head"><div><span class="live-dot"></span> <b>لوحة متابعة مباشرة</b> · ' + h(d.cohort.name) + '</div><div class="row"><span class="pill">👁 قراءة فقط</span><button class="btn btn-primary btn-sm" data-act="report-pdf" data-lang="ar">📑 التقرير (عربي)</button><button class="btn btn-soft btn-sm" data-act="report-pdf" data-lang="en">📑 Report (EN)</button></div></div>' +
+      '<div class="mon-kpis">' + kpi('المسجّلون', d.uids.length) + kpi('متوسط الحضور', d.attAvg + '%') + kpi('مستحقو الشهادة', d.certs) + kpi('التقييم القبلي', pct(d.preAvg), d.pre.length + ' مشارك') + kpi('التقييم البعدي', pct(d.postAvg), d.post.length + ' مشارك') + kpi('متوسط التحسن', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain)) + kpi('الرضا', d.survey.overall ? d.survey.overall.toFixed(1) + '/5' : '—') + kpi('NPS', d.survey.nps == null ? '—' : d.survey.nps) + kpi('مهتمون ببرامج البنك', d.leads.length) + '</div>' +
+      '<div class="mon-grid"><div class="card pad"><h3>المشاركة في المحاور</h3>' + bars(d.axes.map(x => ({ l: x.a.title, v: Math.round(x.rate * 100), t: Math.round(x.rate * 100) + '%' })), 100) + '</div>' +
+      '<div class="card pad"><h3>الحضور حسب اليوم</h3>' + bars(d.perDay.map((v, i) => ({ l: 'اليوم ' + (i + 1), v, t: v + '/' + d.uids.length })), Math.max(1, d.uids.length), '#0E7C7B') + '<h3 style="margin-top:14px">قطاعات المشاركين</h3>' + dist(d.sector) + '</div>' +
+      '<div class="card pad"><h3>التقييم القبلي مقابل البعدي لكل سؤال</h3>' + d.A.items.map((it, i) => '<div class="mon-q"><span class="num">' + (i + 1) + '</span>' + bars([{ l: 'قبلي', v: d.pq[i] || 0, t: pct(d.pq[i]), c: '#C98A9C' }, { l: 'بعدي', v: d.qq[i] || 0, t: pct(d.qq[i]), c: '#8A1538' }], 100) + '</div>').join('') + '</div>' +
+      '<div class="card pad"><h3>الرضا لكل بند</h3>' + bars(d.survey.rates.map((r, i) => ({ l: r, v: d.survey.avgs[i] || 0, t: d.survey.avgs[i] ? d.survey.avgs[i].toFixed(1) : '—' })), 5, '#E0A526') + '<h3 style="margin-top:14px">الاهتمام ببرامج البنك</h3>' + dist(d.byProg) + '</div>' +
+      '<div class="card pad"><h3>💡 توصيات آلية</h3>' + (d.recs.length ? '<ul class="mon-recs">' + d.recs.map(r => '<li>' + h(r.ar) + '</li>').join('') + '</ul>' : '<div class="muted">تظهر عند توفر بيانات كافية.</div>') + '</div>' +
+      '<div class="card pad"><h3>آخر النشاطات</h3>' + (ev.length ? ev.map(e => '<div class="bell-item"><div class="grow">' + e.html + '<div class="t">' + ago(e.ts) + '</div></div></div>').join('') : '<div class="muted">لا نشاط بعد.</div>') + '</div></div>';
   }
 };

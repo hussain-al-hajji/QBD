@@ -627,6 +627,26 @@ font{background:transparent!important;box-shadow:none!important}
 .reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-top:16px}
 .reg-grid .field:first-child{grid-column:1/-1}
 @media (max-width:600px){.reg-grid{grid-template-columns:1fr}}
+/* ===== الاهتمام ببرامج البنك ===== */
+.lead-box{background:linear-gradient(135deg,#F2FAF6,#FFFFFF);border:1px solid #CFE9DC;border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--sh-1)}
+.lead-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}.lead-head h3{font-size:18px}.lead-head p{margin:2px 0 0;color:var(--ink-2);font-size:14.5px}
+.lead-ico{font-size:30px}
+.lead-progs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;margin-bottom:10px}
+.lead-prog{display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-family:var(--f-ui);font-size:13.5px;cursor:pointer}
+.lead-prog input{margin-top:4px}
+.lead-done{background:#fff;border:1px solid #CFE9DC;border-radius:12px;padding:10px 12px;font-family:var(--f-ui)}
+/* ===== لوحة المشرف ===== */
+.mon-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:14px 0;font-family:var(--f-ui)}
+.mon-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mon-kpi{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;font-family:var(--f-ui);box-shadow:var(--sh-1)}
+.mon-kpi span{font-size:12.5px;color:var(--ink-3)}.mon-kpi b{font-family:var(--f-display);font-size:26px;color:var(--brand)}.mon-kpi em{font-style:normal;font-size:11.5px;color:var(--ink-3)}
+.mon-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.mon-grid h3{font-size:16px;margin-bottom:8px}
+@media (max-width:820px){.mon-grid{grid-template-columns:1fr}}
+.mon-bars{display:flex;flex-direction:column;gap:6px;font-family:var(--f-ui);font-size:12.5px}
+.mon-bar{display:grid;grid-template-columns:minmax(90px,40%) 1fr 48px;gap:8px;align-items:center}
+.mon-bar i{display:block;height:10px;background:var(--line);border-radius:5px;overflow:hidden}.mon-bar em{display:block;height:100%}
+.mon-q{display:grid;grid-template-columns:22px 1fr;gap:6px;margin-bottom:6px;align-items:center;font-family:var(--f-ui)}
+.mon-recs{margin:0;padding-inline-start:18px;font-size:14px;display:flex;flex-direction:column;gap:6px}
 
 </style>
 </head>
@@ -1727,6 +1747,65 @@ const Likes = {
 };
 
 
+/* ===== 04b-sponsor.js ===== */
+// ---------------------------------------------------------------------
+// ميزات الجهة الراعية: الاهتمام ببرامج البنك، رابط المشرف، الدفعات، والتسميات الإنجليزية للتقرير
+// ---------------------------------------------------------------------
+const DEFAULT_LEADS = {
+  axis: 'a12',
+  intro: 'هل ترغب في أن يتواصل معك فريق بنك قطر للتنمية بخصوص برنامج يناسب مرحلة مشروعك؟ اختر ما يهمك، وسنرفع اهتمامك إلى الجهة المنظمة.',
+  consent: 'أوافق على مشاركة بياناتي واهتماماتي مع بنك قطر للتنمية للتواصل معي بخصوص البرامج المختارة',
+  programs: ['الحلول التمويلية (التمويل المباشر وغير المباشر وضمانات «الضمين»)', 'بوابة التمويل الوطنية «تمكين»', 'دعم التصدير والوصول للأسواق الخارجية («تصدير»)', 'الاحتضان وتسريع الأعمال', 'الاستشارات وبرامج تطوير الأعمال', 'التمكين الرقمي وتبني التقنيات']
+};
+const Leads = {
+  cfg() { const c = Object.assign({}, DEFAULT_LEADS, (Store.site && Store.site.leads) || {}); c.programs = arr(c.programs); return c; },
+  list() { const o = Store.leads || {}; return Object.keys(o).filter(u => o[u] && arr(o[u].programs).length).map(u => Object.assign({ uid: u }, o[u], { programs: arr(o[u].programs) })); },
+  byProgram(list) { const c = {}; (list || Leads.list()).forEach(l => l.programs.forEach(p => { c[p] = (c[p] || 0) + 1; })); return c; }
+};
+function leadFormHtml(where) {
+  const c = Leads.cfg(); if (!c.programs.length) return '';
+  const head = '<div class="lead-box"><div class="lead-head"><span class="lead-ico">🤝</span><div><h3>مهتم ببرامج بنك قطر للتنمية؟</h3><p>' + h(c.intro) + '</p></div></div>';
+  if (!Me.isReg()) return head + '<div class="locked-note">🔒 للمسجلين فقط</div></div>';
+  const cur = (Store.leads || {})[Me.uid()]; const editing = UIState.editing['lead'];
+  if (cur && arr(cur.programs).length && !editing) return head + '<div class="lead-done">✅ سُجّل اهتمامك بـ: <b>' + arr(cur.programs).map(h).join('، ') + '</b><div class="muted" style="font-size:12.5px">' + ago(cur.ts || 0) + ' · وسيلة التواصل: ' + h(cur.method || '') + ' ' + h(cur.contact || '') + '</div><div class="row" style="margin-top:8px"><button class="btn btn-soft btn-xs" data-act="lead-edit">✏️ تعديل</button><button class="btn btn-ghost btn-xs" data-act="lead-withdraw">سحب الاهتمام</button></div></div></div>';
+  const u = Store.users[Me.uid()] || {}; const email = RegFields.val(u, 'email'), phone = RegFields.val(u, 'phone');
+  const sel = arr(cur && cur.programs);
+  return head + '<div class="lead-progs">' + c.programs.map((p, i) => '<label class="lead-prog"><input type="checkbox" data-lead-p="' + i + '" ' + (sel.indexOf(p) > -1 ? 'checked' : '') + '><span>' + h(p) + '</span></label>').join('') + '</div>' +
+    '<div class="field"><label>ما احتياج مشروعك باختصار؟ (اختياري)</label><textarea id="leadNeed_' + where + '" data-keep="lead-need-' + where + '" rows="2" placeholder="مثال: تمويل مخزون موسم رمضان، أو دخول السوق السعودي">' + h((cur && cur.need) || '') + '</textarea></div>' +
+    '<div class="grid2"><div class="field"><label>وسيلة التواصل المفضلة</label><select id="leadMethod_' + where + '"><option>هاتف</option><option ' + ((cur && cur.method) === 'واتساب' ? 'selected' : '') + '>واتساب</option><option ' + ((cur && cur.method) === 'بريد إلكتروني' ? 'selected' : '') + '>بريد إلكتروني</option></select></div><div class="field"><label>رقم الهاتف أو البريد</label><input id="leadContact_' + where + '" data-keep="lead-contact-' + where + '" value="' + h((cur && cur.contact) || phone || email || '') + '"></div></div>' +
+    '<label class="consent"><input type="checkbox" id="leadConsent_' + where + '"> <span>' + h(c.consent) + '</span></label><button class="btn btn-primary btn-sm" data-act="lead-save" data-w="' + where + '">🤝 أرسل اهتمامي</button></div>';
+}
+
+// ---------- رابط المشرف (قراءة فقط) ----------
+const Monitor = { cfg() { return Object.assign({ enabled: false, token: '' }, Store.monitorCfg || {}); }, url() { const c = Monitor.cfg(); return location.origin + location.pathname + '#v=monitor&id=' + encodeURIComponent(c.token); } };
+
+// ---------- الدفعات ----------
+const Cohort = {
+  cur() { return Object.assign({ name: 'الدفعة الأولى', start: '', end: '' }, Store.cohortCfg || {}); },
+  list() { const o = Store.cohortIndex || {}; return Object.keys(o).map(k => Object.assign({ id: k }, o[k])).sort((a, b) => (a.closedAt || 0) - (b.closedAt || 0)); }
+};
+
+// ---------- ربط أسئلة التقييم بالمحاور (للتوصيات الآلية) ----------
+const ASSESS_AXIS = ['a3', 'a5', 'a4', 'a6', 'a8', 'a11', 'a2', 'a10', 'a4', 'a13'];
+
+// ---------- تسميات إنجليزية للتقرير المؤسسي ----------
+const EN = {
+  course: 'E-Commerce Acceleration for SMEs',
+  axes: { a1: 'Where to sell: the platform landscape', a2: 'Platform decision & store set-up for growth', a3: 'How money reaches your account: payment gateways', a4: 'Secure checkout & cart abandonment', a5: 'From shelf to doorstep: fulfilment & inventory', a6: 'Cross-border shipping & logistics partners', a7: 'Product listings & marketplace SEO', a8: 'Customer acquisition, CRM & lifetime value', a9: 'Automating e-commerce operations', a10: 'SOPs & multi-channel scaling', a11: 'Analytics dashboard & data-driven decisions', a12: 'Growth planning & QDB support ecosystem', a13: 'AI in e-commerce' },
+  assess: ['Payment provider fees vs settlement', 'Inventory reorder point', 'Cart abandonment & shipping cost', 'DDP vs DAP cross-border delivery', 'ROAS vs profit margin', 'Conversion rate impact on revenue', 'B2B platform selection criteria', 'Multi-channel inventory sync', 'PCI DSS compliance', 'Responsible use of AI content'],
+  rates: ['Trainer knowledge & delivery', 'Content clarity & structure', 'Practical value for my business', 'Exercises & simulations', 'Relevance to Qatar/GCC market', 'Interactive platform & usability', 'Organisation & time management'],
+  fields: { sector: 'Business sector', stage: 'Business stage', hasStore: 'Online sales channel', onlineSales: 'Share of online sales' },
+  programs: ['Financing solutions (direct/indirect & Al Dhameen guarantees)', 'National Funding Gate "TAMKEEN"', 'Export development ("Tasdeer")', 'Incubation & acceleration', 'Advisory & business development', 'Digital enablement & technology adoption']
+};
+const EN_OPTIONS = {
+  'تجزئة ومنتجات استهلاكية': 'Retail & consumer goods', 'أغذية ومشروبات': 'Food & beverage', 'أزياء وعطور ومستحضرات': 'Fashion, fragrance & cosmetics', 'خدمات وحجوزات': 'Services & bookings', 'تقنية ومنتجات رقمية': 'Tech & digital products', 'صناعة وتوريد (B2B)': 'Manufacturing & supply (B2B)', 'أخرى': 'Other',
+  'فكرة لم تنطلق بعد': 'Idea stage', 'مشروع قائم دون بيع إلكتروني': 'Operating, no online sales', 'بدأت البيع إلكترونيًا منذ أقل من سنة': 'Selling online < 1 year', 'متجر إلكتروني قائم يسعى للتوسع': 'Established store seeking scale',
+  'متجر إلكتروني خاص': 'Own online store', 'سوق إلكتروني (مثل Noon أو سنونو)': 'Marketplace (e.g. Noon, Snoonu)', 'وسائل التواصل وواتساب فقط': 'Social media & WhatsApp only', 'أكثر من قناة': 'Multiple channels', 'لا يوجد بعد': 'None yet',
+  'لا توجد مبيعات إلكترونية': 'No online sales', 'أقل من 10%': '< 10%', '10% – 30%': '10% – 30%', '30% – 60%': '30% – 60%', 'أكثر من 60%': '> 60%'
+};
+function enOpt(v) { return EN_OPTIONS[v] || v; }
+
+
 /* ===== 05-common.js ===== */
 // ---------------------------------------------------------------------
 // الموجّه (History API) + الهيكل العام + مكوّنات مشتركة
@@ -2122,6 +2201,7 @@ Views.axis = {
     out += '<section class="section" style="--ac:' + col + ';--acg:' + tint(col, .1) + '"><div class="sec-head"><h2 class="sec-title">✍️ تمارين هذا المحور</h2><span class="pill"><span class="num">' + exs.length + '</span> تمرين</span></div>' +
       (exs.length ? '<div class="ex-list">' + exs.map(e => '<button class="ex-item" data-go="ex" data-id="' + h(e.id) + '"><span class="ico">' + h(e.icon || '✍️') + '</span><span><h4>' + h(e.title) + '</h4><span class="muted" style="font-family:var(--f-ui);font-size:12.5px">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + ' · ' + h(FORMATS[e.format] || '') + '</span></span>' + (Progress.exDone(e, Me.uid()) ? '<span class="done">✔</span>' : '') + '</button>').join('') + '</div>' : '<div class="empty">لا توجد تمارين لهذا المحور.</div>') +
       '<div class="nav-row"><button class="btn btn-dark" ' + (next ? 'data-act="open-axis" data-id="' + h(next.id) + '"' : 'disabled') + '>الفصل القادم ▶</button><button class="btn btn-ghost" data-go="home">🏠 الرئيسية</button></div></section>';
+    if (Leads.cfg().axis === a.id) out += '<section class="section">' + leadFormHtml('axis') + '</section>';
     return out;
   },
   after(root) {
@@ -2469,6 +2549,7 @@ Views.account = {
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📝 مشاركاتي في التمارين</h2><span class="pill">راجع إجاباتك وافتح أي تمرين لتعديلها</span></div>' + myPostsHtml(me.uid) + '</section>';
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🏅 أوسمتي</h2><span class="pill">يُفتح الوسام عند إنجاز <span class="num">80%</span> من تمارين المحور</span></div><div class="badges">' +
       pr.axes.map(x => { const ok = x.pct >= BADGE_THRESHOLD; return '<div class="badge ' + (ok ? '' : 'locked') + '">' + (ok ? '' : '<span class="lock">🔒</span>') + medalSvg(x.a) + '<h5>' + h(x.a.title) + '</h5><div class="pct num">' + Math.round(x.pct * 100) + '% · ' + x.done + ' من ' + x.total + '</div></div>'; }).join('') + '</div></section>';
+    out += '<section class="section">' + leadFormHtml('acc') + '</section>';
     // شهادة المشاركة (بالحضور)
     const cc = Content.cert();
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🎓 شهادة المشاركة</h2><span class="pill">تُمنح عند حضور <span class="num">' + ac.threshold + '%</span> من مدة البرنامج</span></div>';
@@ -2481,6 +2562,27 @@ Views.account = {
     out += '</section>';
     if (pdf.enabled !== false) out += '<section class="section"><div class="card pad row"><div class="grow"><h3>📄 استخراج المحتوى (PDF)</h3><p class="muted" style="font-family:var(--f-ui);font-size:14px">ملف مصمَّم بمقاس A5 يضم كل شرائح البرنامج بأحدث نسخة، جاهز للطباعة.</p></div><button class="btn btn-dark" data-act="content-pdf">📄 استخراج المحتوى (PDF)</button></div></section>';
     return out;
+  }
+};
+
+// ============ لوحة المشرف (قراءة فقط) ============
+Views.monitor = {
+  html() {
+    const c = Monitor.cfg(); const tok = Router.cur.id || '';
+    if (!Admin.ok() && (!c.enabled || !c.token || tok !== c.token)) return '<div class="empty" style="margin-top:30px">🔒 رابط المتابعة غير صالح أو غير مفعّل. اطلب رابطًا محدثًا من إدارة البرنامج.</div>';
+    const d = reportData(); const pct = v => v == null ? '—' : Math.round(v) + '%';
+    const kpi = (l, v, s) => '<div class="mon-kpi"><span>' + l + '</span><b class="num">' + v + '</b>' + (s ? '<em>' + s + '</em>' : '') + '</div>';
+    const bars = (items, max, col) => '<div class="mon-bars">' + items.map(x => '<div class="mon-bar"><span>' + h(x.l) + '</span><i><em style="width:' + Math.max(0, Math.min(100, (x.v || 0) / (max || 1) * 100)) + '%;background:' + (x.c || col || 'var(--brand)') + '"></em></i><b class="num">' + h(x.t != null ? x.t : x.v) + '</b></div>').join('') + '</div>';
+    const dist = o => { const k = Object.keys(o).sort((a, b) => o[b] - o[a]); return k.length ? bars(k.map(x => ({ l: x, v: o[x] })), Math.max(...k.map(x => o[x])), '#1F3A5F') : '<div class="muted">لا توجد بيانات</div>'; };
+    const ev = Bell.events().slice(0, 12);
+    return '<div class="mon-head"><div><span class="live-dot"></span> <b>لوحة متابعة مباشرة</b> · ' + h(d.cohort.name) + '</div><div class="row"><span class="pill">👁 قراءة فقط</span><button class="btn btn-primary btn-sm" data-act="report-pdf" data-lang="ar">📑 التقرير (عربي)</button><button class="btn btn-soft btn-sm" data-act="report-pdf" data-lang="en">📑 Report (EN)</button></div></div>' +
+      '<div class="mon-kpis">' + kpi('المسجّلون', d.uids.length) + kpi('متوسط الحضور', d.attAvg + '%') + kpi('مستحقو الشهادة', d.certs) + kpi('التقييم القبلي', pct(d.preAvg), d.pre.length + ' مشارك') + kpi('التقييم البعدي', pct(d.postAvg), d.post.length + ' مشارك') + kpi('متوسط التحسن', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain)) + kpi('الرضا', d.survey.overall ? d.survey.overall.toFixed(1) + '/5' : '—') + kpi('NPS', d.survey.nps == null ? '—' : d.survey.nps) + kpi('مهتمون ببرامج البنك', d.leads.length) + '</div>' +
+      '<div class="mon-grid"><div class="card pad"><h3>المشاركة في المحاور</h3>' + bars(d.axes.map(x => ({ l: x.a.title, v: Math.round(x.rate * 100), t: Math.round(x.rate * 100) + '%' })), 100) + '</div>' +
+      '<div class="card pad"><h3>الحضور حسب اليوم</h3>' + bars(d.perDay.map((v, i) => ({ l: 'اليوم ' + (i + 1), v, t: v + '/' + d.uids.length })), Math.max(1, d.uids.length), '#0E7C7B') + '<h3 style="margin-top:14px">قطاعات المشاركين</h3>' + dist(d.sector) + '</div>' +
+      '<div class="card pad"><h3>التقييم القبلي مقابل البعدي لكل سؤال</h3>' + d.A.items.map((it, i) => '<div class="mon-q"><span class="num">' + (i + 1) + '</span>' + bars([{ l: 'قبلي', v: d.pq[i] || 0, t: pct(d.pq[i]), c: '#C98A9C' }, { l: 'بعدي', v: d.qq[i] || 0, t: pct(d.qq[i]), c: '#8A1538' }], 100) + '</div>').join('') + '</div>' +
+      '<div class="card pad"><h3>الرضا لكل بند</h3>' + bars(d.survey.rates.map((r, i) => ({ l: r, v: d.survey.avgs[i] || 0, t: d.survey.avgs[i] ? d.survey.avgs[i].toFixed(1) : '—' })), 5, '#E0A526') + '<h3 style="margin-top:14px">الاهتمام ببرامج البنك</h3>' + dist(d.byProg) + '</div>' +
+      '<div class="card pad"><h3>💡 توصيات آلية</h3>' + (d.recs.length ? '<ul class="mon-recs">' + d.recs.map(r => '<li>' + h(r.ar) + '</li>').join('') + '</ul>' : '<div class="muted">تظهر عند توفر بيانات كافية.</div>') + '</div>' +
+      '<div class="card pad"><h3>آخر النشاطات</h3>' + (ev.length ? ev.map(e => '<div class="bell-item"><div class="grow">' + e.html + '<div class="t">' + ago(e.ts) + '</div></div></div>').join('') : '<div class="muted">لا نشاط بعد.</div>') + '</div></div>';
   }
 };
 
@@ -2780,13 +2882,29 @@ Views.admin = {
     out += drop('asRes', Views.admin.assessResults());
     out += tool('broadcast', '📣', '#C8702A', 'بث رسالة مباشرة', '<textarea id="bcText" data-keep="bc-text" rows="2" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-family:var(--f-body)" placeholder="رسالة تظهر كشريط أعلى الصفحة لكل المتصفحين الآن"></textarea>' + (Store.broadcast && Store.broadcast.text ? '<div class="muted" style="margin-top:4px">الحالية: ' + h(Store.broadcast.text) + '</div>' : ''), '<button class="btn btn-primary btn-xs" data-act="bc-send">إرسال</button>' + (Store.broadcast && Store.broadcast.text ? '<button class="btn btn-ghost btn-xs" data-act="bc-stop">إيقاف البث</button>' : ''));
     out += '</div>';
+    // ---- الجهة الراعية ----
+    out += band('الجهة الراعية والدفعات', '#8A1538') + '<div class="tools-grid">';
+    const mc = Monitor.cfg(); const lds = Leads.list(); const coh = Cohort.cur(); const cl = Cohort.list();
+    out += tool('monitor', '👁', '#1F3A5F', 'رابط متابعة للمشرف', 'لوحة حية للقراءة فقط لممثل الجهة الراعية: الحضور والتقييمات والمشاركة والرضا والاهتمامات، مع تنزيل التقرير. ' + (mc.enabled ? '<span class="tag added">مفعّل</span>' : '<span class="tag off">معطّل</span>'), '<button class="btn btn-xs ' + (mc.enabled ? 'btn-danger' : 'btn-primary') + '" data-act="mon-toggle">' + (mc.enabled ? 'إيقاف الرابط' : 'تفعيل الرابط') + '</button>' + (mc.enabled ? '<button class="btn btn-soft btn-xs" data-act="mon-copy">📋 نسخ الرابط</button><button class="btn btn-ghost btn-xs" data-act="mon-open">👀 معاينة</button><button class="btn btn-ghost btn-xs" data-act="mon-new">رابط جديد</button>' : ''));
+    out += tool('leads', '🤝', '#138A5E', 'المهتمون ببرامج البنك', '<div class="bigno num">' + lds.length + '</div>مشروع طلب التواصل بخصوص برامج بنك قطر للتنمية', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="leadsList">القائمة</button><button class="btn btn-primary btn-xs" data-act="leads-csv">⬇️ CSV</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="leadsCfg">إعدادات النموذج</button>');
+    out += drop('leadsList', lds.length ? '<div class="table-wrap"><table class="att-table"><thead><tr><th>الاسم</th><th>المشروع</th><th>البرامج</th><th>الاحتياج</th><th>التواصل</th><th>التاريخ</th></tr></thead><tbody>' + lds.map(l => { const u = Store.users[l.uid] || {}; return '<tr><td><b>' + h(l.name || u.name || '') + '</b></td><td>' + h(l.org || RegFields.val(u, 'org')) + '<div class="muted" style="font-size:11.5px">' + h(RegFields.val(u, 'sector')) + '</div></td><td>' + l.programs.map(h).join('<br>') + '</td><td>' + h(l.need || '') + '</td><td>' + h(l.method || '') + '<div class="num">' + h(l.contact || '') + '</div></td><td>' + fmtDate(l.ts) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="empty">لا توجد طلبات بعد.</div>');
+    const lc = Leads.cfg();
+    out += drop('leadsCfg', '<div class="field"><label>النص التعريفي</label><textarea id="lcIntro" data-keep="lc-intro" rows="2">' + h(lc.intro) + '</textarea></div><div class="field"><label>البرامج (سطر لكل برنامج)</label><textarea id="lcProgs" data-keep="lc-progs" rows="6">' + h(lc.programs.join('\n')) + '</textarea></div><div class="field"><label>نص الموافقة</label><input id="lcConsent" data-keep="lc-consent" value="' + h(lc.consent) + '"></div><div class="field"><label>يظهر النموذج أيضًا أسفل المحور</label><select id="lcAxis"><option value="">— لا يظهر في محور —</option>' + Content.axes({ all: true }).map(a => '<option value="' + h(a.id) + '" ' + (a.id === lc.axis ? 'selected' : '') + '>' + h(a.title) + '</option>').join('') + '</select><span class="help">ويظهر دائمًا في صفحة «حسابي».</span></div><div class="row"><button class="btn btn-primary btn-sm" data-act="leads-cfg-save">💾 حفظ</button><button class="btn btn-ghost btn-sm" data-act="leads-cfg-reset">↺ الافتراضي</button></div>');
+    out += tool('cohorts', '📦', '#9A7412', 'الدفعات والأرشيف', 'الدفعة الحالية: <b>' + h(coh.name) + '</b> · في الأرشيف: <b class="num">' + cl.length + '</b> دفعة', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="cohList">المقارنة والأرشيف</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="cohEdit">بيانات الدفعة</button><button class="btn btn-danger btn-xs" data-act="cohort-close">📦 إغلاق وأرشفة</button>');
+    out += drop('cohEdit', '<div class="grid2"><div class="field"><label>اسم الدفعة</label><input id="cohName" data-keep="coh-name" value="' + h(coh.name) + '"></div><div class="field"><label>تاريخ البداية</label><input id="cohStart" type="date" data-keep="coh-start" value="' + h(coh.start) + '"></div><div class="field"><label>تاريخ النهاية</label><input id="cohEnd" type="date" data-keep="coh-end" value="' + h(coh.end) + '"></div></div><button class="btn btn-primary btn-sm" data-act="cohort-save">💾 حفظ</button>');
+    if (UIState.openDrop.has('cohList')) { const live = cohortSummary(reportData()); const rows = cl.map(c => ({ c, s: c.summary || {} })).concat([{ c: Object.assign({ id: '' }, coh), s: live, live: true }]); const v = x => x == null ? '—' : x;
+      out += drop('cohList', '<div class="table-wrap"><table class="att-table"><thead><tr><th>الدفعة</th><th>المشاركون</th><th>الحضور</th><th>الشهادات</th><th>قبلي</th><th>بعدي</th><th>التحسن</th><th>الرضا</th><th>NPS</th><th>المهتمون</th><th></th></tr></thead><tbody>' +
+        rows.map(r => '<tr><td><b>' + h(r.c.name || '') + '</b>' + (r.live ? ' <span class="tag added">حالية</span>' : '') + '<div class="muted num" style="font-size:11.5px">' + h(r.c.start || '') + (r.c.end ? ' — ' + h(r.c.end) : '') + '</div></td><td class="num">' + v(r.s.participants) + '</td><td class="num">' + v(r.s.attAvg) + '%</td><td class="num">' + v(r.s.certs) + '</td><td class="num">' + (r.s.preAvg == null ? '—' : r.s.preAvg + '%') + '</td><td class="num">' + (r.s.postAvg == null ? '—' : r.s.postAvg + '%') + '</td><td class="num">' + (r.s.gain == null ? '—' : (r.s.gain >= 0 ? '+' : '') + r.s.gain) + '</td><td class="num">' + v(r.s.sat) + '</td><td class="num">' + v(r.s.nps) + '</td><td class="num">' + v(r.s.leads) + '</td><td>' +
+          (r.live ? '' : '<button class="btn btn-soft btn-xs" data-act="coh-report" data-cid="' + h(r.c.id) + '" data-lang="ar">PDF</button><button class="btn btn-ghost btn-xs" data-act="coh-report" data-cid="' + h(r.c.id) + '" data-lang="en">EN</button><button class="btn btn-ghost btn-xs" data-act="coh-csv" data-cid="' + h(r.c.id) + '">CSV</button><button class="btn btn-ghost btn-xs" data-act="coh-json" data-cid="' + h(r.c.id) + '">JSON</button><button class="btn btn-danger btn-xs" data-act="coh-del" data-cid="' + h(r.c.id) + '">🗑</button>') + '</td></tr>').join('') + '</tbody></table></div>'); }
+    out += '</div>';
     // ---- التصدير والنسخ ----
     out += band('التصدير والنسخ', '#138A5E') + '<div class="tools-grid">';
     out += tool('pdf', '📄', '#00827F', 'ملف المحتوى PDF', 'A5 مصمَّم: أغلفة، فهرس، وشرائح كل محور. ' + (pdf.enabled === false ? '<span class="tag off">معطّل للمتدربين</span>' : '<span class="tag added">متاح للمتدربين</span>'), '<button class="btn btn-soft btn-xs" data-act="drop" data-k="pdfEdit">بيانات الملف</button><button class="btn btn-primary btn-xs" data-act="content-pdf">معاينة الآن</button>');
     out += drop('pdfEdit', Views.admin.pdfEditor());
     out += tool('guide', '📘', '#1F3A5F', 'دليل المدرب', 'ملف PDF يضم أهداف البرنامج ومنهجيته وجدول اليومين ومخرجات كل محور وملاحظة لكل شريحة، إضافة إلى التمارين ومفتاح إجابات التقييم — جاهز للتسليم قبل التدريب.', '<button class="btn btn-primary btn-xs" data-act="guide-pdf">📘 تصدير الدليل PDF</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="guideEdit">تعديل الأهداف والجدول</button>');
     out += drop('guideEdit', Views.admin.guideEditor());
-    out += tool('report', '📑', '#8A1538', 'تقرير ختام البرنامج', 'ملخص جاهز لتقرير الختام: المسجّلون، الحضور، الشهادات، نتائج التقييم القبلي والبعدي لكل سؤال، المشاركة في المحاور، وآراء المتدربين.', '<button class="btn btn-primary btn-xs" data-act="report-pdf">📑 PDF</button><button class="btn btn-soft btn-xs" data-act="report-csv">📊 CSV</button>');
+    out += tool('report', '📑', '#8A1538', 'تقرير ختام البرنامج', 'تقرير مؤسسي آلي بشعار البنك: ملخص تنفيذي، ملف المشاركين، نتائج التقييم القبلي والبعدي، التفاعل، الرضا وNPS، الاهتمام ببرامج البنك، وتوصيات آلية — بالعربية أو الإنجليزية.', '<button class="btn btn-primary btn-xs" data-act="report-pdf" data-lang="ar">📑 عربي</button><button class="btn btn-primary btn-xs" data-act="report-pdf" data-lang="en">📑 English</button><button class="btn btn-soft btn-xs" data-act="report-csv">📊 CSV</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="logoEdit">شعار البنك</button>');
+    out += drop('logoEdit', '<p class="help muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:0">ارفع الشعار الرسمي لبنك قطر للتنمية (PNG بخلفية شفافة أو بيضاء). يظهر في الغلاف وأعلى كل صفحة من التقرير. بدون شعار يُستخدم اسم البنك نصيًا.</p>' + ImgPick.html('brandLogo', (Store.site || {}).brandLogo) + '<div class="row" style="margin-top:8px"><button class="btn btn-primary btn-sm" data-act="logo-save">💾 حفظ الشعار</button></div>');
     out += tool('csv', '📊', '#138A5E', 'تصدير المشاركات', 'كل إجابات المحاور والأنشطة والاستطلاع والمختبر والتقييمين في ملف CSV واحد يفتح في Excel.', '<button class="btn btn-primary btn-xs" data-act="export-csv">⬇️ تصدير CSV</button>');
     out += tool('person', '🗂️', '#1F3A5F', 'مشاركات فردية', 'ملف PDF وCSV لمشاركات كل متدرب على حدة، أو للجميع في ملف ZIP.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="persons">' + (UIState.openDrop.has('persons') ? 'إخفاء' : 'فتح') + ' القائمة</button>');
     out += drop('persons', '<div class="row" style="margin-bottom:10px"><input data-keep="persons-search" data-filter=".person" placeholder="🔍 بحث بالاسم…" style="flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;padding:8px 10px"><button class="btn btn-primary btn-xs" data-act="export-all-pdf">📦 تصدير الكل PDF</button><button class="btn btn-soft btn-xs" data-act="export-all-csv">📦 تصدير الكل CSV</button></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><button class="btn btn-soft btn-xs" data-act="person-pdf" data-uid="' + h(u) + '">PDF</button><button class="btn btn-ghost btn-xs" data-act="person-csv" data-uid="' + h(u) + '">CSV</button></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
@@ -3534,49 +3652,6 @@ function exportAttendanceCsv() {
   downloadBlob(csvBlob(rows), 'سجل الحضور.csv'); UI.toast('✅ تم التصدير (الحد المطلوب ' + c.threshold + '%)');
 }
 
-// ---------- تقرير ختام البرنامج ----------
-function reportData() {
-  const users = Store.users || {}; const uids = Object.keys(users); const A = Content.assess(); const n = A.items.length || 1;
-  const pre = Assess.list('pre'), post = Assess.list('post'); const preM = {}; pre.forEach(x => { preM[x.uid] = x; });
-  const paired = post.filter(x => preM[x.uid]); const gain = paired.length ? paired.reduce((s, x) => s + (x.score - preM[x.uid].score), 0) / paired.length / n * 100 : null;
-  const axes = Content.eligibleAxes().map(a => { const exs = Content.exercisesOf(a.id); const posts = exs.reduce((s, e) => s + Object.keys(Store.posts[e.id] || {}).length, 0); const people = new Set(); exs.forEach(e => Object.keys(Store.posts[e.id] || {}).forEach(k => { const p = Store.posts[e.id][k]; if (e.mode === 'group') Object.keys(p.members || {}).forEach(m => people.add(m)); else people.add(k); })); return { a, exs: exs.length, posts, people: people.size }; });
-  const sv = Content.survey({ all: true }); const svPosts = sv ? Object.keys(Store.posts[sv.id] || {}).map(k => Store.posts[sv.id][k]).filter(p => p && p.text) : [];
-  const attAvg = uids.length ? Math.round(uids.reduce((s, u) => s + Attend.pct(u), 0) / uids.length) : 0;
-  return { uids, A, pre, post, paired, gain, preAvg: Assess.avg('pre'), postAvg: Assess.avg('post'), pq: Assess.perQuestion('pre'), qq: Assess.perQuestion('post'), axes, svPosts, attAvg, certs: Attend.holders().length, achievers: Progress.achievers().length, labGroups: Object.keys(Store.labAnswers || {}).length, cfg: Attend.cfg() };
-}
-function exportReportCsv() {
-  const d = reportData(); const r = v => v == null ? '—' : Math.round(v) + '%';
-  const rows = [['البند', 'القيمة'], ['البرنامج', Content.courseTitle()], ['تاريخ التقرير', fmtDate(Date.now())], ['عدد المسجّلين', d.uids.length], ['متوسط نسبة الحضور', d.attAvg + '%'], ['المستحقون لشهادة المشاركة (حضور ≥ ' + d.cfg.threshold + '%)', d.certs], ['المنجزون لـ 80% من التمارين', d.achievers], ['عدد من أجاب التقييم القبلي', d.pre.length], ['عدد من أجاب التقييم البعدي', d.post.length], ['متوسط التقييم القبلي', r(d.preAvg)], ['متوسط التقييم البعدي', r(d.postAvg)], ['متوسط التحسن لمن أجاب التقييمين (' + d.paired.length + ')', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain) + ' نقطة'], ['مجموعات شاركت في المختبر الختامي', d.labGroups], [], ['السؤال', 'صحيح قبلي', 'صحيح بعدي']];
-  d.A.items.forEach((it, i) => rows.push([(i + 1) + '. ' + it.q, r(d.pq[i]), r(d.qq[i])]));
-  rows.push([], ['المحور', 'عدد التمارين', 'عدد المشاركات', 'عدد المشاركين']); d.axes.forEach(x => rows.push([x.a.title, x.exs, x.posts, x.people]));
-  rows.push([], ['آراء المتدربين (الاستطلاع الختامي)', '']); d.svPosts.forEach(p => rows.push([p.name || '', p.text || '']));
-  downloadBlob(csvBlob(rows), 'تقرير ختام البرنامج.csv');
-}
-const A4P = { w: 794, h: 1123, mmW: 210, mmH: 297, format: 'a4', orientation: 'portrait' };
-async function buildReportPdf() {
-  const pm = progressModal('📑 تقرير ختام البرنامج');
-  try {
-    const d = reportData(); const r = v => v == null ? '—' : Math.round(v) + '%'; const C = '#8A1538';
-    const head = t => '<div style="position:absolute;top:0;left:0;right:0;height:84px;background:linear-gradient(120deg,#8A1538,#1F3A5F)"><div style="position:absolute;top:22px;right:34px;left:34px;color:#fff;display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:IBM Plex Sans Arabic;font-size:12px;opacity:.85">' + h(Content.courseTitle()) + '</div><div style="font-family:Cairo;font-weight:800;font-size:22px">' + h(t) + '</div></div><div class="num" style="font-family:IBM Plex Sans Arabic;font-size:12px">' + fmtDate(Date.now()) + '</div></div></div>';
-    const kpi = (lbl, v, sub) => '<div style="flex:1 1 30%;min-width:200px;background:#fff;border:1px solid #EADDE1;border-radius:18px;padding:14px 16px"><div style="font-family:IBM Plex Sans Arabic;font-size:12.5px;color:#7D879C">' + lbl + '</div><div class="num" style="font-family:Cairo;font-weight:800;font-size:30px;color:' + C + '">' + v + '</div>' + (sub ? '<div style="font-size:11.5px;color:#7D879C">' + sub + '</div>' : '') + '</div>';
-    const pages = [];
-    pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('تقرير ختام البرنامج') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px"><h2 style="font-size:20px;margin-bottom:10px">ملخص المؤشرات</h2><div style="display:flex;flex-wrap:wrap;gap:12px">' +
-      kpi('المسجّلون', d.uids.length) + kpi('متوسط نسبة الحضور', d.attAvg + '%') + kpi('مستحقو شهادة المشاركة', d.certs, 'حضور ≥ ' + d.cfg.threshold + '%') +
-      kpi('متوسط التقييم القبلي', r(d.preAvg), d.pre.length + ' مشارك') + kpi('متوسط التقييم البعدي', r(d.postAvg), d.post.length + ' مشارك') + kpi('متوسط التحسن (نقطة مئوية)', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain), 'لمن أجاب التقييمين (' + d.paired.length + ')') +
-      kpi('أنجزوا 80% من التمارين', d.achievers) + kpi('مجموعات المختبر الختامي', d.labGroups) + kpi('آراء في الاستطلاع الختامي', d.svPosts.length) + '</div></div>' + PP.foot(Content.courseTitle(), 1));
-    pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('المشاركة في المحاور') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px"><h2 style="font-size:20px;margin:0 0 10px">المشاركة في المحاور</h2><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="background:' + C + ';color:#fff"><th style="padding:8px;text-align:right">المحور</th><th>التمارين</th><th>المشاركات</th><th>المشاركون</th></tr>' +
-      d.axes.map((x, i) => '<tr style="background:' + (i % 2 ? '#fff' : '#F8EEF1') + '"><td style="padding:7px 8px">' + h(x.a.title) + '</td><td class="num" style="text-align:center">' + x.exs + '</td><td class="num" style="text-align:center">' + x.posts + '</td><td class="num" style="text-align:center">' + x.people + '</td></tr>').join('') + '</table></div>' + PP.foot(Content.courseTitle(), 2));
-    for (let q0 = 0; q0 < d.A.items.length; q0 += 5) pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('نتائج التقييم القبلي والبعدي لكل سؤال') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px">' +
-      '<div style="font-family:IBM Plex Sans Arabic;font-size:12px;color:#7D879C;margin-bottom:10px"><span style="display:inline-block;width:14px;height:10px;background:#DCC3CB;border-radius:3px"></span> قبلي &nbsp; <span style="display:inline-block;width:14px;height:10px;background:' + C + ';border-radius:3px"></span> بعدي — نسبة من أجابوا إجابة صحيحة</div>' +
-      d.A.items.slice(q0, q0 + 5).map((it, j) => { const i = q0 + j; return  '<div style="margin-bottom:12px;background:#fff;border:1px solid #EADDE1;border-radius:14px;padding:10px 12px"><div style="font-weight:700;font-size:13px"><span class="num">' + (i + 1) + '.</span> ' + h(it.q) + '</div><div style="font-size:11.5px;color:#138A5E;margin-top:3px">الإجابة الصحيحة: ' + h(it.options[it.answer] || '') + '</div>' +
-        ['pq', 'qq'].map(k => { const v = d[k][i]; return '<div style="display:flex;align-items:center;gap:8px;margin-top:5px"><span style="width:44px;font-size:11px;color:#7D879C">' + (k === 'pq' ? 'قبلي' : 'بعدي') + '</span><div style="flex:1;height:12px;background:#F3E9EC;border-radius:6px;overflow:hidden"><div style="height:100%;width:' + (v || 0) + '%;background:' + (k === 'pq' ? '#DCC3CB' : C) + '"></div></div><span class="num" style="width:40px;font-size:12px;font-weight:700">' + (v == null ? '—' : v + '%') + '</span></div>'; }).join('') + '</div>'; }).join('') + '</div>' + PP.foot(Content.courseTitle(), pages.length + 1));
-    const sv = d.svPosts; const per = 9;
-    for (let i = 0; i < Math.max(1, Math.ceil(sv.length / per)); i++) pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head('آراء المتدربين في الاستطلاع الختامي') + '<div class="fit" style="top:110px;bottom:50px;right:34px;left:34px">' + (sv.length ? sv.slice(i * per, i * per + per).map(p => '<div style="margin-bottom:10px;background:#fff;border-right:4px solid ' + C + ';border-radius:12px;padding:10px 14px"><div class="j" style="font-size:13.5px;white-space:pre-wrap">«' + h(p.text) + '»</div><div style="font-size:11.5px;color:#7D879C;margin-top:4px">— ' + h(p.name || '') + (p.role ? '، ' + h(p.role) : '') + '</div></div>').join('') : '<div style="text-align:center;color:#7D879C;margin-top:80px">لا توجد آراء مسجلة بعد.</div>') + '</div>' + PP.foot(Content.courseTitle(), pages.length + 1));
-    const doc = await PDFE.build(pages, A4P, (i, n) => pm.set(i, n));
-    doc.save('تقرير ختام البرنامج - ' + fmtDate(Date.now()).replace(/\//g, '-') + '.pdf'); pm.close();
-  } catch (e) { pm.close(); UI.alert('تعذر إنشاء التقرير: ' + h(e.message || e)); }
-}
-
 // ---------- دليل المدرب (A4 عمودي) ----------
 async function buildGuidePdf() {
   const pm = progressModal('📘 دليل المدرب');
@@ -3626,6 +3701,137 @@ function exportUsersCsv() {
 }
 
 
+/* ===== 08b-report.js ===== */
+// ---------------------------------------------------------------------
+// تقرير ختام البرنامج بمستوى مؤسسي (عربي / إنجليزي) + بيانات لوحة المشرف ومقارنة الدفعات
+// كل الأرقام تُحسب مرة واحدة في reportData() من البيانات الحالية أو من لقطة دفعة مؤرشفة.
+// ---------------------------------------------------------------------
+const A4P = { w: 794, h: 1123, mmW: 210, mmH: 297, format: 'a4', orientation: 'portrait' };
+const SNAP_KEYS = { users: 'users', posts: 'posts', assess: 'assess', attendance: 'attendance', labAnswers: 'lab', leads: 'leads', followups: 'followups' };
+// حساب المؤشرات على لقطة بيانات (دفعة مؤرشفة) بتبديل مؤقت لحالة Store ثم استعادتها
+function withSnapshot(snap, fn) {
+  if (!snap) return fn();
+  const saved = {}; Object.keys(SNAP_KEYS).forEach(k => { saved[k] = Store[k]; });
+  try { Store.users = snap.users || {}; Store.posts = snap.posts || {}; Store.assess = snap.assess || {}; Store.attendance = snap.attendance || {}; Store.labAnswers = (snap.lab && snap.lab.answers) || {}; Store.leads = snap.leads || {}; Store.followups = snap.followups || {}; return fn(); }
+  finally { Object.keys(saved).forEach(k => { Store[k] = saved[k]; }); }
+}
+function distOf(uids, key) { const c = {}; uids.forEach(u => { const v = RegFields.val(Store.users[u], key); if (v) c[v] = (c[v] || 0) + 1; }); return c; }
+function reportData(snap) {
+  return withSnapshot(snap, () => {
+    const users = Store.users || {}; const uids = Object.keys(users); const A = Content.assess(); const n = A.items.length || 1;
+    const pre = Assess.list('pre'), post = Assess.list('post'); const preM = {}; pre.forEach(x => { preM[x.uid] = x; });
+    const paired = post.filter(x => preM[x.uid]); const gain = paired.length ? paired.reduce((s, x) => s + (x.score - preM[x.uid].score), 0) / paired.length / n * 100 : null;
+    const axes = Content.eligibleAxes().map(a => { const exs = Content.exercisesOf(a.id); let posts = 0; const people = new Set(); exs.forEach(e => { const ps = Store.posts[e.id] || {}; Object.keys(ps).forEach(k => { const p = ps[k]; if (!p) return; posts++; if (e.mode === 'group') Object.keys(p.members || {}).forEach(m => people.add(m)); else people.add(k); }); }); return { a, exs: exs.length, posts, people: people.size, rate: uids.length ? people.size / uids.length : 0 }; });
+    const sv = Content.survey({ all: true }); const survey = SurveyStats.of(sv ? Store.posts[sv.id] : {}, sv);
+    const cfg = Attend.cfg(); const attAvg = uids.length ? Math.round(uids.reduce((s, u) => s + Attend.pct(u), 0) / uids.length) : 0;
+    const perDay = Attend.days().map(d => uids.filter(u => Attend.hoursOf(u, d) > 0).length);
+    const leads = Leads.list(); const byProg = Leads.byProgram(leads);
+    const budget = (() => { const e = Content.allExercises().map(x => x.e).find(e => e && e.sim === 'budget'); if (!e) return []; const ps = Store.posts[e.id] || {}; return Object.keys(ps).filter(k => ps[k] && ps[k].state).map(k => ({ g: +k.slice(1), r: BudgetSim.calc(ps[k].state) })).sort((a, b) => b.r.score - a.r.score); })();
+    const fu = {}; ['30', '60', '90'].forEach(k => { fu[k] = Object.keys((Store.followups || {})['d' + k] || {}).length; });
+    const d = { cohort: Cohort.cur(), uids, n: A.items.length, A, pre, post, paired, gain, preAvg: Assess.avg('pre'), postAvg: Assess.avg('post'), pq: Assess.perQuestion('pre'), qq: Assess.perQuestion('post'), axes, survey, attAvg, perDay, cfg,
+      certs: Attend.holders().length, achievers: Progress.achievers().length, labGroups: Object.keys(Store.labAnswers || {}).length, leads, byProg, budget, fu,
+      sector: distOf(uids, 'sector'), stage: distOf(uids, 'stage'), hasStore: distOf(uids, 'hasStore'), onlineSales: distOf(uids, 'onlineSales') };
+    d.recs = recommendations(d); return d;
+  });
+}
+// توصيات آلية مبنية على القواعد (عربي + إنجليزي)
+function recommendations(d) {
+  const R = []; const add = (ar, en) => R.push({ ar, en });
+  if (d.qq.some(x => x != null)) {
+    const weak = d.qq.map((v, i) => ({ v, i })).filter(x => x.v != null).sort((a, b) => a.v - b.v).slice(0, 2).filter(x => x.v < 70);
+    weak.forEach(x => { const ax = Content.axis(ASSESS_AXIS[x.i]); add('تعزيز محور «' + (ax ? ax.title : '') + '»: نسبة الإجابة الصحيحة على السؤال ' + (x.i + 1) + ' في التقييم البعدي ' + x.v + '% فقط؛ يُقترح زيادة وقت التطبيق العملي عليه في الدفعات القادمة.', 'Strengthen "' + (EN.axes[ASSESS_AXIS[x.i]] || '') + '": only ' + x.v + '% answered post-test Q' + (x.i + 1) + ' correctly; add more hands-on practice in future cohorts.'); });
+  }
+  if (d.survey.avgs.some(x => x != null)) { const lo = d.survey.avgs.map((v, i) => ({ v, i })).filter(x => x.v != null).sort((a, b) => a.v - b.v)[0]; if (lo && lo.v < 4.3) add('أقل بنود الرضا تقييمًا: «' + d.survey.rates[lo.i] + '» (' + lo.v.toFixed(1) + ' من 5)؛ يُوصى بمراجعته.', 'Lowest-rated satisfaction item: "' + (EN.rates[lo.i] || d.survey.rates[lo.i]) + '" (' + lo.v.toFixed(1) + '/5); review for the next cohort.'); }
+  const lowAx = d.axes.filter(x => x.exs).sort((a, b) => a.rate - b.rate)[0]; if (lowAx && d.uids.length && lowAx.rate < 0.5) add('أقل المحاور مشاركة: «' + lowAx.a.title + '» (' + Math.round(lowAx.rate * 100) + '% من المسجلين)؛ يُقترح تخصيص وقت داخل الجلسة لتمارينه.', 'Lowest engagement: "' + (EN.axes[lowAx.a.id] || lowAx.a.title) + '" (' + Math.round(lowAx.rate * 100) + '% of participants); allocate in-session time to its exercises.');
+  const below = d.uids.filter(u => !Attend.eligible(u)).length; if (d.uids.length && below) add(below + ' مشاركًا لم يبلغوا نسبة الحضور المطلوبة للشهادة (' + d.cfg.threshold + '%)؛ يُقترح تذكير مسبق بالمواعيد وتسجيل الحضور في بداية كل جلسة.', below + ' participant(s) did not reach the ' + d.cfg.threshold + '% attendance required for certification; send reminders and take attendance at the start of each session.');
+  if (d.survey.nps != null) add(d.survey.nps >= 50 ? 'مؤشر صافي التوصية ممتاز (' + d.survey.nps + ')؛ يمكن الاستفادة من المشاركين كسفراء للدفعات القادمة.' : 'مؤشر صافي التوصية ' + d.survey.nps + '؛ يُوصى بمراجعة آراء المشاركين النصية لتحديد أولويات التحسين.', d.survey.nps >= 50 ? 'Excellent Net Promoter Score (' + d.survey.nps + '); participants can act as ambassadors for future cohorts.' : 'NPS of ' + d.survey.nps + '; review qualitative feedback to prioritise improvements.');
+  if (d.leads.length) { const top = Object.keys(d.byProg).sort((a, b) => d.byProg[b] - d.byProg[a])[0]; add(d.leads.length + ' مشروعًا أبدى اهتمامًا ببرامج البنك، وأكثرها طلبًا: «' + top + '»؛ يُوصى بتواصل الفريق المختص خلال أسبوعين من انتهاء البرنامج.', d.leads.length + ' businesses expressed interest in QDB programmes (most requested: "' + (EN.programs[DEFAULT_LEADS.programs.indexOf(top)] || top) + '"); recommend follow-up by the relevant QDB team within two weeks.'); }
+  const topSector = Object.keys(d.sector).sort((a, b) => d.sector[b] - d.sector[a])[0]; if (topSector) add('القطاع الأكثر تمثيلًا: «' + topSector + '»؛ يُقترح إضافة أمثلة ودراسات حالة من هذا القطاع في الدفعات القادمة.', 'Most represented sector: "' + enOpt(topSector) + '"; add sector-specific cases in future cohorts.');
+  if (d.gain != null && d.gain > 0) add('تحسّن متوسط المعرفة بمقدار ' + Math.round(d.gain) + ' نقطة مئوية بين التقييمين القبلي والبعدي؛ يُوصى بقياس التطبيق الفعلي عبر متابعات 30 و60 و90 يومًا.', 'Average knowledge improved by ' + Math.round(d.gain) + ' percentage points (pre vs post); measure real-world application through the 30/60/90-day follow-ups.');
+  return R;
+}
+// ---------- مخطط أعمدة HTML لصفحات PDF ----------
+function pdfBars(items, o = {}) {
+  const max = o.max || Math.max(1, ...items.map(x => +x.v || 0)); const C = o.color || '#8A1538';
+  return '<div style="display:flex;flex-direction:column;gap:7px">' + items.map(x => '<div style="display:grid;grid-template-columns:' + (o.lw || '38%') + ' 1fr 56px;gap:8px;align-items:center;font-size:12px"><span>' + h(x.l) + '</span><div style="height:13px;background:#F1E7EA;border-radius:7px;overflow:hidden"><div style="height:100%;width:' + Math.max(0, Math.min(100, (+x.v || 0) / max * 100)) + '%;background:' + (x.c || C) + ';border-radius:7px"></div></div><b class="num" style="font-size:12px">' + (x.t != null ? h(x.t) : (x.v == null ? '—' : x.v)) + '</b></div>').join('') + '</div>';
+}
+function logoHtml(size) {
+  const lg = (Store.site || {}).brandLogo;
+  if (lg) return '<img src="' + lg + '" style="max-height:' + size + 'px;max-width:' + (size * 4) + 'px;object-fit:contain">';
+  return '<div style="display:inline-flex;flex-direction:column;align-items:center;line-height:1.2"><span style="font-family:Cairo;font-weight:800;font-size:' + Math.round(size * .42) + 'px;color:#8A1538">بنك قطر للتنمية</span><span style="font-family:Arial,sans-serif;font-weight:700;letter-spacing:1px;font-size:' + Math.round(size * .26) + 'px;color:#1F3A5F">QATAR DEVELOPMENT BANK</span></div>';
+}
+async function buildReportPdf(lang = 'ar', snap, cohortName) {
+  const pm = progressModal(lang === 'en' ? '📑 Closing report' : '📑 تقرير ختام البرنامج');
+  try {
+    const d = reportData(snap); const E = lang === 'en'; const C = '#8A1538'; const dir = E ? 'ltr' : 'rtl'; const al = E ? 'left' : 'right';
+    const T = E ? EN.course : Content.courseTitle(); const coh = cohortName || d.cohort.name; const pct = v => v == null ? '—' : Math.round(v) + '%';
+    const L = (ar, en) => E ? en : ar; const pages = [];
+    const head = t => '<div style="position:absolute;top:0;left:0;right:0;height:92px;background:linear-gradient(120deg,#8A1538,#1F3A5F)"></div><div style="position:absolute;top:20px;left:34px;right:34px;display:flex;justify-content:space-between;align-items:center;color:#fff;direction:' + dir + '"><div><div style="font-family:IBM Plex Sans Arabic,Arial;font-size:12px;opacity:.85">' + h(T) + ' · ' + h(coh) + '</div><div style="font-family:Cairo,Arial;font-weight:800;font-size:21px">' + h(t) + '</div></div><div style="background:#fff;border-radius:12px;padding:6px 10px">' + logoHtml(40) + '</div></div>';
+    const page = (t, body) => pages.push('<div style="position:absolute;inset:0;background:#FBF8F7"></div>' + head(t) + '<div class="fit" style="top:112px;bottom:50px;right:34px;left:34px;direction:' + dir + ';text-align:' + al + ';line-height:1.75">' + body + '</div>' + '<div class="foot" style="direction:' + dir + '"><span>' + h(T) + ' — ' + L('تقرير ختام البرنامج', 'Programme closing report') + '</span><span class="num">' + (pages.length + 1) + '</span></div>');
+    const card = (lbl, v, sub) => '<div style="flex:1 1 30%;min-width:190px;background:#fff;border:1px solid #EADDE1;border-radius:16px;padding:12px 14px"><div style="font-size:12px;color:#7D879C">' + lbl + '</div><div class="num" style="font-family:Cairo,Arial;font-weight:800;font-size:28px;color:' + C + '">' + v + '</div>' + (sub ? '<div style="font-size:11px;color:#7D879C">' + sub + '</div>' : '') + '</div>';
+    const box = (t, inner) => '<div style="background:#fff;border:1px solid #EADDE1;border-radius:14px;padding:12px 14px;margin-bottom:12px"><div style="font-family:Cairo,Arial;font-weight:800;color:' + C + ';margin-bottom:6px">' + t + '</div>' + inner + '</div>';
+    const distBars = (obj, key) => { const ks = Object.keys(obj).sort((a, b) => obj[b] - obj[a]); return ks.length ? pdfBars(ks.map(k => ({ l: E ? enOpt(k) : k, v: obj[k] })), { color: '#1F3A5F' }) : '<div style="color:#7D879C;font-size:12px">' + L('لا توجد بيانات', 'No data') + '</div>'; };
+    // 1) الغلاف
+    pages.push(PP.multiBg() + '<div style="position:absolute;left:70px;right:70px;top:200px;background:#fff;border-radius:30px;box-shadow:0 20px 50px rgba(20,40,70,.16);padding:44px 36px;text-align:center;direction:' + dir + '"><div style="margin-bottom:22px">' + logoHtml(70) + '</div>' +
+      '<div style="font-family:IBM Plex Sans Arabic,Arial;font-weight:700;color:' + C + ';font-size:15px">' + L('تقرير ختام البرنامج', 'Programme Closing Report') + '</div><h1 style="font-size:30px;font-weight:800;margin-top:8px;font-family:Cairo,Arial">' + h(T) + '</h1>' +
+      '<p style="margin-top:12px;color:#4A5470;font-size:15px">' + h(coh) + (d.cohort.start ? ' · <span class="num">' + h(d.cohort.start) + (d.cohort.end ? ' — ' + h(d.cohort.end) : '') + '</span>' : '') + '</p>' +
+      '<p style="color:#4A5470;font-size:13.5px">' + L('إدارة تنمية ريادة الأعمال · برنامج تدريبي تفاعلي (يومان × 4 ساعات)', 'Entrepreneurship Development · Interactive training programme (2 days × 4 hours)') + '</p><div class="num" style="margin-top:16px;font-size:12px;color:#7D879C">' + L('تاريخ الإصدار', 'Issued') + ': ' + fmtDate(Date.now()) + '</div></div>');
+    // 2) الملخص التنفيذي
+    const summ = E ? [d.uids.length + ' participants registered; average attendance ' + d.attAvg + '% and ' + d.certs + ' qualified for the participation certificate (≥ ' + d.cfg.threshold + '% attendance).',
+      d.preAvg != null || d.postAvg != null ? 'Knowledge assessment: pre-test average ' + pct(d.preAvg) + ' vs post-test ' + pct(d.postAvg) + (d.gain != null ? ' — an average gain of ' + Math.round(d.gain) + ' points for participants who completed both.' : '.') : 'Knowledge assessment results are not yet available.',
+      d.survey.n ? 'Satisfaction: ' + (d.survey.overall ? d.survey.overall.toFixed(1) : '—') + '/5 across ' + d.survey.n + ' evaluations; Net Promoter Score ' + (d.survey.nps == null ? '—' : d.survey.nps) + '.' : 'Post-training evaluation responses are pending.',
+      d.leads.length + ' businesses requested follow-up on QDB programmes; ' + d.labGroups + ' groups completed the capstone lab.']
+      : [d.uids.length + ' مشاركًا مسجّلًا، بمتوسط حضور ' + d.attAvg + '%، واستحق ' + d.certs + ' منهم شهادة المشاركة (حضور ≥ ' + d.cfg.threshold + '%).',
+      d.preAvg != null || d.postAvg != null ? 'التقييم المعرفي: متوسط القبلي ' + pct(d.preAvg) + ' مقابل البعدي ' + pct(d.postAvg) + (d.gain != null ? '، بتحسن متوسط ' + Math.round(d.gain) + ' نقطة مئوية لمن أجاب التقييمين.' : '.') : 'نتائج التقييم المعرفي غير متاحة بعد.',
+      d.survey.n ? 'الرضا العام ' + (d.survey.overall ? d.survey.overall.toFixed(1) : '—') + ' من 5 من ' + d.survey.n + ' تقييمًا، ومؤشر صافي التوصية ' + (d.survey.nps == null ? '—' : d.survey.nps) + '.' : 'تقييمات ما بعد التدريب لم تكتمل بعد.',
+      d.leads.length + ' مشروعًا طلب التواصل بخصوص برامج البنك، وأنجزت ' + d.labGroups + ' مجموعات المختبر الختامي.'];
+    page(L('الملخص التنفيذي', 'Executive summary'), '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">' + card(L('المسجّلون', 'Participants'), d.uids.length) + card(L('متوسط الحضور', 'Avg. attendance'), d.attAvg + '%') + card(L('مستحقو الشهادة', 'Certified'), d.certs, '≥ ' + d.cfg.threshold + '%') + card(L('التقييم القبلي', 'Pre-test avg.'), pct(d.preAvg), d.pre.length + ' ' + L('مشارك', 'resp.')) + card(L('التقييم البعدي', 'Post-test avg.'), pct(d.postAvg), d.post.length + ' ' + L('مشارك', 'resp.')) + card(L('متوسط التحسن', 'Avg. gain (pts)'), d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain)) + card(L('الرضا العام', 'Satisfaction'), d.survey.overall ? d.survey.overall.toFixed(1) + '/5' : '—') + card('NPS', d.survey.nps == null ? '—' : d.survey.nps) + card(L('مهتمون ببرامج البنك', 'QDB leads'), d.leads.length) + '</div>' +
+      box(L('أبرز النتائج', 'Key findings'), PP.numbered(summ.map(h), C)) + box(L('التوصيات', 'Recommendations'), d.recs.length ? PP.numbered(d.recs.map(r => h(E ? r.en : r.ar)), '#138A5E') : L('لا توجد بيانات كافية بعد لتوليد توصيات.', 'Not enough data yet to generate recommendations.')));
+    // 3) ملف المشاركين والحضور
+    page(L('ملف المشاركين', 'Participant profile'), box(E ? EN.fields.sector : 'قطاع المشروع', distBars(d.sector)) + box(E ? EN.fields.stage : 'مرحلة المشروع', distBars(d.stage)));
+    page(L('الجاهزية الرقمية والحضور', 'Digital readiness & attendance'), box(E ? EN.fields.hasStore : 'قناة البيع الإلكترونية', distBars(d.hasStore)) + box(E ? EN.fields.onlineSales : 'نسبة المبيعات الإلكترونية', distBars(d.onlineSales)) +
+      box(L('الحضور حسب اليوم', 'Attendance by day'), pdfBars(d.perDay.map((v, i) => ({ l: L('اليوم ', 'Day ') + (i + 1), v, t: v + ' / ' + d.uids.length })), { max: Math.max(1, d.uids.length), color: '#0E7C7B' })));
+    // 4) نتائج التقييم
+    const qRows = d.A.items.map((it, i) => ({ i, l: (i + 1) + '. ' + (E ? (EN.assess[i] || 'Q' + (i + 1)) : clip(it.q, 70)) }));
+    page(L('نتائج التعلم: التقييم القبلي والبعدي', 'Learning outcomes: pre vs post assessment'), box(L('المتوسط العام', 'Overall average'), pdfBars([{ l: L('قبلي', 'Pre-test'), v: d.preAvg == null ? 0 : Math.round(d.preAvg), t: pct(d.preAvg), c: '#C98A9C' }, { l: L('بعدي', 'Post-test'), v: d.postAvg == null ? 0 : Math.round(d.postAvg), t: pct(d.postAvg) }], { max: 100, lw: '22%' })) +
+      box(L('نسبة الإجابة الصحيحة لكل سؤال (قبلي ثم بعدي)', 'Correct answers per question (pre, then post)'), qRows.slice(0, 5).map(r => '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:700;margin-bottom:3px">' + h(r.l) + '</div>' + pdfBars([{ l: L('قبلي', 'Pre'), v: d.pq[r.i] || 0, t: pct(d.pq[r.i]), c: '#C98A9C' }, { l: L('بعدي', 'Post'), v: d.qq[r.i] || 0, t: pct(d.qq[r.i]) }], { max: 100, lw: '14%' }) + '</div>').join('')));
+    if (qRows.length > 5) page(L('نتائج التعلم (تابع)', 'Learning outcomes (continued)'), box(L('نسبة الإجابة الصحيحة لكل سؤال (قبلي ثم بعدي)', 'Correct answers per question (pre, then post)'), qRows.slice(5).map(r => '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:700;margin-bottom:3px">' + h(r.l) + '</div>' + pdfBars([{ l: L('قبلي', 'Pre'), v: d.pq[r.i] || 0, t: pct(d.pq[r.i]), c: '#C98A9C' }, { l: L('بعدي', 'Post'), v: d.qq[r.i] || 0, t: pct(d.qq[r.i]) }], { max: 100, lw: '14%' }) + '</div>').join('')));
+    // 5) المشاركة في المحاور والمحاكاة
+    page(L('التفاعل والمشاركة', 'Engagement'), box(L('نسبة المشاركين في تمارين كل محور', 'Share of participants engaging with each module'), pdfBars(d.axes.map(x => ({ l: E ? (EN.axes[x.a.id] || x.a.title) : x.a.title, v: Math.round(x.rate * 100), t: Math.round(x.rate * 100) + '%' })), { max: 100, color: '#1F3A5F', lw: '46%' })) +
+      box(L('مؤشرات إضافية', 'Other indicators'), '<div style="display:flex;flex-wrap:wrap;gap:8px">' + card(L('إجمالي المشاركات', 'Total submissions'), d.axes.reduce((s, x) => s + x.posts, 0)) + card(L('أنجزوا 80% من التمارين', 'Completed ≥ 80%'), d.achievers) + card(L('مجموعات المختبر', 'Lab groups'), d.labGroups) + '</div>') +
+      (d.budget.length ? box(L('لعبة ميزانية التسويق: ترتيب المجموعات', 'Marketing budget simulation: group ranking'), pdfBars(d.budget.map(x => ({ l: Groups.label(x.g), v: Math.max(0, Math.round(x.r.score)), t: QAR(x.r.score) + ' · ROAS ' + x.r.roas.toFixed(1) })), { color: '#D07A32' })) : ''));
+    // 6) الرضا
+    const sv = d.survey;
+    page(L('تقييم المشاركين للبرنامج', 'Participant satisfaction'), box(L('متوسط كل بند (من 5)', 'Average rating per item (out of 5)'), sv.rates.length ? pdfBars(sv.rates.map((r, i) => ({ l: E ? (EN.rates[i] || r) : r, v: sv.avgs[i] || 0, t: sv.avgs[i] ? sv.avgs[i].toFixed(2) : '—' })), { max: 5, color: '#E0A526', lw: '46%' }) : '—') +
+      box(L('مؤشر صافي التوصية', 'Net Promoter Score'), '<div style="display:flex;gap:10px;flex-wrap:wrap">' + card('NPS', sv.nps == null ? '—' : sv.nps) + card(L('مروّجون (9–10)', 'Promoters (9–10)'), sv.prom) + card(L('محايدون (7–8)', 'Passives (7–8)'), sv.pass) + card(L('منتقدون (0–6)', 'Detractors (0–6)'), sv.det) + '</div>') +
+      box(L('من آراء المشاركين', 'Selected participant comments') + (E ? ' <span style="font-weight:400;font-size:11px;color:#7D879C">(quoted in original language)</span>' : ''), sv.texts.length ? sv.texts.slice(0, 8).map(p => '<div style="border-' + (E ? 'left' : 'right') + ':3px solid ' + C + ';padding:4px 10px;margin-bottom:6px;font-size:12.5px;direction:rtl;text-align:right">«' + h(clip(p.text, 220)) + '» — ' + h(p.name || '') + '</div>').join('') : L('لا توجد آراء بعد.', 'No comments yet.')));
+    // 7) الاهتمام ببرامج البنك والمتابعة
+    page(L('الربط ببرامج بنك قطر للتنمية وقياس الأثر', 'Link to QDB programmes & impact follow-up'), box(L('الاهتمام حسب البرنامج', 'Interest by programme'), Object.keys(d.byProg).length ? pdfBars(Object.keys(d.byProg).sort((a, b) => d.byProg[b] - d.byProg[a]).map(p => ({ l: E ? (EN.programs[DEFAULT_LEADS.programs.indexOf(p)] || p) : p, v: d.byProg[p] })), { color: '#138A5E', lw: '50%' }) : L('لا توجد طلبات اهتمام بعد.', 'No interest requests yet.')) +
+      (d.leads.length ? box(L('المشاريع المهتمة', 'Interested businesses'), '<table style="width:100%;border-collapse:collapse;font-size:11.5px"><tr style="background:' + C + ';color:#fff"><th style="padding:6px;text-align:' + al + '">' + L('الاسم', 'Name') + '</th><th style="text-align:' + al + '">' + L('المشروع', 'Business') + '</th><th style="text-align:' + al + '">' + L('البرامج', 'Programmes') + '</th></tr>' + d.leads.slice(0, 18).map((l, i) => { const u = Store.users[l.uid] || {}; return '<tr style="background:' + (i % 2 ? '#fff' : '#F8EEF1') + '"><td style="padding:5px 6px">' + h(l.name || u.name || '') + '</td><td>' + h(l.org || RegFields.val(u, 'org') || '') + '</td><td>' + h(l.programs.map(p => E ? (EN.programs[DEFAULT_LEADS.programs.indexOf(p)] || p) : p).join(' · ')) + '</td></tr>'; }).join('') + '</table>' + (d.leads.length > 18 ? '<div style="font-size:11px;color:#7D879C">+' + (d.leads.length - 18) + ' ' + L('آخرون (القائمة كاملة في ملف CSV)', 'more (full list in CSV)') + '</div>' : '')) : '') +
+      box(L('متابعة الأثر بعد البرنامج', 'Post-programme impact follow-up'), pdfBars(['30', '60', '90'].map(k => ({ l: L('بعد ' + k + ' يومًا', 'Day ' + k), v: d.fu[k], t: d.fu[k] + ' / ' + d.uids.length })), { max: Math.max(1, d.uids.length), color: '#5B3A8A', lw: '24%' })));
+    const doc = await PDFE.build(pages, A4P, (i, n) => pm.set(i, n));
+    doc.save((E ? 'Closing report - ' : 'تقرير ختام البرنامج - ') + safeName(coh) + ' - ' + fmtDate(Date.now()).replace(/\//g, '-') + '.pdf'); pm.close();
+  } catch (e) { pm.close(); UI.alert('تعذر إنشاء التقرير: ' + h(e.message || e)); }
+}
+function exportReportCsv(snap, cohortName) {
+  const d = reportData(snap); const r = v => v == null ? '—' : Math.round(v) + '%';
+  const rows = [['البند', 'القيمة'], ['البرنامج', Content.courseTitle()], ['الدفعة', cohortName || d.cohort.name], ['تاريخ التقرير', fmtDate(Date.now())], ['عدد المسجّلين', d.uids.length], ['متوسط نسبة الحضور', d.attAvg + '%'], ['المستحقون لشهادة المشاركة', d.certs], ['المنجزون لـ 80% من التمارين', d.achievers],
+    ['متوسط التقييم القبلي', r(d.preAvg)], ['متوسط التقييم البعدي', r(d.postAvg)], ['متوسط التحسن (نقطة مئوية)', d.gain == null ? '—' : Math.round(d.gain)], ['الرضا العام من 5', d.survey.overall ? d.survey.overall.toFixed(2) : '—'], ['مؤشر صافي التوصية', d.survey.nps == null ? '—' : d.survey.nps], ['المهتمون ببرامج البنك', d.leads.length], ['مجموعات المختبر', d.labGroups], [],
+    ['السؤال', 'صحيح قبلي', 'صحيح بعدي']];
+  d.A.items.forEach((it, i) => rows.push([(i + 1) + '. ' + it.q, r(d.pq[i]), r(d.qq[i])]));
+  rows.push([], ['بند الرضا', 'المتوسط من 5']); d.survey.rates.forEach((x, i) => rows.push([x, d.survey.avgs[i] ? d.survey.avgs[i].toFixed(2) : '—']));
+  rows.push([], ['المحور', 'التمارين', 'المشاركات', 'المشاركون', 'نسبة المشاركين']); d.axes.forEach(x => rows.push([x.a.title, x.exs, x.posts, x.people, Math.round(x.rate * 100) + '%']));
+  rows.push([], ['التوصيات']); d.recs.forEach(x => rows.push([x.ar]));
+  rows.push([], ['آراء المشاركين', '']); d.survey.texts.forEach(p => rows.push([p.name || '', p.text || '']));
+  downloadBlob(csvBlob(rows), 'تقرير ختام البرنامج - ' + safeName(cohortName || d.cohort.name) + '.csv');
+}
+function exportLeadsCsv() {
+  const rows = [['الاسم', 'المسمى', 'المشروع', 'القطاع', 'المرحلة', 'البرامج', 'الاحتياج', 'وسيلة التواصل', 'بيانات التواصل', 'التاريخ']];
+  Leads.list().forEach(l => { const u = Store.users[l.uid] || {}; rows.push([l.name || u.name || '', u.role || '', RegFields.val(u, 'org'), RegFields.val(u, 'sector'), RegFields.val(u, 'stage'), l.programs.join(' | '), l.need || '', l.method || '', l.contact || '', l.ts ? fmtTime(l.ts) : '']); });
+  downloadBlob(csvBlob(rows), 'المهتمون ببرامج بنك قطر للتنمية.csv');
+}
+
+
 /* ===== 09-main.js ===== */
 // ---------------------------------------------------------------------
 // التطبيق: الرسم، المراقبات الحية، والتفاعلات
@@ -3638,7 +3844,7 @@ const App = {
     const root = document.getElementById('app'); if (!root) return;
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
-    const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1;
+    const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor';
     const view = needLogin ? Views.login : (Views[v] || Views.home);
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
@@ -3668,7 +3874,7 @@ function watchAll() {
   W('assess', v => { Store.assess = v || {}; });
   W('attendance', v => { Store.attendance = v || {}; });
   W('site', v => { Store.site = v || {}; });
-  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; });
+  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.monitorCfg = v.monitor || {}; Store.cohortCfg = v.cohort || {}; });
   W('assign', v => { Store.assign = v || {}; });
   W('users', v => { Store.users = v || {}; });
   W('posts', v => { Store.posts = v || {}; });
@@ -3676,6 +3882,9 @@ function watchAll() {
   W('lab', v => { v = v || {}; Store.labTimers = v.timers || {}; Store.labAnswers = v.answers || {}; });
   W('broadcast', v => { Store.broadcast = v; });
   W('backupIndex', v => { Store.backupIndex = v || {}; });
+  W('leads', v => { Store.leads = v || {}; });
+  W('followups', v => { Store.followups = v || {}; });
+  W('cohortIndex', v => { Store.cohortIndex = v || {}; });
   W('stats/registered', v => { Store.registered = Number(v) || 0; });
   W('meta/resetStamp', v => {
     Store.resetStamp = Number(v) || 0;
@@ -3948,7 +4157,33 @@ document.addEventListener('click', async ev => {
     case 'as-clear': { const ph = t.getAttribute('data-ph'); if (await UI.confirm('مسح كل نتائج ' + (ph === 'pre' ? 'التقييم القبلي' : 'التقييم البعدي') + '؟', { danger: true, ok: 'مسح' })) DB.remove('assess/' + ph); break; }
     case 'assessform-save': Views.assessEdit.save(root); break;
     case 'assess-reset-content': { if (await UI.confirm('استرجاع الأسئلة الافتراضية؟', { ok: 'استرجاع' })) { await DB.remove('content/assess'); FormState.exId = null; Router.go('admin'); } break; }
-    case 'report-pdf': buildReportPdf(); break;
+    case 'report-pdf': buildReportPdf(t.getAttribute('data-lang') || 'ar'); break;
+    case 'leads-csv': exportLeadsCsv(); break;
+    case 'logo-save': { await DB.set('site/brandLogo', ImgPick.val('brandLogo') || null); UI.toast('✅ حُفظ الشعار'); break; }
+    case 'lead-edit': UIState.editing.lead = true; App.render(); break;
+    case 'lead-withdraw': { if (await UI.confirm('سحب اهتمامك ببرامج البنك؟', { ok: 'سحب' })) DB.remove('leads/' + Me.uid()); break; }
+    case 'lead-save': {
+      const w = t.getAttribute('data-w'); const box = t.closest('.lead-box'); const c = Leads.cfg();
+      const programs = $$('[data-lead-p]', box).filter(x => x.checked).map(x => c.programs[+x.getAttribute('data-lead-p')]);
+      if (!programs.length) { UI.alert('اختر برنامجًا واحدًا على الأقل.'); break; }
+      if (!($('#leadConsent_' + w) || {}).checked) { UI.alert('يلزم الموافقة على مشاركة بياناتك مع البنك.'); break; }
+      const contact = $('#leadContact_' + w).value.trim(); if (!contact) { UI.alert('اكتب رقم الهاتف أو البريد للتواصل.'); break; }
+      const u = Store.users[Me.uid()] || {};
+      await DB.set('leads/' + Me.uid(), { programs, need: $('#leadNeed_' + w).value.trim(), method: $('#leadMethod_' + w).value, contact, name: Me.data.name, org: RegFields.val(u, 'org'), consent: DB.now(), ts: DB.now() });
+      UIState.editing.lead = false; UI.toast('🤝 سُجّل اهتمامك وسيصل إلى الجهة المنظمة'); App.render(); break;
+    }
+    case 'leads-cfg-save': { const progs = $('#lcProgs').value.split('\n').map(x => x.trim()).filter(Boolean); await DB.set('site/leads', { intro: $('#lcIntro').value.trim(), consent: $('#lcConsent').value.trim(), programs: progs, axis: $('#lcAxis').value }); UI.toast('✅ حُفظ'); break; }
+    case 'leads-cfg-reset': { if (await UI.confirm('استرجاع الإعدادات الافتراضية لنموذج الاهتمام؟', { ok: 'استرجاع' })) DB.remove('site/leads'); break; }
+    case 'mon-toggle': { const c = Monitor.cfg(); await DB.set('settings/monitor', { enabled: !c.enabled, token: c.token || genId('m') }); break; }
+    case 'mon-new': { if (await UI.confirm('إنشاء رابط جديد؟ سيتوقف الرابط القديم عن العمل.', { ok: 'إنشاء' })) await DB.set('settings/monitor', { enabled: true, token: genId('m') }); break; }
+    case 'mon-copy': { const u = Monitor.url(); try { await navigator.clipboard.writeText(u); UI.toast('📋 نُسخ الرابط'); } catch (e) { UI.prompt('انسخ الرابط:', { value: u, title: 'رابط المتابعة' }); } break; }
+    case 'mon-open': Router.go('monitor', { id: Monitor.cfg().token }); break;
+    case 'cohort-save': { await DB.update('settings/cohort', { name: $('#cohName').value.trim() || 'الدفعة', start: $('#cohStart').value, end: $('#cohEnd').value }); UI.toast('✅ حُفظت بيانات الدفعة'); break; }
+    case 'cohort-close': closeCohort(); break;
+    case 'coh-report': { const cid = t.getAttribute('data-cid'); const c = await DB.get('cohorts/' + cid); if (!c) break; buildReportPdf(t.getAttribute('data-lang') || 'ar', c.data, c.meta && c.meta.name); break; }
+    case 'coh-csv': { const cid = t.getAttribute('data-cid'); const c = await DB.get('cohorts/' + cid); if (c) exportReportCsv(c.data, c.meta && c.meta.name); break; }
+    case 'coh-json': { const cid = t.getAttribute('data-cid'); const c = await DB.get('cohorts/' + cid); downloadBlob(new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' }), 'أرشيف ' + safeName(c && c.meta && c.meta.name) + '.json'); break; }
+    case 'coh-del': { const cid = t.getAttribute('data-cid'); if (await UI.confirm('حذف أرشيف هذه الدفعة نهائيًا؟', { danger: true, ok: 'حذف' })) DB.update('', { ['cohorts/' + cid]: null, ['cohortIndex/' + cid]: null }); break; }
     case 'guide-pdf': buildGuidePdf(); break;
     case 'guide-save': { const L = id2 => ($(id2).value || '').split('\n').map(x => x.trim()).filter(Boolean); const day = id2 => L(id2).map(x => { const p = x.split('|').map(y => y.trim()); return { t: p[0] || '', min: +p[1] || 0, act: p[2] || '', note: p[3] || '' }; }); await DB.set('site/guide', { objectives: L('#gObj'), methodology: L('#gMeth'), days: [day('#gDay0'), day('#gDay1')] }); UI.toast('✅ حُفظ الدليل'); break; }
     case 'guide-reset': { if (await UI.confirm('استرجاع بيانات الدليل الافتراضية؟', { ok: 'استرجاع' })) DB.remove('site/guide'); break; }
@@ -4041,6 +4276,22 @@ async function restoreBackup(day) {
   if (!(await UI.confirm('استعادة مدخلات المتدربين كما كانت في نسخة ' + h(day) + '؟ ستُستبدل البيانات الحالية (التسجيل، المشاركات، التقييمات، الحضور، المختبر). المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'استعادة' }))) return;
   const b = await DB.get('backups/' + day); if (!b || !b.data) { UI.alert('النسخة غير موجودة.'); return; }
   const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd); UI.toast('✅ تمت الاستعادة');
+}
+
+// ---------- إغلاق الدفعة الحالية وأرشفتها ثم تجهيز المنصة لدفعة جديدة ----------
+function cohortSummary(d) { return { participants: d.uids.length, attAvg: d.attAvg, certs: d.certs, preAvg: d.preAvg == null ? null : Math.round(d.preAvg), postAvg: d.postAvg == null ? null : Math.round(d.postAvg), gain: d.gain == null ? null : Math.round(d.gain), sat: d.survey.overall == null ? null : Math.round(d.survey.overall * 100) / 100, nps: d.survey.nps, leads: d.leads.length, labGroups: d.labGroups }; }
+async function closeCohort() {
+  const cur = Cohort.cur(); const num = Cohort.list().length + 2;
+  if (!(await UI.confirm('سيتم أرشفة كل مدخلات «' + h(cur.name) + '» (المسجّلون، المشاركات، التقييمات، الحضور، المختبر، الاهتمامات، المتابعات) في أرشيف الدفعات مع ملخص مؤشراتها، ثم تفريغ المنصة لاستقبال دفعة جديدة. المحتوى وتعديلاته لا تتأثر.', { ok: 'أرشفة وبدء دفعة جديدة', title: 'إغلاق الدفعة' }))) return;
+  const pm = progressModal('📦 أرشفة الدفعة');
+  try {
+    pm.set(1, 3, 'جارٍ جمع البيانات…'); const data = await snapshotData();
+    const summary = cohortSummary(reportData(data)); const id = 'c' + genId(); const meta = Object.assign({}, cur, { closedAt: DB.now() });
+    pm.set(2, 3, 'جارٍ الحفظ في الأرشيف…'); await DB.set('cohorts/' + id, { meta, data }); await DB.set('cohortIndex/' + id, Object.assign({}, meta, { summary }));
+    pm.set(3, 3, 'جارٍ تجهيز الدفعة الجديدة…'); const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = null; }); upd['meta/resetStamp'] = DB.now(); upd['stats/registered'] = 0; upd['settings/attendance/codes'] = null; upd.reveal = null;
+    upd['settings/cohort'] = { name: 'الدفعة ' + num, start: '', end: '' };
+    await DB.update('', upd); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
+  } catch (e) { pm.close(); UI.alert('تعذرت الأرشفة: ' + h(e.message || e)); }
 }
 
 // ---------- الإقلاع ----------
