@@ -3,7 +3,7 @@
     ".read": true,
     ".write": false,
     "$node": {
-      ".write": true
+      ".write": "$node.matches(/^(content|added|visibility|enabled|order|site|settings|media|users|posts|assess|attendance|lab|assign|leads|followups|storyLikes|reveal|broadcast|stats|meta|cohorts|cohortIndex|backups|backupIndex)$/)"
     }
   }
 }
