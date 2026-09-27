@@ -46,7 +46,7 @@ const S = (p, path) => p.evaluate(path => { let n = window.__mock.server; for (c
   if (run('a')) { // (أ) بيانات موجودة + اتصال بطيء 20 ثانية
     const { ctx, p, net, errs } = await open(b, { cfg: { delayFirst: 20000 }, guest: true }); await p.waitForTimeout(3000);
     const t3 = await txt(p);
-    R.a = { at3s_hiddenStoriesVisible: /قصص نجاح ملهمة/.test(t3), at3s_defaultHeroShown: !/عنوان معدّل من الأدمن/.test(t3), at3s_loadingMsg: /جارٍ الاتصال|الاتصال بطيء/.test(t3) };
+    R.a = { at3s_hiddenStoriesVisible: /قصص نجاح ملهمة/.test(t3), at3s_defaultHeroShown: !/عنوان معدّل من الأدمن/.test(t3), at3s_loadingRing: await p.evaluate(() => !!document.querySelector('.connect-screen .cs-ring')) };
     await p.waitForTimeout(24000);
     const t = await txt(p); const w = await W(p);
     R.a.afterLoad_storiesHidden = !/قصص نجاح ملهمة/.test(t); R.a.writes = w.writes.map(x => x.kind + ':' + x.path); R.a.realNet = net.real; R.a.errs = errs;

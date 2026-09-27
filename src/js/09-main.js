@@ -12,6 +12,8 @@ const App = {
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
     if (!App.dataReady || !AUTH.resolved) { root.innerHTML = connectScreen(); return; }
+    // اكتمال الدائرة لحظة جاهزية البيانات قبل عرض الصفحة
+    const ring = root.querySelector('.cs-ring:not(.stop)'); if (ring && !ring.classList.contains('done')) { ring.classList.add('done'); setTimeout(() => App.render(), 320); return; }
     const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor' && v !== 'show';
     const view = needLogin ? Views.landing : (Views[v] || Views.home);
     App.onLanding = view === Views.landing;
@@ -593,8 +595,11 @@ async function closeCohort() {
 function connectScreen() {
   const noLib = DB.status && !DB.status.lib;
   const err = App.watchError;
-  const msg = noLib ? 'تعذّر تحميل مكتبة الاتصال بقاعدة البيانات (قد تكون الشبكة ضعيفة أو محجوبة).' : err ? 'رفضت قاعدة البيانات القراءة: ' + h(err.message || err) : App.slow ? 'الاتصال بطيء… ما زلنا نحاول الوصول إلى الخادم. لن يُحفظ أي شيء قبل اكتمال التحميل.' : 'جارٍ الاتصال بقاعدة البيانات…';
-  return '<div class="connect-screen"><div class="cs-box"><div class="cs-spin' + (noLib || err ? ' stop' : '') + '"></div><h2>' + h(Content.site ? (Content.site().headerTitle || '') : '') + '</h2><p>' + msg + '</p>' + (noLib || err || App.slow ? '<button class="btn btn-primary" onclick="location.reload()">↻ إعادة المحاولة</button>' : '') + '</div></div>';
+  const msg = noLib ? 'تعذّر تحميل مكتبة الاتصال بقاعدة البيانات (قد تكون الشبكة ضعيفة أو محجوبة).' : err ? 'رفضت قاعدة البيانات القراءة: ' + h(err.message || err) : '';
+  // دائرة تمتلئ تدريجيًا أثناء الاتصال؛ التأخير السالب يحفظ موضعها عند إعادة الرسم
+  if (!App._csT0) App._csT0 = Date.now();
+  const ring = '<svg class="cs-ring' + (noLib || err ? ' stop' : '') + '" viewBox="0 0 48 48" aria-hidden="true"><circle class="cs-track" cx="24" cy="24" r="20"/><circle class="cs-fill" cx="24" cy="24" r="20" pathLength="100" style="animation-delay:-' + (Date.now() - App._csT0) + 'ms"/></svg>';
+  return '<div class="connect-screen" role="status" aria-label="جارٍ التحميل"><div class="cs-box">' + ring + '<h2>' + h(Content.site ? (Content.site().headerTitle || '') : '') + '</h2>' + (msg ? '<p>' + msg + '</p>' : '') + (noLib || err || App.slow ? '<button class="btn btn-primary" onclick="location.reload()">↻ إعادة المحاولة</button>' : '') + '</div></div>';
 }
 
 // ---------- دخول المدرب عبر Firebase Authentication ----------
