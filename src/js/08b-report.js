@@ -3,12 +3,13 @@
 // كل الأرقام تُحسب مرة واحدة في reportData() من البيانات الحالية أو من لقطة دفعة مؤرشفة.
 // ---------------------------------------------------------------------
 const A4P = { w: 794, h: 1123, mmW: 210, mmH: 297, format: 'a4', orientation: 'portrait' };
-const SNAP_KEYS = { users: 'users', posts: 'posts', assess: 'assess', attendance: 'attendance', labAnswers: 'lab', leads: 'leads', followups: 'followups' };
+const SNAP_KEYS = { users: 'users', posts: 'posts', assess: 'assess', attendance: 'attendance', checkins: 'checkins', labAnswers: 'lab', leads: 'leads', followups: 'followups' };
 // حساب المؤشرات على لقطة بيانات (دفعة مؤرشفة) بتبديل مؤقت لحالة Store ثم استعادتها
+function mergeSnapUsers(pub, pr) { const out = {}; Object.keys(pub || {}).forEach(u => { const p = (pr || {})[u]; out[u] = Object.assign({}, pub[u], p ? { f: Object.assign({}, (pub[u] || {}).f || {}, p.f || {}), consent: p.consent } : {}); }); return out; }
 function withSnapshot(snap, fn) {
   if (!snap) return fn();
   const saved = {}; Object.keys(SNAP_KEYS).forEach(k => { saved[k] = Store[k]; });
-  try { Store.users = snap.users || {}; Store.posts = snap.posts || {}; Store.assess = snap.assess || {}; Store.attendance = snap.attendance || {}; Store.labAnswers = (snap.lab && snap.lab.answers) || {}; Store.leads = snap.leads || {}; Store.followups = snap.followups || {}; return fn(); }
+  try { Store.users = mergeSnapUsers(snap.users, snap.private); Store.checkins = snap.checkins || {}; Store.posts = snap.posts || {}; Store.assess = snap.assess || {}; Store.attendance = snap.attendance || {}; Store.labAnswers = (snap.lab && snap.lab.answers) || {}; Store.leads = snap.leads || {}; Store.followups = snap.followups || {}; return fn(); }
   finally { Object.keys(saved).forEach(k => { Store[k] = saved[k]; }); }
 }
 function distOf(uids, key) { const c = {}; uids.forEach(u => { const v = RegFields.val(Store.users[u], key); if (v) c[v] = (c[v] || 0) + 1; }); return c; }

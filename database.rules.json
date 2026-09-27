@@ -1,133 +1,213 @@
 {
   "rules": {
-    ".read": true,
+    ".read": false,
     ".write": false,
     "admins": {
-      ".write": false
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
     },
     "content": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "added": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "visibility": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "enabled": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "order": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "site": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "settings": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "media": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "reveal": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "broadcast": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "secure": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "cohorts": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "cohortIndex": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "backups": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
     "backupIndex": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
     },
+    "monitorData": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$token": {
+        ".read": true
+      }
+    },
     "users": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
-        ".write": true
+        ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())"
+      }
+    },
+    "private": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())",
+        ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())"
+      }
+    },
+    "secrets": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())",
+        ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && (!data.exists() || !newData.exists())"
+      }
+    },
+    "devices": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && !newData.exists()",
+        "$aid": {
+          ".read": "auth != null && auth.uid === $aid",
+          ".write": "auth != null && auth.uid === $aid && newData.exists() && (newData.val() === root.child('secrets').child($uid).val() || (!root.child('devices').child($uid).exists() && !root.child('secrets').child($uid).exists() && (!root.child('users').child($uid).exists() || root.child('meta').child('legacyClaims').val() !== false)))"
+        }
       }
     },
     "posts": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$ex": {
         "$key": {
-          ".write": true
-        }
-      }
-    },
-    "assess": {
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      "$phase": {
-        "$uid": {
-          ".write": true
-        }
-      }
-    },
-    "attendance": {
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      "$uid": {
-        ".write": true
-      }
-    },
-    "lab": {
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      "timers": {
-        "$group": {
-          ".write": true
-        }
-      },
-      "answers": {
-        "$group": {
-          ".write": true
-        }
-      }
-    },
-    "assign": {
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      "$uid": {
-        ".write": "!newData.exists()"
-      }
-    },
-    "leads": {
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      "$uid": {
-        ".write": true
-      }
-    },
-    "followups": {
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      "$round": {
-        "$uid": {
-          ".write": true
-        }
-      }
-    },
-    "storyLikes": {
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      "$story": {
-        "likes": {
-          "$uid": {
-            ".write": true
+          ".write": "auth != null && ($key.beginsWith('g') || auth.uid === $key || root.child('devices').child($key).child(auth.uid).exists())",
+          "likes": {
+            "$liker": {
+              ".write": "auth != null && (auth.uid === $liker || root.child('devices').child($liker).child(auth.uid).exists())"
+            }
           }
         }
       }
     },
+    "storyLikes": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$story": {
+        "likes": {
+          "$liker": {
+            ".write": "auth != null && (auth.uid === $liker || root.child('devices').child($liker).child(auth.uid).exists())"
+          }
+        }
+      }
+    },
+    "assess": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$phase": {
+        "$uid": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())"
+        }
+      }
+    },
+    "attendance": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && !newData.exists()"
+      }
+    },
+    "checkins": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$day": {
+        "$uid": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && (!newData.exists() || (newData.child('code').val() === root.child('secure').child('attcodes').child($day).child('code').val() && root.child('settings').child('attendance').child('codes').child($day).child('open').val() === true))"
+        }
+      }
+    },
+    "lab": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "timers": {
+        "$group": {
+          ".write": "auth != null"
+        }
+      },
+      "answers": {
+        "$group": {
+          ".write": "auth != null"
+        }
+      }
+    },
+    "assign": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && !newData.exists()"
+      }
+    },
+    "leads": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())",
+        ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())"
+      }
+    },
+    "followups": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$round": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())",
+          ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())"
+        }
+      }
+    },
     "stats": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "registered": {
-        ".write": true
+        ".write": "auth != null && newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1)))"
       }
     },
     "meta": {
+      ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "memberCounter": {
-        ".write": true
+        ".write": "auth != null && newData.isNumber() && ((!data.exists() && newData.val() >= 1) || (data.exists() && newData.val() === data.val() + 1))"
       }
     }
   }

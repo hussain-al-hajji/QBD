@@ -185,12 +185,12 @@ const Assess = {
 
 // ---------- الحضور وشهادة المشاركة ----------
 const Attend = {
-  cfg() { const c = Object.assign({ days: ATTEND_DAYS_DEFAULT, hours: ATTEND_HOURS_DEFAULT, threshold: CERT_THRESHOLD_DEFAULT, codes: {} }, Store.attCfg || {}); c.days = Math.max(1, Math.min(10, +c.days || ATTEND_DAYS_DEFAULT)); c.hours = Math.max(1, +c.hours || ATTEND_HOURS_DEFAULT); c.threshold = Math.max(0, Math.min(100, +c.threshold || 0)); c.codes = c.codes || {}; return c; },
+  cfg() { const c = Object.assign({ days: ATTEND_DAYS_DEFAULT, hours: ATTEND_HOURS_DEFAULT, threshold: CERT_THRESHOLD_DEFAULT, codes: {} }, Store.attCfg || {}); c.days = Math.max(1, Math.min(10, +c.days || ATTEND_DAYS_DEFAULT)); c.hours = Math.max(1, +c.hours || ATTEND_HOURS_DEFAULT); c.threshold = Math.max(0, Math.min(100, +c.threshold || 0)); c.codes = c.codes || {}; const sec = (Store.secure && Store.secure.attcodes) || {}; c.codes = Object.assign({}, c.codes); Object.keys(sec).forEach(k => { c.codes[k] = Object.assign({}, c.codes[k], { code: (sec[k] || {}).code }); }); return c; },
   days() { const out = []; for (let i = 1; i <= Attend.cfg().days; i++) out.push(i); return out; },
-  hoursOf(uid, d) { const v = ((Store.attendance || {})[uid] || {})['d' + d]; return Math.max(0, Math.min(Attend.cfg().hours, +v || 0)); },
+  hoursOf(uid, d) { const man = ((Store.attendance || {})[uid] || {})['d' + d]; if (man != null) return Math.max(0, Math.min(Attend.cfg().hours, +man || 0)); return ((Store.checkins || {})['d' + d] || {})[uid] ? Attend.cfg().hours : 0; }, // الساعات اليدوية من المدرب تتقدم على تسجيل الرمز
   pct(uid) { const c = Attend.cfg(); const tot = c.days * c.hours; const got = Attend.days().reduce((s, d) => s + Attend.hoursOf(uid, d), 0); return tot ? Math.round(got / tot * 100) : 0; },
   eligible(uid) { return Attend.pct(uid) >= Attend.cfg().threshold; },
-  openDays() { const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open && c.codes['d' + d].code); },
+  openDays() { const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open); },
   holders() { return Object.keys(Store.users || {}).filter(Attend.eligible).map(u => Object.assign({ uid: u }, Store.users[u])); }
 };
 

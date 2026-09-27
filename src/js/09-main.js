@@ -36,36 +36,72 @@ const App = {
 function applyFilter(inp) { const q = inp.value.trim().toLowerCase(); const scope = inp.closest('.tool-drop') || document; $$(inp.getAttribute('data-filter'), scope).forEach(x => { x.style.display = !q || (x.getAttribute('data-name') || '').indexOf(q) > -1 ? '' : 'none'; }); }
 
 // ---------- المراقبات الحية ----------
-function watchAll() {
-  // لا تُعرض الواجهة ولا تُقبل الكتابة قبل وصول أول قراءة مؤكدة من الخادم لكل العقد المراقبة
-  const seen = new Set(); let total = 0;
-  const W = (path, fn) => { total++; return DB.watch(path, v => { fn(v); if (!seen.has(path)) { seen.add(path); if (seen.size === total && !App.dataReady) { App.dataReady = true; DB.markReady(); App.render(); } } App.onData(); }, e => { App.watchError = e; App.render(); }); };
-  W('content', v => { v = v || {}; Store.contentAxes = v.axes || {}; Store.contentEx = v.ex || {}; Store.contentLab = v.lab || null; Store.contentAssess = v.assess || null; Store.contentStories = v.stories || {}; });
-  W('added', v => { v = v || {}; Store.addedAxes = v.axes || {}; Store.addedEx = v.ex || {}; Store.addedStories = v.stories || {}; });
-  W('storyLikes', v => { Store.storyLikes = v || {}; });
-  W('visibility', v => { Store.visibility = v || {}; });
-  W('enabled', v => { Store.enabled = v || {}; });
-  W('order', v => { v = v || {}; Store.order = arr(v.axes); Store.exOrder = v.ex || {}; Store.storyOrder = arr(v.stories); });
-  W('assess', v => { Store.assess = v || {}; });
-  W('attendance', v => { Store.attendance = v || {}; });
-  W('site', v => { Store.site = v || {}; });
-  W('settings', v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.monitorCfg = v.monitor || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; });
-  W('assign', v => { Store.assign = v || {}; });
-  W('users', v => { Store.users = v || {}; });
-  W('posts', v => { Store.posts = v || {}; });
-  W('reveal', v => { Store.reveal = v || {}; });
-  W('lab', v => { v = v || {}; Store.labTimers = v.timers || {}; Store.labAnswers = v.answers || {}; });
-  W('broadcast', v => { Store.broadcast = v; });
-  W('backupIndex', v => { Store.backupIndex = v || {}; });
-  W('leads', v => { Store.leads = v || {}; });
-  W('followups', v => { Store.followups = v || {}; });
-  W('cohortIndex', v => { Store.cohortIndex = v || {}; });
-  W('stats/registered', v => { Store.registered = Number(v) || 0; });
-  W('meta/resetStamp', v => {
-    Store.resetStamp = Number(v) || 0;
-    if (Me.data && Store.resetStamp && (Me.data.ts || 0) < Store.resetStamp) { Me.clear(); UIState.draft = {}; UIState.editing = {}; setTimeout(() => UI.toast('تمت إعادة ضبط البرنامج — سجّل اسمك من جديد'), 300); }
+// كل زائر يراقب العقد العامة فقط، وسجلاته الخاصة (عقد المتدرب نفسه)، والمدرب وحده يراقب العقد الخاصة كاملة.
+// الجاهزية: لا تُعرض الواجهة ولا تُقبل الكتابة قبل أول قراءة مؤكدة لكل العقد العامة.
+const Watch = { active: {}, publicPaths: [], seen: new Set() };
+function mergeUsers() { // الملف العام (users) + البيانات الخاصة (private) = سجل كامل للواجهة
+  const pub = Store.usersPub || {}; const pr = Store.priv || {}; const out = {};
+  Object.keys(pub).forEach(u => { out[u] = Object.assign({}, pub[u], pr[u] ? { f: Object.assign({}, pub[u].f || {}, pr[u].f || {}), consent: pr[u].consent || pub[u].consent } : {}); });
+  Store.users = out;
+}
+function watchDefs() {
+  const d = {
+    'content': v => { v = v || {}; Store.contentAxes = v.axes || {}; Store.contentEx = v.ex || {}; Store.contentLab = v.lab || null; Store.contentAssess = v.assess || null; Store.contentStories = v.stories || {}; },
+    'added': v => { v = v || {}; Store.addedAxes = v.axes || {}; Store.addedEx = v.ex || {}; Store.addedStories = v.stories || {}; },
+    'storyLikes': v => { Store.storyLikes = v || {}; },
+    'visibility': v => { Store.visibility = v || {}; },
+    'enabled': v => { Store.enabled = v || {}; },
+    'order': v => { v = v || {}; Store.order = arr(v.axes); Store.exOrder = v.ex || {}; Store.storyOrder = arr(v.stories); },
+    'assess': v => { Store.assess = v || {}; },
+    'attendance': v => { Store.attendance = v || {}; },
+    'checkins': v => { Store.checkins = v || {}; },
+    'site': v => { Store.site = v || {}; },
+    'settings': v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; },
+    'assign': v => { Store.assign = v || {}; },
+    'users': v => { Store.usersPub = v || {}; mergeUsers(); },
+    'posts': v => { Store.posts = v || {}; },
+    'reveal': v => { Store.reveal = v || {}; },
+    'lab': v => { v = v || {}; Store.labTimers = v.timers || {}; Store.labAnswers = v.answers || {}; },
+    'broadcast': v => { Store.broadcast = v; },
+    'stats/registered': v => { Store.registered = Number(v) || 0; },
+    'meta/resetStamp': v => {
+      Store.resetStamp = Number(v) || 0;
+      if (Me.data && Store.resetStamp && (Me.data.ts || 0) < Store.resetStamp) { Me.clear(); UIState.draft = {}; UIState.editing = {}; setTimeout(() => UI.toast('تمت إعادة ضبط البرنامج — سجّل اسمك من جديد'), 300); syncWatchers(); }
+    }
+  };
+  const pub = Object.keys(d);
+  const me = Me.uid();
+  if (Admin.ok()) {
+    Object.assign(d, {
+      'private': v => { Store.priv = v || {}; mergeUsers(); },
+      'leads': v => { Store.leads = v || {}; },
+      'followups': v => { Store.followups = v || {}; },
+      'backupIndex': v => { Store.backupIndex = v || {}; },
+      'cohortIndex': v => { Store.cohortIndex = v || {}; },
+      'secure': v => { Store.secure = v || {}; }
+    });
+  } else if (me) {
+    d['private/' + me] = v => { Store.priv = v ? { [me]: v } : {}; mergeUsers(); };
+    d['leads/' + me] = v => { Store.leads = v ? { [me]: v } : {}; };
+    ['30', '60', '90'].forEach(n => { d['followups/d' + n + '/' + me] = v => { Store.followups = Object.assign({}, Store.followups); Store.followups['d' + n] = v ? { [me]: v } : {}; }; });
+    d['secrets/' + me] = v => { Store.mySecret = v || ''; };
+  }
+  return { defs: d, pub };
+}
+function syncWatchers() {
+  const { defs, pub } = watchDefs(); Watch.publicPaths = pub;
+  Object.keys(Watch.active).forEach(p => { if (!defs[p]) { try { Watch.active[p](); } catch (e) {} delete Watch.active[p]; } });
+  if (!Admin.ok()) { Store.backupIndex = {}; Store.cohortIndex = {}; Store.secure = {}; if (!Me.uid()) { Store.priv = {}; Store.leads = {}; Store.followups = {}; Store.mySecret = ''; mergeUsers(); } }
+  Object.keys(defs).forEach(path => {
+    if (Watch.active[path]) return;
+    Watch.active[path] = DB.watch(path, v => {
+      defs[path](v);
+      if (!Watch.seen.has(path)) { Watch.seen.add(path); if (!App.dataReady && Watch.publicPaths.every(x => Watch.seen.has(x))) { App.dataReady = true; DB.markReady(); App.render(); } }
+      App.onData();
+    }, e => { console.warn('watch denied', path, e); if (Watch.publicPaths.indexOf(path) > -1) { App.watchError = e; App.render(); } });
   });
 }
+function watchAll() { syncWatchers(); }
 function getByPath(path) { const seg = path.split('/'); let n = seg[0] === 'posts' ? Store.posts : seg[0] === 'lab' ? Store.labAnswers : seg[0] === 'storyLikes' ? Store.storyLikes : null; const rest = seg[0] === 'lab' ? seg.slice(2) : seg.slice(1); for (const s of rest) { if (!n) return null; n = n[s]; } return n; }
 
 // ---------- التسجيل والدخول ----------
@@ -76,13 +112,18 @@ async function doRegister() {
   const follow = !!($('#regFollow') || {}).checked;
   const btn = $('[data-act="register"]'); if (btn) { btn.disabled = true; btn.textContent = 'جارٍ التسجيل…'; }
   try {
-    const uid = genId('u');
-    // رقم عضوية تسلسلي عبر عملية ذرّية مع حماية دنيا صريحة
+    const uid = genId('u'); const code = genCode();
+    // 1) ربط هذا الجهاز بالسجل الجديد (قبل أي كتابة، حتى تسمح القواعد لصاحبه فقط)
+    if (!(await linkDevice(uid, code))) throw new Error('تعذر تجهيز الجلسة الآمنة. أعد تحميل الصفحة ثم حاول مرة أخرى.');
+    // 2) رقم عضوية تسلسلي عبر عملية ذرّية
     const member = await DB.transaction('meta/memberCounter', cur => Math.max(Number(cur) || 0, MEMBER_NO_FLOOR) + 1);
     const ts = DB.now(); const name = data.name, role = data.role || '';
-    await DB.set('users/' + uid, { name, role, f: data.f, member, ts, consent: { privacy: ts, followup: follow } });
+    // 3) الملف العام (الاسم فقط) + البيانات الخاصة (الحقول والموافقة) + رمز الدخول الشخصي
+    await DB.set('users/' + uid, { name, role, member, ts });
+    await DB.set('private/' + uid, { f: data.f || {}, consent: { privacy: ts, followup: follow } });
+    await DB.set('secrets/' + uid, code);
     DB.transaction('stats/registered', c => (Number(c) || 0) + 1);
-    const me = { uid, name, role, member, ts }; Me.save(me);
+    const me = { uid, name, role, member, ts, code }; Me.save(me); syncWatchers();
     LoginModal.close(); App.render(); window.scrollTo(0, 0); welcomeModal(me);
   } catch (e) { UI.alert('تعذر التسجيل: ' + h(e.message || e)); if (btn) { btn.disabled = false; btn.textContent = 'ابدأ 🚀'; } }
 }
@@ -93,25 +134,33 @@ async function deleteMyData() {
   if (!ok) return; const uid = Me.uid(); const upd = {};
   upd['users/' + uid] = null; upd['assess/pre/' + uid] = null; upd['assess/post/' + uid] = null; upd['attendance/' + uid] = null; upd['assign/' + uid] = null; upd['leads/' + uid] = null;
   ['30', '60', '90'].forEach(n => { upd['followups/d' + n + '/' + uid] = null; });
+  upd['private/' + uid] = null; upd['secrets/' + uid] = null; upd['devices/' + uid] = null; Attend.days().forEach(d => { upd['checkins/d' + d + '/' + uid] = null; });
   Object.keys(Store.posts || {}).forEach(ex => { const ps = Store.posts[ex] || {}; Object.keys(ps).forEach(k => { const p = ps[k] || {}; if (k === uid) upd['posts/' + ex + '/' + k] = null; else { if (p.members && p.members[uid]) upd['posts/' + ex + '/' + k + '/members/' + uid] = null; if (p.likes && p.likes[uid]) upd['posts/' + ex + '/' + k + '/likes/' + uid] = null; if (p.by === uid) upd['posts/' + ex + '/' + k + '/name'] = ''; } }); });
   Object.keys(Store.storyLikes || {}).forEach(st => { if (((Store.storyLikes[st] || {}).likes || {})[uid]) upd['storyLikes/' + st + '/likes/' + uid] = null; });
   await DB.update('', upd); DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1));
   Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); UI.toast('تم حذف بياناتك نهائيًا');
 }
 function welcomeModal(me) {
-  const m = UI.modal('<div class="center"><div style="font-size:48px">🎉</div><h3>أهلًا ' + h(me.name) + '!</h3><p class="muted" style="font-family:var(--f-ui)">تم تسجيلك بنجاح. هذا رقم عضويتك — احتفظ به للدخول من أي جهاز آخر دون كلمة مرور.</p><div class="num" style="font-family:var(--f-display);font-size:52px;font-weight:800;letter-spacing:4px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block">' + pad4(me.member) + '</div></div><div class="actions" style="justify-content:center"><button class="btn btn-primary" data-save-card>💾 حفظ رقم العضوية</button><button class="btn btn-ghost" data-close>ابدأ الجولة</button></div>');
+  const m = UI.modal('<div class="center"><div style="font-size:48px">🎉</div><h3>أهلًا ' + h(me.name) + '!</h3><p class="muted" style="font-family:var(--f-ui)">تم تسجيلك بنجاح. احفظ رقم العضوية ورمز الدخول الشخصي: تحتاجهما معًا للدخول من أي جهاز آخر.</p><div class="num" style="font-family:var(--f-display);font-size:52px;font-weight:800;letter-spacing:4px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block">' + pad4(me.member) + '</div>' + (me.code ? '<div style="margin-top:6px;font-family:var(--f-ui);font-size:13px;color:var(--ink-3)">رمز الدخول الشخصي</div><div class="num notranslate" translate="no" dir="ltr" style="font-family:var(--f-display);font-size:30px;font-weight:800;letter-spacing:6px;user-select:all">' + h(me.code) + '</div>' : '') + '</div><div class="actions" style="justify-content:center"><button class="btn btn-primary" data-save-card>💾 حفظ رقم العضوية</button><button class="btn btn-ghost" data-close>ابدأ الجولة</button></div>');
   $('[data-save-card]', m.el).onclick = () => saveMemberCard(me);
   $('[data-close]', m.el).onclick = () => m.close();
 }
 async function memberLogin() {
-  const v = await UI.prompt('أدخل رقم عضويتك (مثال: 0058)', { title: 'الدخول برقم العضوية', type: 'text', inputmode: 'numeric', placeholder: '0000', ok: 'دخول' });
-  if (v == null) return; const num = parseInt(String(v).replace(/[^\d٠-٩]/g, '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)), 10);
-  if (!num) { UI.alert('اكتب رقم عضوية صحيحًا.'); return; }
-  const users = await DB.get('users') || {}; // قراءة لمرة واحدة لكامل السجل
-  const uid = Object.keys(users).find(u => +users[u].member === num);
-  if (!uid) { UI.alert('لم نجد حسابًا بهذا الرقم (ربما حُذف لاحقًا). يُرجى التسجيل من جديد باسمك.', 'رقم غير مطابق'); return; }
-  const u = users[uid]; Me.save({ uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || DB.now(), group: u.group || null });
-  LoginModal.close(); UI.toast('مرحبًا بعودتك يا ' + u.name + ' 👋'); App.render(); window.scrollTo(0, 0);
+  const m = UI.modal('<h3>الدخول برقم العضوية</h3><p class="muted" style="font-family:var(--f-ui);font-size:13px;margin-top:0">تجدهما في بطاقة العضوية التي ظهرت عند تسجيلك، أو في صفحة «حسابي» على جهازك الأول.</p>' +
+    '<div class="grid2"><div class="field"><label>رقم العضوية</label><input id="mlNum" inputmode="numeric" dir="ltr" placeholder="0058"></div><div class="field"><label>رمز الدخول الشخصي</label><input id="mlCode" dir="ltr" autocapitalize="characters" placeholder="ABC234"></div></div>' +
+    '<div id="mlErr" style="color:#C62F35;font-family:var(--f-ui);font-size:13px;min-height:18px"></div><div class="actions"><button class="btn btn-primary" data-ok>دخول</button><button class="btn btn-ghost" data-x>إلغاء</button></div>');
+  const err = t => { $('#mlErr', m.el).innerHTML = t; }; $('[data-x]', m.el).onclick = () => m.close(); setTimeout(() => $('#mlNum', m.el).focus(), 50);
+  $('[data-ok]', m.el).onclick = async () => {
+    const num = parseInt(String($('#mlNum', m.el).value).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\d]/g, ''), 10); const code = String($('#mlCode', m.el).value || '').trim().toUpperCase();
+    if (!num) { err('اكتب رقم عضوية صحيحًا.'); return; }
+    const users = Store.usersPub || {}; const uid = Object.keys(users).find(u => +users[u].member === num);
+    if (!uid) { err('لم نجد حسابًا بهذا الرقم (ربما حُذف لاحقًا). يُرجى التسجيل من جديد باسمك.'); return; }
+    if (!(await linkDevice(uid, code))) { err(code ? 'رقم العضوية أو رمز الدخول غير صحيح.' : 'اكتب رمز الدخول الشخصي المكتوب في بطاقة عضويتك.'); return; }
+    const u = users[uid]; let mycode = code;
+    if (DB.real && authUid() && !code) { mycode = genCode(); try { await DB.set('secrets/' + uid, mycode, { quiet: true }); } catch (e) { mycode = ''; } }
+    Me.save({ uid, name: u.name, role: u.role || '', member: u.member, ts: u.ts || DB.now(), group: u.group || null, code: mycode }); syncWatchers();
+    m.close(); LoginModal.close(); UI.toast('مرحبًا بعودتك يا ' + u.name + ' 👋'); App.render(); window.scrollTo(0, 0);
+  };
 }
 
 // ---------- حفظ الإجابات ----------
@@ -168,7 +217,7 @@ async function importBackup(file) {
   } catch (e) { UI.alert('تعذر الاستيراد: ' + h(e.message || e)); }
 }
 // نسخة كاملة من كل عقد القاعدة (ملف خارجي) — للاحتفاظ بها خارج Firebase
-const ALL_NODES = ['content', 'added', 'visibility', 'enabled', 'order', 'site', 'settings', 'media', 'users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes', 'reveal', 'broadcast', 'stats', 'meta', 'cohorts', 'cohortIndex', 'backups', 'backupIndex'];
+const ALL_NODES = ['admins', 'secure', 'monitorData', 'private', 'devices', 'secrets', 'checkins', 'content', 'added', 'visibility', 'enabled', 'order', 'site', 'settings', 'media', 'users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes', 'reveal', 'broadcast', 'stats', 'meta', 'cohorts', 'cohortIndex', 'backups', 'backupIndex'];
 async function exportAll() {
   const pm = progressModal('💾 نسخة كاملة'); const out = {};
   try { for (let i = 0; i < ALL_NODES.length; i++) { pm.set(i + 1, ALL_NODES.length, ALL_NODES[i]); out[ALL_NODES[i]] = await DB.get(ALL_NODES[i]); }
@@ -181,7 +230,7 @@ async function globalReset() {
   const posts = await DB.get('posts') || {}; const upd = {};
   Object.keys(posts).forEach(k => { if (k !== SURVEY_ID) upd['posts/' + k] = null; }); // استثناء صريح للاستطلاع الختامي
   await autoBackup(true); // نسخة احتياطية تلقائية قبل المسح
-  upd.lab = null; upd.users = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd.leads = null; upd.followups = null; upd['meta/resetStamp'] = DB.now();
+  upd.lab = null; upd.users = null; upd.private = null; upd.devices = null; upd.secrets = null; upd.checkins = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd.leads = null; upd.followups = null; upd['meta/resetStamp'] = DB.now();
   await DB.update('', upd, { allowTopLevel: true }); UI.toast('تمت إعادة الضبط الشاملة');
 }
 
@@ -204,7 +253,7 @@ document.addEventListener('click', async ev => {
   const root = document.getElementById('app');
   switch (act) {
     // ----- عام -----
-    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، وستعود إلى الصفحة التعريفية للبرنامج لتسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تسجيل مستخدم جديد' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); window.scrollTo(0, 0); } break; }
+    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، وستعود إلى الصفحة التعريفية للبرنامج لتسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تسجيل مستخدم جديد' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; syncWatchers(); Router.go('home'); window.scrollTo(0, 0); } break; }
     case 'open-login': LoginModal.open(); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
     case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
@@ -266,7 +315,7 @@ document.addEventListener('click', async ev => {
     case 'lab-save': { const i = t.getAttribute('data-i'); const ta = $('#labAns' + i); const txt = ta ? ta.value.trim() : ''; if (!txt) { UI.alert('اكتبوا مخرج المرحلة أولًا.'); break; } await DB.update('lab/answers/g' + Me.group() + '/s' + i, { text: txt, name: Me.data.name, uid: Me.uid(), ts: DB.now() }); UIState.editing['lab' + i] = false; if (ta) ta.value = ''; UI.toast('✅ حُفظت المرحلة'); App.render(); break; }
     case 'del-lab': { if (await UI.confirm('حذف إجابة هذه المرحلة؟', { danger: true, ok: 'حذف' })) DB.remove('lab/answers/' + t.getAttribute('data-k') + '/s' + t.getAttribute('data-i')); break; }
     // ----- حسابي -----
-    case 'acc-save': { const { data, err } = RegFields.collect(document, 'acc_'); if (err) { UI.alert(err); break; } const me = Object.assign({}, Me.data, { name: data.name || Me.data.name, role: data.role != null ? data.role : Me.data.role }); Me.save(me); await DB.update('users/' + me.uid, { name: me.name, role: me.role || '', f: Object.assign({}, (Store.users[me.uid] || {}).f || {}, data.f), 'consent/followup': !!($('#accFollow') || {}).checked }); UI.toast('✅ تم تحديث بياناتك'); App.render(); break; }
+    case 'acc-save': { const { data, err } = RegFields.collect(document, 'acc_'); if (err) { UI.alert(err); break; } const me = Object.assign({}, Me.data, { name: data.name || Me.data.name, role: data.role != null ? data.role : Me.data.role }); Me.save(me); await DB.update('users/' + me.uid, { name: me.name, role: me.role || '' }); await DB.update('private/' + me.uid, { f: Object.assign({}, (Store.users[me.uid] || {}).f || {}, data.f), 'consent/followup': !!($('#accFollow') || {}).checked }); UI.toast('✅ تم تحديث بياناتك'); App.render(); break; }
     case 'privacy-show': ev.preventDefault(); privacyModal(); break;
     case 'rr-move': case 'rr-del': case 'rr-add': {
       const fs = collectRegRows(); if (act === 'rr-add') fs.push({ key: 'c' + genId(), label: 'حقل جديد', type: 'text', visible: true, required: false, options: [], builtin: false });
@@ -297,8 +346,11 @@ document.addEventListener('click', async ev => {
       const d = t.getAttribute('data-d'); const inp = $('#checkin' + d); const v = inp ? inp.value.replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x)).trim() : '';
       const cd = (Attend.cfg().codes || {})['d' + d] || {};
       if (!cd.open) { UI.alert('تسجيل الحضور لهذا اليوم مغلق الآن.'); break; }
-      if (!v || v !== String(cd.code)) { UI.alert('الرمز غير صحيح. تأكد من الرمز المعروض على الشاشة.'); break; }
-      await DB.update('attendance/' + Me.uid(), { ['d' + d]: Attend.cfg().hours, ['t' + d]: DB.now() }); UI.toast('✅ تم تسجيل حضورك لليوم ' + d); break;
+      if (!v) { UI.alert('اكتب رمز الحضور المعروض على الشاشة.'); break; }
+      // الرمز لا يصل إلى المتصفح؛ الخادم يقارنه بالرمز السري ويقبل التسجيل أو يرفضه
+      try { await DB.set('checkins/d' + d + '/' + Me.uid(), { code: v, ts: DB.now() }, { quiet: true }); UI.toast('✅ تم تسجيل حضورك لليوم ' + d); }
+      catch (e) { UI.alert(DB.real ? 'الرمز غير صحيح أو أُغلق التسجيل. تأكد من الرمز المعروض على الشاشة.' : 'تعذر التسجيل: ' + h(e.message || e)); }
+      break;
     }
     case 'as-pick': { const k = 'as_' + t.getAttribute('data-ph'); UIState.draft[k][+t.getAttribute('data-i')] = +t.getAttribute('data-v'); App.render(); break; }
     case 'as-submit': {
@@ -340,7 +392,7 @@ document.addEventListener('click', async ev => {
     case 'cg-reset': { const kind = t.getAttribute('data-kind'); if (await UI.confirm('استرجاع المحتوى الافتراضي؟', { ok: 'استرجاع' })) DB.remove('site/' + kind); break; }
     // ----- الحضور -----
     case 'att-cfg-save': { const days = parseInt($('#attDays').value, 10), hours = parseFloat($('#attHours').value), th = parseInt($('#attTh').value, 10); if (!(days >= 1 && days <= 10) || !(hours > 0) || !(th >= 0 && th <= 100)) { UI.alert('تحقق من القيم المدخلة.'); break; } await DB.update('settings/attendance', { days, hours, threshold: th }); UI.toast('✅ حُفظت إعدادات الحضور'); break; }
-    case 'att-code': { const d = t.getAttribute('data-d'); await DB.update('settings/attendance/codes/d' + d, { code: String(Math.floor(1000 + Math.random() * 9000)) }); break; }
+    case 'att-code': { const d = t.getAttribute('data-d'); await DB.set('secure/attcodes/d' + d + '/code', String(Math.floor(1000 + Math.random() * 9000))); break; }
     case 'att-open': { const d = t.getAttribute('data-d'); const cd = Attend.cfg().codes['d' + d] || {}; await DB.update('settings/attendance/codes/d' + d, { open: !cd.open }); UI.toast(cd.open ? '🔒 أُغلق تسجيل الحضور' : '🟢 فُتح تسجيل الحضور لليوم ' + d); break; }
     case 'att-show': { const d = t.getAttribute('data-d'); const cd = Attend.cfg().codes['d' + d] || {}; const m = UI.modal('<div class="center"><div class="sec-kicker">رمز حضور اليوم ' + d + '</div><div class="att-big num notranslate" translate="no">' + h(cd.code || '') + '</div><p class="muted" style="font-family:var(--f-ui)">افتح المنصة ← أدخل الرمز في شريط «تسجيل الحضور» أعلى الصفحة</p></div><div class="actions" style="justify-content:center"><button class="btn btn-ghost" data-x>إغلاق</button></div>', { wide: true }); $('[data-x]', m.el).onclick = () => m.close(); break; }
     case 'att-all': { const d = t.getAttribute('data-d'); if (!(await UI.confirm('تسجيل حضور كامل لكل المسجّلين في اليوم ' + d + '؟', { ok: 'تسجيل' }))) break; const upd = {}; Object.keys(Store.users || {}).forEach(u => { upd['attendance/' + u + '/d' + d] = Attend.cfg().hours; }); await DB.update('', upd); UI.toast('✅ تم'); break; }
@@ -387,8 +439,8 @@ document.addEventListener('click', async ev => {
     }
     case 'leads-cfg-save': { const progs = $('#lcProgs').value.split('\n').map(x => x.trim()).filter(Boolean); await DB.set('site/leads', { intro: $('#lcIntro').value.trim(), consent: $('#lcConsent').value.trim(), programs: progs, axis: $('#lcAxis').value }); UI.toast('✅ حُفظ'); break; }
     case 'leads-cfg-reset': { if (await UI.confirm('استرجاع الإعدادات الافتراضية لنموذج الاهتمام؟', { ok: 'استرجاع' })) DB.remove('site/leads'); break; }
-    case 'mon-toggle': { const c = Monitor.cfg(); await DB.set('settings/monitor', { enabled: !c.enabled, token: c.token || genId('m') }); break; }
-    case 'mon-new': { if (await UI.confirm('إنشاء رابط جديد؟ سيتوقف الرابط القديم عن العمل.', { ok: 'إنشاء' })) await DB.set('settings/monitor', { enabled: true, token: genId('m') }); break; }
+    case 'mon-toggle': { const c = Monitor.cfg(); const tok = c.token || genId('m') + genId(); await DB.set('secure/monitor', { enabled: !c.enabled, token: tok }); if (c.enabled) await DB.remove('monitorData/' + tok); else setTimeout(() => Monitor.publish(true), 500); break; }
+    case 'mon-new': { if (await UI.confirm('إنشاء رابط جديد؟ سيتوقف الرابط القديم عن العمل.', { ok: 'إنشاء' })) { const old = Monitor.cfg().token; await DB.set('secure/monitor', { enabled: true, token: genId('m') + genId() }); if (old) await DB.remove('monitorData/' + old); setTimeout(() => Monitor.publish(true), 500); } break; }
     case 'mon-copy': { const u = Monitor.url(); try { await navigator.clipboard.writeText(u); UI.toast('📋 نُسخ الرابط'); } catch (e) { UI.prompt('انسخ الرابط:', { value: u, title: 'رابط المتابعة' }); } break; }
     case 'mon-open': Router.go('monitor', { id: Monitor.cfg().token }); break;
     case 'cohort-save': { await DB.update('settings/cohort', { name: $('#cohName').value.trim() || 'الدفعة', start: $('#cohStart').value, end: $('#cohEnd').value }); UI.toast('✅ حُفظت بيانات الدفعة'); break; }
@@ -487,7 +539,7 @@ function labTick() {
 // ---------- نسخ احتياطي يومي تلقائي لمدخلات المتدربين ----------
 // أول متصفح يفتح المنصة في يوم جديد يأخذ نسخة من المشاركات والتسجيل والحضور والتقييمات (عملية ذرّية تضمن نسخة واحدة يوميًا)
 const BACKUP_KEEP = 14;
-const BACKUP_PATHS = ['users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes'];
+const BACKUP_PATHS = ['users', 'private', 'devices', 'secrets', 'posts', 'assess', 'attendance', 'checkins', 'lab', 'assign', 'leads', 'followups', 'storyLikes'];
 function dayKey(ts) { const d = new Date(ts || Date.now()); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
 async function snapshotData() { const o = {}; for (const k of BACKUP_PATHS) o[k] = await DB.get(k); return o; }
 async function autoBackup(force) {
@@ -538,17 +590,48 @@ function connectScreen() {
 }
 
 // ---------- دخول المدرب عبر Firebase Authentication ----------
+// كل زائر يحصل على جلسة Firebase مجهولة (Anonymous) تُربط بسجله، والمدرب يدخل بحساب Google — القواعد تميّز بينهما
 function authInit() {
-  AUTH.enabled = !DEMO_MODE && !!firebaseConfig.apiKey && typeof firebase !== 'undefined' && typeof firebase.auth === 'function';
-  if (!AUTH.enabled) return;
+  const fb = !DEMO_MODE && typeof firebase !== 'undefined' && typeof firebase.auth === 'function' && !!firebaseConfig.apiKey;
+  AUTH.enabled = fb; if (!fb) return;
   AUTH.resolved = false;
   firebase.auth().onAuthStateChanged(async u => {
-    AUTH.user = u; let ok = false;
-    if (u) { try { ok = (await DB.get('admins/' + u.uid)) === true; } catch (e) { ok = false; } }
+    if (!u) { try { await firebase.auth().signInAnonymously(); return; } catch (e) { console.warn('anonymous sign-in', e); AUTH.anonError = e; } }
+    AUTH.user = u || null; let ok = false;
+    if (u && !u.isAnonymous) { try { ok = (await DB.get('admins/' + u.uid)) === true; } catch (e) { ok = false; } }
     AUTH.isAdmin = ok; AUTH.resolved = true;
-    if (SafeSS.get('ec_admin_redirect')) { SafeSS.del('ec_admin_redirect'); if (ok) { Router.go('admin'); return; } if (u) { UI.alert('الحساب ' + h(u.email || '') + ' غير مضاف إلى حسابات المدربين. أضف هذا الرقم في العقدة admins بقيمة true:<br><b class="num" dir="ltr" style="user-select:all">' + h(u.uid) + '</b>'); firebase.auth().signOut(); } }
+    if (SafeSS.get('ec_admin_redirect')) { SafeSS.del('ec_admin_redirect'); if (!ok && u && !u.isAnonymous) { UI.alert('الحساب ' + h(u.email || '') + ' غير مضاف إلى حسابات المدربين. أضف هذا الرقم في العقدة admins بقيمة true:<br><b class="num" dir="ltr" style="user-select:all">' + h(u.uid) + '</b>'); firebase.auth().signOut(); return; } }
+    syncWatchers(); await ensureOwnership();
+    if (ok) setTimeout(migrateSchema, 1500);
+    if (ok && SafeSS.get('ec_go_admin')) { SafeSS.del('ec_go_admin'); Router.go('admin'); return; }
     App.render();
   });
+}
+const authUid = () => (AUTH.user && AUTH.user.uid) || null;
+function genCode() { const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; const r = new Uint32Array(6); try { crypto.getRandomValues(r); } catch (e) { for (let i = 0; i < 6; i++) r[i] = Math.floor(Math.random() * 1e9); } for (let i = 0; i < 6; i++) s += a[r[i] % a.length]; return s; }
+// ربط الجهاز بالسجل: السجل الجديد يُربط فورًا، والدخول من جهاز آخر يحتاج رمز الدخول الشخصي
+async function linkDevice(uid, code) { const au = authUid(); if (!DB.real || !au) return true; try { await DB.set('devices/' + uid + '/' + au, code || 'legacy', { quiet: true, beforeReady: true }); return true; } catch (e) { return false; } }
+async function ensureOwnership() {
+  if (!DB.real || !Me.data || !authUid() || !AUTH.enabled) return;
+  const uid = Me.data.uid; if (uid === authUid()) return;
+  try { if (await DB.get('devices/' + uid + '/' + authUid())) return; } catch (e) {}
+  if (await linkDevice(uid, Me.data.code)) {
+    if (!Me.data.code) { const code = genCode(); try { await DB.set('secrets/' + uid, code, { quiet: true, beforeReady: true }); Me.save(Object.assign({}, Me.data, { code })); } catch (e) {} }
+    syncWatchers(); return;
+  }
+  Me.clear(); syncWatchers(); setTimeout(() => UI.toast('🔐 لحماية حسابك: ادخل مجددًا برقم العضوية ورمز الدخول الشخصي', 6000), 400);
+}
+// نقل البيانات القديمة إلى النموذج الآمن (مرة واحدة من جلسة المدرب)
+async function migrateSchema() {
+  try {
+    if (!Admin.ok() || !DB.real) return; const meta = await DB.get('meta/schema'); if (Number(meta) >= 2) return;
+    const users = (await DB.get('users')) || {}; const settings = (await DB.get('settings')) || {}; const upd = {};
+    Object.keys(users).forEach(u => { const x = users[u] || {}; if (x.f || x.consent) { if (x.f) upd['private/' + u + '/f'] = x.f; if (x.consent) upd['private/' + u + '/consent'] = x.consent; upd['users/' + u + '/f'] = null; upd['users/' + u + '/consent'] = null; } if (x.email) { upd['private/' + u + '/f/email'] = x.email; upd['users/' + u + '/email'] = null; } if (x.org) { upd['private/' + u + '/f/org'] = x.org; upd['users/' + u + '/org'] = null; } });
+    const codes = ((settings.attendance || {}).codes) || {}; Object.keys(codes).forEach(k => { if (codes[k] && codes[k].code != null) { upd['secure/attcodes/' + k + '/code'] = String(codes[k].code); upd['settings/attendance/codes/' + k + '/code'] = null; } });
+    if (settings.monitor) { upd['secure/monitor'] = settings.monitor; upd['settings/monitor'] = null; }
+    upd['meta/schema'] = 2;
+    await DB.update('', upd); UI.toast('🔐 نُقلت البيانات الخاصة ورموز الحضور إلى النموذج المحمي');
+  } catch (e) { console.warn('migrate', e); }
 }
 function authErr(e) {
   const c = (e && e.code) || '';
@@ -574,7 +657,7 @@ function adminLogin() {
   const finish = async user => {
     const ok = (await DB.get('admins/' + user.uid)) === true;
     if (!ok) { await firebase.auth().signOut(); err('الحساب ' + h(user.email || '') + ' غير مضاف إلى حسابات المدربين (العقدة admins في قاعدة البيانات).<br>انسخ هذا الرقم وأضفه هناك بقيمة true:<br><span class="num" dir="ltr" style="user-select:all;font-weight:700">' + h(user.uid) + '</span>'); return false; }
-    AUTH.user = user; AUTH.isAdmin = true; m.close(); SafeSS.del('ec_preview'); Router.go('admin'); return true;
+    AUTH.user = user; AUTH.isAdmin = true; m.close(); SafeSS.del('ec_preview'); syncWatchers(); setTimeout(migrateSchema, 1500); Router.go('admin'); return true;
   };
   $('[data-google]', m.el).onclick = async () => {
     const btn = $('[data-google]', m.el); btn.disabled = true; err('');
@@ -606,6 +689,7 @@ function boot() {
   // النسخ اليومي التلقائي من جلسة المدرب فقط، وبعد قراءة مؤكدة من الخادم (لا يكتب الزوار شيئًا تلقائيًا)
   const bk = () => { if (App.dataReady && Admin.ok()) autoBackup(false); };
   setTimeout(bk, 15000); setInterval(bk, 3600000);
+  setInterval(() => Monitor.publish(false), 60000); // لقطة لوحة المشرف تُحدَّث من جلسة المدرب
   setTimeout(() => { if (!App.dataReady) { App.slow = true; App.render(); } }, 8000);
   DB.onStatus(debounce(() => { if (App.dataReady) App.render(); }, 120));
   DB.onReject = (e, where) => { console.warn('write rejected', where, e); UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };

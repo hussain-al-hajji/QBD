@@ -591,7 +591,7 @@ Views.account = {
     const scoreTxt = r => !r || !r.done ? '—' : rv ? Assess.score(r.answers) + '/' + A.items.length : '✔';
     let out = Layout.crumbs('<span class="crumb-tag">حسابي</span>') +
       '<div class="card pad" style="margin-top:8px"><div class="row" style="align-items:flex-start"><div class="grow"><div class="sec-kicker">نسبة الإنجاز الإجمالية</div><div class="big-pct num">' + pct + '%</div><div class="muted" style="font-family:var(--f-ui)">أنجزت <span class="num">' + pr.done + '</span> من <span class="num">' + pr.total + '</span> تمرينًا</div></div>' +
-      '<div style="text-align:center"><div class="sec-kicker">رقم العضوية</div><div class="num notranslate" translate="no" style="font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:2px">' + (member ? pad4(member) : '—') + '</div></div></div><div class="progress" style="margin-top:12px"><i style="width:' + pct + '%"></i></div>' +
+      '<div style="text-align:center"><div class="sec-kicker">رقم العضوية</div><div class="num notranslate" translate="no" style="font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:2px">' + (member ? pad4(member) : '—') + '</div>' + ((Me.data && Me.data.code) || Store.mySecret ? '<div class="sec-kicker" style="margin-top:4px">رمز الدخول</div><div class="num notranslate" translate="no" dir="ltr" style="font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:3px;user-select:all">' + h((Me.data && Me.data.code) || Store.mySecret) + '</div>' : '') + '</div></div><div class="progress" style="margin-top:12px"><i style="width:' + pct + '%"></i></div>' +
       '<div class="mini-stats"><div><span>📍 الحضور</span><b class="num">' + att + '%</b></div><div><span>🧭 التقييم القبلي</span><b class="num">' + scoreTxt(pre) + '</b></div><div><span>🏁 التقييم البعدي</span><b class="num">' + scoreTxt(post) + '</b></div><div><span>🏅 الأوسمة</span><b class="num">' + pr.axes.filter(x => x.pct >= BADGE_THRESHOLD).length + '/' + pr.axes.length + '</b></div></div></div>';
     const urec = Object.assign({}, Store.users[me.uid] || {}, { name: me.name, role: me.role }); const cons = urec.consent || {};
     out += '<div class="card pad" style="margin-top:16px"><h3 style="margin-bottom:12px">✏️ بياناتي</h3><div class="grid2">' + RegFields.visible().map(f => RegFields.input(f, RegFields.val(urec, f.key), 'acc_')).join('') + '</div>' +
@@ -621,10 +621,22 @@ Views.account = {
 };
 
 // ============ لوحة المشرف (قراءة فقط) ============
+// لوحة المشرف: المدرب يرى البيانات الحية ويُنشر منها لقطة؛ المشرف (بلا حساب) يقرأ اللقطة فقط عبر الرمز
 Views.monitor = {
   html() {
-    const c = Monitor.cfg(); const tok = Router.cur.id || '';
-    if (!Admin.ok() && (!c.enabled || !c.token || tok !== c.token)) return '<div class="empty" style="margin-top:30px">🔒 رابط المتابعة غير صالح أو غير مفعّل. اطلب رابطًا محدثًا من إدارة البرنامج.</div>';
+    if (Admin.ok()) return monitorBody();
+    const tok = Router.cur.id || ''; const snap = (Store.monData || {})[tok];
+    if (snap === undefined) return '<div class="empty" style="margin-top:30px">⏳ جارٍ تحميل لوحة المتابعة…</div>';
+    if (!snap || !snap.html) return '<div class="empty" style="margin-top:30px">🔒 رابط المتابعة غير صالح أو غير مفعّل. اطلب رابطًا محدثًا من إدارة البرنامج.</div>';
+    return '<div class="notice" style="margin-top:14px">🕒 آخر تحديث من إدارة البرنامج: ' + ago(snap.ts || 0) + ' — تتحدث اللوحة تلقائيًا أثناء عمل المدرب على المنصة.</div>' + snap.html;
+  },
+  after() {
+    if (Admin.ok()) return; const tok = Router.cur.id || ''; Store.monData = Store.monData || {};
+    if (Views.monitor._tok === tok) return; if (Views.monitor._un) Views.monitor._un(); Views.monitor._tok = tok;
+    Views.monitor._un = DB.watch('monitorData/' + tok, v => { Store.monData[tok] = v; App.onData(); }, () => { Store.monData[tok] = null; App.onData(); });
+  }
+};
+function monitorBody() {
     const d = reportData(); const pct = v => v == null ? '—' : Math.round(v) + '%';
     const kpi = (l, v, s) => '<div class="mon-kpi"><span>' + l + '</span><b class="num">' + v + '</b>' + (s ? '<em>' + s + '</em>' : '') + '</div>';
     const bars = (items, max, col) => '<div class="mon-bars">' + items.map(x => '<div class="mon-bar"><span>' + h(x.l) + '</span><i><em style="width:' + Math.max(0, Math.min(100, (x.v || 0) / (max || 1) * 100)) + '%;background:' + (x.c || col || 'var(--brand)') + '"></em></i><b class="num">' + h(x.t != null ? x.t : x.v) + '</b></div>').join('') + '</div>';
@@ -638,5 +650,4 @@ Views.monitor = {
       '<div class="card pad"><h3>الرضا لكل بند</h3>' + bars(d.survey.rates.map((r, i) => ({ l: r, v: d.survey.avgs[i] || 0, t: d.survey.avgs[i] ? d.survey.avgs[i].toFixed(1) : '—' })), 5, '#E0A526') + '<h3 style="margin-top:14px">الاهتمام ببرامج البنك</h3>' + dist(d.byProg) + '</div>' +
       '<div class="card pad"><h3>💡 توصيات آلية</h3>' + (d.recs.length ? '<ul class="mon-recs">' + d.recs.map(r => '<li>' + h(r.ar) + '</li>').join('') + '</ul>' : '<div class="muted">تظهر عند توفر بيانات كافية.</div>') + '</div>' +
       '<div class="card pad"><h3>آخر النشاطات</h3>' + (ev.length ? ev.map(e => '<div class="bell-item"><div class="grow">' + e.html + '<div class="t">' + ago(e.ts) + '</div></div></div>').join('') : '<div class="muted">لا نشاط بعد.</div>') + '</div></div>';
-  }
-};
+}

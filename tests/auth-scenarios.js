@@ -31,7 +31,7 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
       await DB.set('posts/a1e1/u1/likes/' + uid, true);
       await DB.set('storyLikes/st1/likes/' + uid, true);
       await DB.set('assess/pre/' + uid, { answers: [0, 1], done: true, ts: DB.now() });
-      await DB.update('attendance/' + uid, { d1: 4, t1: DB.now() });
+      // الحضور صار عبر checkins برمز يتحقق منه الخادم (يُختبر في security-scenarios.js)
       await DB.set('lab/timers/g' + g, { start: DB.now(), pausedTotal: 0 }); await DB.update('lab/answers/g' + g, { s1: { text: 'x' } });
       await DB.set('leads/' + uid, { programs: ['تمويل'] }); await DB.set('followups/d30/' + uid, { actions: 'x' });
     });

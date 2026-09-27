@@ -272,7 +272,9 @@ async function saveMemberCard(me) {
     c.fillStyle = '#4A5470'; c.font = '500 28px "IBM Plex Sans Arabic", sans-serif'; c.fillText(me.role || '', W - 110, 305);
     c.fillStyle = '#7D879C'; c.font = '700 22px "IBM Plex Sans Arabic", sans-serif'; c.fillText('رقم العضوية', W - 110, 400);
     c.direction = 'ltr'; c.textAlign = 'right'; c.fillStyle = '#1C2340'; c.font = '800 76px Cairo, sans-serif'; c.fillText(pad4(me.member || 0), W - 110, 480);
-    c.textAlign = 'left'; c.direction = 'rtl'; c.fillStyle = '#7D879C'; c.font = '500 20px "IBM Plex Sans Arabic", sans-serif'; c.fillText('ادخل به من أي جهاز: «مسجّل مسبقًا؟ الدخول برقم العضوية»', 110, 480);
+    const code = me.code || (Me.data && Me.data.uid === me.uid && Me.data.code) || Store.mySecret || '';
+    if (code) { c.textAlign = 'left'; c.direction = 'rtl'; c.fillStyle = '#7D879C'; c.font = '700 22px "IBM Plex Sans Arabic", sans-serif'; c.fillText('رمز الدخول الشخصي', 110 + 260, 400); c.direction = 'ltr'; c.fillStyle = '#8A1538'; c.font = '800 56px Cairo, sans-serif'; c.fillText(code, 110, 478); }
+    c.textAlign = 'left'; c.direction = 'rtl'; c.fillStyle = '#7D879C'; c.font = '500 19px "IBM Plex Sans Arabic", sans-serif'; c.fillText('للدخول من جهاز آخر: «مسجّل مسبقًا؟» ثم الرقم والرمز معًا', 110, 540);
     await new Promise(res => cv.toBlob(b => { downloadBlob(b, 'رقم العضوية ' + pad4(me.member || 0) + '.png'); res(); }, 'image/png'));
     UI.toast('✅ تم حفظ بطاقة رقم العضوية على جهازك');
   } catch (e) { UI.alert('تعذر حفظ البطاقة: ' + h(e.message || e)); }

@@ -124,10 +124,10 @@ const DB = (function () {
     if (!status.ready && !(o && o.beforeReady)) { const e = new Error('لم تكتمل قراءة البيانات من الخادم بعد — انتظر لحظات ثم أعد المحاولة'); if (DB.onReject) DB.onReject(e, path); return Promise.reject(e); }
     return null;
   }
-  function track(promise, desc) {
+  function track(promise, desc, o) {
     status.pending++; emit();
     return promise.then(v => { status.pending--; if (!status.pending && status.wasOffline && status.connected) { status.wasOffline = false; if (DB.onSynced) DB.onSynced(); } emit(); return v; },
-      e => { status.pending--; emit(); if (DB.onReject) DB.onReject(e, desc); throw e; });
+      e => { status.pending--; emit(); if (DB.onReject && !(o && o.quiet)) DB.onReject(e, desc); throw e; });
   }
   if (!DEMO_MODE) {
     if (typeof firebase === 'undefined') {
@@ -147,11 +147,11 @@ const DB = (function () {
       markReady() { status.ready = true; emit(); },
       watch(path, cb, onErr) { const ref = db.ref(norm(path)); const fn = s => cb(s.val()); ref.on('value', fn, e => { console.warn('watch', path, e); if (onErr) onErr(e); }); return () => ref.off('value', fn); },
       get(path) { return db.ref(norm(path)).once('value').then(s => s.val()); },
-      set(path, v, o) { const g = guard('set', path, null, o); if (g) return g; return track(db.ref(norm(path)).set(clean(v)), path); },
-      update(path, obj, o) { const g = guard('update', path, obj, o); if (g) return g; return track(norm(path) ? db.ref(norm(path)).update(clean(obj)) : db.ref().update(clean(obj)), path || Object.keys(obj).join(',')); },
-      remove(path, o) { const g = guard('remove', path, null, o); if (g) return g; return track(db.ref(norm(path)).remove(), path); },
+      set(path, v, o) { const g = guard('set', path, null, o); if (g) return g; return track(db.ref(norm(path)).set(clean(v)), path, o); },
+      update(path, obj, o) { const g = guard('update', path, obj, o); if (g) return g; return track(norm(path) ? db.ref(norm(path)).update(clean(obj)) : db.ref().update(clean(obj)), path || Object.keys(obj).join(','), o); },
+      remove(path, o) { const g = guard('remove', path, null, o); if (g) return g; return track(db.ref(norm(path)).remove(), path, o); },
       push(path, v) { const g = guard('push', path); if (g) return g; const r = db.ref(norm(path)).push(); return track(r.set(clean(v)), path).then(() => r.key); },
-      transaction(path, fn, o) { const g = guard('transaction', path, null, o); if (g) return g; return track(db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()), path); },
+      transaction(path, fn, o) { const g = guard('transaction', path, null, o); if (g) return g; return track(db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()), path, o); },
       now() { return Date.now() + offset; }
     };
   }

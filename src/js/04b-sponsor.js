@@ -27,7 +27,16 @@ function leadFormHtml(where) {
 }
 
 // ---------- رابط المشرف (قراءة فقط) ----------
-const Monitor = { cfg() { return Object.assign({ enabled: false, token: '' }, Store.monitorCfg || {}); }, url() { const c = Monitor.cfg(); return location.origin + location.pathname + '#v=monitor&id=' + encodeURIComponent(c.token); } };
+// الرمز محفوظ في عقدة secure (للمدرب فقط). المشرف لا يقرأ البيانات الخام؛ يقرأ لقطة جاهزة ينشرها المدرب في monitorData/<الرمز>
+const Monitor = {
+  cfg() { return Object.assign({ enabled: false, token: '' }, (Store.secure && Store.secure.monitor) || {}); },
+  _last: '',
+  async publish(force) {
+    const c = Monitor.cfg(); if (!Admin.ok() || !c.enabled || !c.token || !App.dataReady) return;
+    let html = ''; try { html = monitorBody(); } catch (e) { console.warn(e); return; }
+    if (!force && html === Monitor._last) return; Monitor._last = html;
+    try { await DB.set('monitorData/' + c.token, { html, ts: DB.now() }, { quiet: true }); } catch (e) { console.warn('monitor publish', e); }
+  }, url() { const c = Monitor.cfg(); return location.origin + location.pathname + '#v=monitor&id=' + encodeURIComponent(c.token); } };
 
 // ---------- الدفعات ----------
 const Cohort = {
