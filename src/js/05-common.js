@@ -196,6 +196,42 @@ function mediaHtml(s) {
   return out;
 }
 
+// ---------- الرسم التعبيري المناسب لموضوع الشريحة ----------
+// scene: none في المحتوى يلغيه، و scene: <اسم> يحدده؛ وإلا يُختار حسب كلمات العنوان والنص، ثم نوع الشريحة، ثم رسم المحور
+const SCENE_HINTS = [
+  ['ai', /ذكاء اصطناعي|الذكاء الاصطناعي|\bAI\b|مساعد ذكي|نموذج لغوي/],
+  ['trust', /ثقة|أمان|آمن|احتيال|حماية|امتثال|PCI|خصوصية|طمأن/],
+  ['payments', /بوابة|بوابات|الدفع الرقمي|وسائل الدفع|بطاق|محفظ|تسوية|رسوم المعاملة/],
+  ['checkout', /إتمام الشراء|السلة|سلة|التخلي|صفحة الدفع|الدفع/],
+  ['scooter', /توصيل|الشحن|شحن|آخر ميل|مندوب|المرتجعات|مرتجع/],
+  ['globe', /دولي|الحدود|تصدير|الخليج|جمارك|DDP|DAP|أسواق خارجية|عبر الحدود/],
+  ['loop', /أتمتة|آلي|سير العمل|تكامل|محفز|تحسين مستمر|دورة/],
+  ['architecture', /إجراء|SOP|العمليات|هيكل|بنية|تنظيم|توسع/],
+  ['anomaly', /انحراف|خطأ|أخطاء|مشكلة|تسرّب|تسرب/],
+  ['data', /بيانات|أرقام|مؤشر|تحليل|لوحة|قمع|نسبة التحويل|التحويل/],
+  ['measure', /قياس|ROAS|CAC|CLV|هامش|تكلفة|ميزانية|تسعير|سعر/],
+  ['megaphone', /تسويق|إعلان|حملة|حملات|رسالة|SEO|محركات البحث|تواصل اجتماعي/],
+  ['community', /عميل|عملاء|ولاء|CRM|احتفاظ|مجتمع|تقييمات/],
+  ['content', /وصف|صور|صفحة المنتج|قائمة المنتج|عنوان المنتج|محتوى/],
+  ['navigation', /تنقل|قائمة|تصنيف|بحث/],
+  ['store', /منصة|منصات|متجر|سوق إلكتروني|Shopify|WooCommerce|سلة وزد/],
+  ['target', /هدف|أهداف|خطة|استراتيجية|SMART|أولوية|أولويات/],
+  ['journey', /رحلة|مسار|مراحل|خطوات/],
+  ['friction', /تعقيد|احتكاك|مغادرة|عائق|عوائق/]
+];
+function slideScene(s, a, type) {
+  if (s.scene === 'none') return null; if (s.scene && Scenes.keys.indexOf(s.scene) > -1) return s.scene;
+  if (type === 'mistakes') return 'mistakes';
+  const txt = [s.title, s.intro, s.text, s.rule].concat(s.points || [], (s.items || []).slice(0, 4)).filter(Boolean).join(' ').slice(0, 600);
+  const hit = SCENE_HINTS.find(([k, re]) => Scenes.keys.indexOf(k) > -1 && re.test(txt));
+  if (hit) return hit[0];
+  if (type === 'tools') return 'tools'; if (type === 'principle') return 'idea';
+  return a.scene || 'idea';
+}
+// أنماط الشرائح الحديثة التي يُضاف لها رسم جانبي عند توفر المساحة (بلا رسم بياني)
+const SK_SCENE = ['checklist', 'numbers', 'scenario'];
+const SCENE_NAMES = {"browse": "التصفح", "journey": "رحلة العميل", "friction": "العوائق", "megaphone": "التسويق", "target": "الأهداف", "measure": "القياس", "architecture": "البنية والعمليات", "content": "المحتوى", "navigation": "التنقل", "checkout": "إتمام الشراء", "trust": "الثقة والأمان", "complete": "الإنجاز", "data": "البيانات", "anomaly": "المشكلات", "loop": "الأتمتة والتحسين", "ai": "الذكاء الاصطناعي", "mistakes": "الأخطاء", "tools": "الأدوات", "idea": "الفكرة", "store": "المتجر", "globe": "الأسواق الدولية", "scooter": "التوصيل", "swallow": "التسوق", "payments": "الدفع", "community": "العملاء والمجتمع"};
+
 // ---------- عرض شريحة ----------
 function renderSlide(s, a, i, n, cur) {
   const col = Content.color(a); const type = SLIDE_TYPES[s.type] ? s.type : 'principle';
@@ -203,25 +239,27 @@ function renderSlide(s, a, i, n, cur) {
   const wrap = (inner, cls) => '<div class="slide slide-' + type + (cur ? ' cur' : '') + (cls ? ' ' + cls : '') + '" style="--ac:' + col + ';--acg:' + tint(col, .1) + ';--acd:' + shade(col, -0.35) + '"><span class="slide-wm num" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span><div class="slide-in">' + head +
     (s.image ? '<img class="slide-img" src=\"' + imgSrc(s.image) + '\" alt="">' : '') + '<h2>' + h(s.title) + '</h2>' + inner + '</div></div>';
   if (SK_TYPES.indexOf(type) > -1) {
-    const chart = s.chart ? '<div class="slide-visual sk-chart">' + Charts.render(s.chart, col) + '</div>' : '';
-    return wrap((chart ? '<div class="sk-split"><div class="sk-main">' + SlideKit[type](s, a, i, col) + '</div>' + chart + '</div>' : SlideKit[type](s, a, i, col)) + mediaHtml(s), chart ? 'vis-chart' : '');
+    const sc = !s.chart && SK_SCENE.indexOf(type) > -1 ? slideScene(s, a, type) : null;
+    const chart = s.chart ? '<div class="slide-visual sk-chart">' + Charts.render(s.chart, col) + '</div>' : sc ? '<div class="slide-visual sk-scene vis-opt">' + Scenes.render(sc, col) + '</div>' : '';
+    return wrap((chart ? '<div class="sk-split' + (sc ? ' sk-split-scene' : '') + '"><div class="sk-main">' + SlideKit[type](s, a, i, col) + '</div>' + chart + '</div>' : SlideKit[type](s, a, i, col)) + mediaHtml(s), s.chart ? 'vis-chart' : sc ? 'vis-scene' : '');
   }
   let text = '', visual = '';
   const chart = s.chart ? Charts.render(s.chart, col) : '';
   const rule = s.rule ? '<div class="rule-box"><span class="lbl">' + (type === 'opening' || type === 'summary' ? '📌 قاعدة تذكّرها' : '💡 الفكرة الذهبية') + '</span>' + richHtml(s.rule) + '</div>' : '';
   if (type === 'opening' || type === 'summary') {
     text = '<div class="slide-text">' + withLede(richHtml(s.text)) + '</div>' + rule;
-    visual = chart || Scenes.render(a.scene || 'idea', col, type === 'summary' ? { style: 'max-width:300px;margin:0 auto' } : {});
+    visual = chart || Scenes.render(slideScene(s, a, type) || a.scene || 'idea', col, type === 'summary' ? { style: 'max-width:300px;margin:0 auto' } : {});
   } else if (type === 'principle') {
     text = '<div class="slide-text">' + richHtml(s.intro) + '</div>' + (s.points && s.points.length ? '<ul class="points">' + s.points.map((p, k) => '<li style="--i:' + k + '"><span class="n num">' + (k + 1) + '</span><span>' + boldTerm(p) + '</span></li>').join('') + '</ul>' : '') + rule;
-    visual = chart || Scenes.render('idea', col);
+    visual = chart || Scenes.render(slideScene(s, a, type) || 'idea', col);
   } else {
     const cls = type === 'mistakes' ? 'mis' : type === 'tools' ? 'tool' : 'ex';
     text = '<div class="pairs ' + cls + '-list">' + (s.items || []).map((it, k) => { const j = String(it).indexOf('::'); const hd = j > -1 ? it.slice(0, j) : it, bd = j > -1 ? it.slice(j + 2) : ''; return '<div class="pair ' + cls + '" style="--i:' + k + '"><div class="h">' + (cls === 'mis' ? '<span class="pm">✕</span>' : cls === 'tool' ? '<span class="pm">🛠</span>' : '<span class="pm num">' + (k + 1) + '</span>') + '<span>' + h(hd.trim()) + '</span></div>' + (bd ? '<div class="b">' + (cls === 'mis' ? '<span class="pm ok">✓</span>' : '') + '<span>' + h(bd.trim()) + '</span></div>' : '') + '</div>'; }).join('') + '</div>' + rule;
-    visual = chart || Scenes.render(type === 'mistakes' ? 'mistakes' : type === 'tools' ? 'tools' : (a.scene || 'idea'), col);
+    visual = chart || Scenes.render(slideScene(s, a, type) || (a.scene || 'idea'), col);
   }
   const many = (s.items || []).length + (s.points || []).length;
-  return wrap('<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual">' + visual + '</div></div>', (chart ? 'vis-chart' : 'vis-scene') + (many > 4 ? ' many' : ''));
+  if (!chart && s.scene === 'none') return wrap('<div class="slide-grid no-visual"><div>' + text + mediaHtml(s) + '</div></div>', 'vis-none');
+  return wrap('<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual' + (chart ? '' : ' vis-opt') + '">' + visual + '</div></div>', (chart ? 'vis-chart' : 'vis-scene') + (many > 4 ? ' many' : ''));
 }
 
 // ---------- محرر النص المنسّق (contenteditable) ----------

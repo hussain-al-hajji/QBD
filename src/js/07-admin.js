@@ -317,6 +317,7 @@ function slideEditorHtml(s, i, n) {
   }
   else f += '<div class="field"><label>' + (t === 'mistakes' ? 'الأخطاء وتصحيحاتها' : t === 'tools' ? 'الأدوات واستخداماتها' : 'الأمثلة') + ' (سطر لكل عنصر، بصيغة: العنوان :: التفصيل)</label><textarea data-sf="items" rows="5">' + h(arr(s.items).map(x => String(x).replace('::', ' :: ')).join('\n')) + '</textarea></div><div class="field"><label>الرسالة (اختيارية)</label>' + RTE.html(k + 'rule', s.rule) + '</div>';
   f += '<div class="field"><label>صورة الشريحة (اختيارية، تظهر أعلى محتواها)</label>' + ImgPick.html(k + 'img', s.image) + '</div>' +
+    '<div class="field"><label>الرسم التعبيري</label><select data-sf="scene"><option value="">تلقائي حسب موضوع الشريحة</option><option value="none" ' + (s.scene === 'none' ? 'selected' : '') + '>بدون رسم</option>' + Scenes.keys.filter(k => k !== 'hero').map(k => '<option value="' + k + '" ' + (s.scene === k ? 'selected' : '') + '>' + h(SCENE_NAMES[k] || k) + '</option>').join('') + '</select><span class="help">يظهر بجانب المحتوى عندما تتسع الشريحة له، ويُخفى تلقائيًا إن كان سيُصغّر النص.</span></div>' +
     '<div class="grid2"><div class="field"><label>رابط مصدر للتوسع (اختياري)</label><input data-sf="srcUrl" value="' + h(s.srcUrl || '') + '" placeholder="https://"></div><div class="field"><label>نص الرابط</label><input data-sf="srcLabel" value="' + h(s.srcLabel || '') + '" placeholder="مصدر للتوسع"></div></div>' +
     '<div class="field"><label>رابط فيديو (يوتيوب أو Google Drive)</label><input data-sf="videoUrl" value="' + h(s.videoUrl || '') + '" placeholder="الصق رابط المشاركة كما هو"></div>' +
     '<div class="field"><label>🎤 ملاحظات المدرب لهذه الشريحة (تظهر للأدمن فقط وفي دليل المدرب)</label><textarea data-sf="note" rows="2">' + h(s.note || '') + '</textarea></div>' +
@@ -339,7 +340,7 @@ function collectSlides(root) {
     else { s.items = g('items').split('\n').map(x => x.trim()).filter(Boolean).map(x => x.replace(/\s*::\s*/, '::')); s.rule = RTE.val(box, k + 'rule'); }
     // الحقول الخاصة بالأنواع الأخرى تُحفظ من الحالة القديمة عند تبديل النوع حتى لا تضيع
     ['text', 'intro', 'points', 'items', 'rule', 'big', 'label', 'src'].forEach(x => { if (s[x] === undefined && old[x] !== undefined) s[x] = old[x]; });
-    s.note = g('note').trim(); s.image = ImgPick.val(k + 'img'); s.srcUrl = g('srcUrl').trim(); s.srcLabel = g('srcLabel').trim(); s.videoUrl = g('videoUrl').trim();
+    s.note = g('note').trim(); s.scene = g('scene') || ''; if (!s.scene) delete s.scene; s.image = ImgPick.val(k + 'img'); s.srcUrl = g('srcUrl').trim(); s.srcLabel = g('srcLabel').trim(); s.videoUrl = g('videoUrl').trim();
     if (old.chart) s.chart = old.chart;
     return s;
   });

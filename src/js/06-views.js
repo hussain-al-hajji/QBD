@@ -218,10 +218,14 @@ const Deck = {
     s.style.setProperty('--vh-max', Math.max(180, H - 150) + 'px'); s.style.setProperty('--vh-scene', Math.max(160, H - 190) + 'px');
     const cs = getComputedStyle(s); const room = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 2;
     const fits = z => { inn.style.zoom = z; return inn.getBoundingClientRect().height <= room; };
-    if (fits(base)) return true;
-    let lo = 0.62, hi = base; if (!fits(lo)) { s.classList.add('tight'); return false; }
-    for (let k = 0; k < 7; k++) { const mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; }
-    inn.style.zoom = lo.toFixed(3); return true;
+    // أفضل تكبير يتسع دون تمرير (بحث ثنائي)؛ 0 = لا يتسع حتى بالحد الأدنى
+    const best = () => { if (fits(base)) return base; let lo = 0.62, hi = base; if (!fits(lo)) return 0; for (let k = 0; k < 7; k++) { const mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; } return lo; };
+    // الرسم التعبيري اختياري: يبقى إن لم يُجبر النص على تصغير ملحوظ، ويُخفى في هذه الشريحة فقط إن كان إخفاؤه يمنح النص مساحة أوضح
+    s.classList.remove('no-vis'); let z = best();
+    // على الشاشات الكبيرة يبقى الرسم ما دام النص بحجمه الطبيعي تقريبًا
+    if ($('.vis-opt', s) && z < Math.min(base, 1.1) * 0.9) { s.classList.add('no-vis'); const z2 = best(); if (z2 > z + 0.04) z = z2; else s.classList.remove('no-vis'); }
+    if (!z) { s.classList.add('tight'); inn.style.zoom = ''; return false; }
+    inn.style.zoom = z.toFixed(3); return true;
   },
   fit(id) {
     const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const m = Deck.mode(deck);
