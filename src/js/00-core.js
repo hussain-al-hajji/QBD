@@ -11,9 +11,10 @@ const firebaseConfig = {
   databaseURL: "https://qbd-cdbc3-default-rtdb.firebaseio.com/",
   // لتفعيل دخول المدرب بحساب Firebase (Authentication): الصق هنا قيم تطبيق الويب من
   // Project settings ← Your apps ← Web app ← SDK setup and configuration ← Config
-  apiKey: "",
-  authDomain: "",
-  projectId: ""
+  apiKey: "AIzaSyAv5I2l27oF_ikZWOEI9kQHaqEuvHQUabo",
+  authDomain: "qbd-cdbc3.firebaseapp.com",
+  projectId: "qbd-cdbc3",
+  appId: "1:333350563889:web:a9105017e189c6ac77a510"
 };
 // للاختبار الآلي فقط (محاكاة Firebase): لا يُستخدم في التشغيل العادي
 try { if (window.__FB_TEST_CONFIG) Object.assign(firebaseConfig, window.__FB_TEST_CONFIG); } catch (e) {}
