@@ -91,6 +91,15 @@ const HomeNav = {
   }
 };
 
+// قائمة جانبية عامة بنفس تصميم أقسام الرئيسية (تُستخدم في «حسابي»)
+function sideShell(items, cur, act, title) {
+  if (!items.length) return ''; let i = items.findIndex(x => x.k === cur); if (i < 0) i = 0; const next = items[i + 1];
+  return '<div class="home-shell"><aside class="home-nav" aria-label="' + h(title) + '"><div class="hn-title">' + h(title) + '</div><nav>' +
+    items.map((x, j) => '<button class="hn-item ' + (j === i ? 'active' : '') + '" data-act="' + act + '" data-k="' + h(x.k) + '" ' + (j === i ? 'aria-current="true"' : '') + '><span class="hn-ico">' + x.ico + '</span><span class="hn-txt"><b>' + h(x.l) + '</b>' + (x.sub ? '<small>' + h(String(x.sub)) + '</small>' : '') + '</span></button>').join('') +
+    '</nav></aside><div class="home-pane" id="homePane">' + items[i].body +
+    (next ? '<button class="hn-next" data-act="' + act + '" data-k="' + h(next.k) + '"><span>القسم التالي</span><b>' + next.ico + ' ' + h(next.l) + ' ←</b></button>' : '') + '</div></div>';
+}
+
 // ============ صفحة قصة النجاح ============
 Views.story = {
   html() {
@@ -106,7 +115,7 @@ Views.story = {
       (ax && !ax._hidden ? '<div class="ex-block extract"><div class="lbl">🔗 المحور المرتبط</div><button class="btn btn-soft" data-act="open-axis" data-id="' + h(ax.id) + '">' + iconSvg(ax.icon || 'star', 16) + ' ' + h(ax.title) + '</button></div>' : '') +
       (st.sources.length ? '<div class="ex-block"><div class="lbl">📚 المصادر</div><ul class="story-sources">' + st.sources.map(x => '<li><a href="' + h(x.url) + '" target="_blank" rel="noopener">' + iconSvg('link', 14) + ' ' + h(x.label) + '</a></li>').join('') + '</ul><div class="muted" style="font-family:var(--f-ui);font-size:12px;margin-top:6px">الأرقام كما وردت في المصادر المنشورة وقت إعداد البرنامج، وقد تتغير لاحقًا.</div></div>' : '') +
       '<div class="row" style="margin-top:14px;justify-content:center">' + Likes.btn('storyLikes/' + st.id, (Store.storyLikes[st.id] || {}).likes).replace('👍', '👏 ألهمتني') + '</div>' +
-      '<div class="nav-row"><button class="btn btn-ghost" ' + (prev ? 'data-go="story" data-id="' + h(prev.id) + '"' : 'disabled') + '>◀ القصة السابقة</button><button class="btn btn-dark" data-go="home">🏠 الرئيسية</button><button class="btn btn-ghost" ' + (next ? 'data-go="story" data-id="' + h(next.id) + '"' : 'disabled') + '>القصة التالية ▶</button></div></article>';
+      '<div class="nav-row"><button class="btn btn-ghost" ' + (prev ? 'data-go="story" data-id="' + h(prev.id) + '"' : 'disabled') + '>◀ القصة السابقة</button><button class="btn btn-dark" data-go="home">🏠 المنصة التعليمية</button><button class="btn btn-ghost" ' + (next ? 'data-go="story" data-id="' + h(next.id) + '"' : 'disabled') + '>القصة التالية ▶</button></div></article>';
     return out;
   }
 };
@@ -154,7 +163,7 @@ Views.axis = {
     } else out += '<div class="empty" style="margin-top:18px">لا توجد شرائح في هذا المحور بعد.</div>';
     out += '<section class="section" style="--ac:' + col + ';--acg:' + tint(col, .1) + '"><div class="sec-head"><h2 class="sec-title">✍️ تمارين هذا المحور</h2><span class="pill"><span class="num">' + exs.length + '</span> تمرين</span></div>' +
       (exs.length ? '<div class="ex-list">' + exs.map(e => '<button class="ex-item" data-go="ex" data-id="' + h(e.id) + '"><span class="ico">' + h(e.icon || '✍️') + '</span><span><h4>' + h(e.title) + '</h4><span class="muted" style="font-family:var(--f-ui);font-size:12.5px">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + ' · ' + h(FORMATS[e.format] || '') + '</span></span>' + (Progress.exDone(e, Me.uid()) ? '<span class="done">✔</span>' : '') + '</button>').join('') + '</div>' : '<div class="empty">لا توجد تمارين لهذا المحور.</div>') +
-      '<div class="nav-row"><button class="btn btn-dark" ' + (next ? 'data-act="open-axis" data-id="' + h(next.id) + '"' : 'disabled') + '>الفصل القادم ▶</button><button class="btn btn-ghost" data-go="home">🏠 الرئيسية</button></div></section>';
+      '<div class="nav-row"><button class="btn btn-dark" ' + (next ? 'data-act="open-axis" data-id="' + h(next.id) + '"' : 'disabled') + '>الفصل القادم ▶</button><button class="btn btn-ghost" data-go="home">🏠 المنصة التعليمية</button></div></section>';
     if (Leads.cfg().axis === a.id) out += '<section class="section">' + leadFormHtml('axis') + '</section>';
     return out;
   },
@@ -450,7 +459,7 @@ function exNavHtml(e) {
   const ax = Content.axisOfEx(e.id); if (!ax) return '';
   const list = Content.exercisesOf(ax); const i = list.findIndex(x => x.id === e.id);
   const prev = i > 0 ? list[i - 1] : null, next = i > -1 && i < list.length - 1 ? list[i + 1] : null;
-  return '<div class="nav-row"><button class="btn btn-ghost" ' + (prev ? 'data-go="ex" data-id="' + h(prev.id) + '"' : 'disabled') + '>◀ التمرين السابق</button><button class="btn btn-soft" data-go="axis" data-id="' + h(ax) + '">📖 محتوى الفصل</button><button class="btn btn-ghost" ' + (next ? 'data-go="ex" data-id="' + h(next.id) + '"' : 'disabled') + '>التمرين التالي ▶</button></div><div class="nav-row" style="margin-top:8px"><button class="btn btn-dark" data-go="home">🏠 الرئيسية</button></div>';
+  return '<div class="nav-row"><button class="btn btn-ghost" ' + (prev ? 'data-go="ex" data-id="' + h(prev.id) + '"' : 'disabled') + '>◀ التمرين السابق</button><button class="btn btn-soft" data-go="axis" data-id="' + h(ax) + '">📖 محتوى الفصل</button><button class="btn btn-ghost" ' + (next ? 'data-go="ex" data-id="' + h(next.id) + '"' : 'disabled') + '>التمرين التالي ▶</button></div><div class="nav-row" style="margin-top:8px"><button class="btn btn-dark" data-go="home">🏠 المنصة التعليمية</button></div>';
 }
 
 Views.ex = {
@@ -589,34 +598,47 @@ Views.account = {
     const member = me.member || (Store.users[me.uid] && Store.users[me.uid].member);
     const att = Attend.pct(me.uid); const ac = Attend.cfg(); const A = Content.assess(); const pre = Assess.rec('pre', me.uid), post = Assess.rec('post', me.uid); const rv = Assess.cfg().reveal;
     const scoreTxt = r => !r || !r.done ? '—' : rv ? Assess.score(r.answers) + '/' + A.items.length : '✔';
-    let out = Layout.crumbs('<span class="crumb-tag">حسابي</span>') +
+    // أقسام الصفحة تُجمع ثم تُعرض بقائمة جانبية مثل الصفحة الرئيسية ولوحة الإدارة
+    const S = []; let cut = 0; const mark = (k, ico, l, sub) => { S.push({ k, ico, l, sub, body: out.slice(cut) }); cut = out.length; };
+    const crumbs = Layout.crumbs('<span class="crumb-tag">حسابي</span>');
+    let out = '' +
       '<div class="card pad" style="margin-top:8px"><div class="row" style="align-items:flex-start"><div class="grow"><div class="sec-kicker">نسبة الإنجاز الإجمالية</div><div class="big-pct num">' + pct + '%</div><div class="muted" style="font-family:var(--f-ui)">أنجزت <span class="num">' + pr.done + '</span> من <span class="num">' + pr.total + '</span> تمرينًا</div></div>' +
       '<div style="text-align:center"><div class="sec-kicker">رقم العضوية</div><div class="num notranslate" translate="no" style="font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:2px">' + (member ? pad4(member) : '—') + '</div>' + ((Me.data && Me.data.code) || Store.mySecret ? '<div class="sec-kicker" style="margin-top:4px">رمز الدخول</div><div class="num notranslate" translate="no" dir="ltr" style="font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:3px;user-select:all">' + h((Me.data && Me.data.code) || Store.mySecret) + '</div>' : '') + '</div></div><div class="progress" style="margin-top:12px"><i style="width:' + pct + '%"></i></div>' +
       '<div class="mini-stats"><div><span>📍 الحضور</span><b class="num">' + att + '%</b></div><div><span>🧭 التقييم القبلي</span><b class="num">' + scoreTxt(pre) + '</b></div><div><span>🏁 التقييم البعدي</span><b class="num">' + scoreTxt(post) + '</b></div><div><span>🏅 الأوسمة</span><b class="num">' + pr.axes.filter(x => x.pct >= BADGE_THRESHOLD).length + '/' + pr.axes.length + '</b></div></div></div>';
+    mark('overview', '📊', 'نظرة عامة', 'الإنجاز ' + pct + '%');
     const urec = Object.assign({}, Store.users[me.uid] || {}, { name: me.name, role: me.role }); const cons = urec.consent || {};
     out += '<div class="card pad" style="margin-top:16px"><h3 style="margin-bottom:12px">✏️ بياناتي</h3><div class="grid2">' + RegFields.visible().map(f => RegFields.input(f, RegFields.val(urec, f.key), 'acc_')).join('') + '</div>' +
       '<label class="consent"><input type="checkbox" id="accFollow" ' + (cons.followup ? 'checked' : '') + '> <span>' + h(Content.privacy().followup) + '</span></label>' +
       '<div class="row"><button class="btn btn-primary btn-sm" data-act="acc-save">💾 حفظ التعديلات</button><button class="btn btn-ghost btn-sm" data-act="save-card">🪪 حفظ بطاقة رقم العضوية</button><span class="grow"></span><a href="#" class="btn btn-ghost btn-sm" data-act="privacy-show">🔒 إشعار الخصوصية</a><button class="btn btn-danger btn-sm" data-act="delete-me">🗑 احذف بياناتي</button></div></div>';
+    mark('data', '✏️', 'بياناتي', 'البيانات والموافقات');
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📝 مشاركاتي في التمارين</h2><span class="pill">راجع إجاباتك وافتح أي تمرين لتعديلها</span></div>' + myPostsHtml(me.uid) + '</section>';
+    mark('posts', '📝', 'مشاركاتي', 'إجاباتك في التمارين');
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🏅 أوسمتي</h2><span class="pill">يُفتح الوسام عند إنجاز <span class="num">80%</span> من تمارين المحور</span></div><div class="badges">' +
       pr.axes.map(x => { const ok = x.pct >= BADGE_THRESHOLD; return '<div class="badge ' + (ok ? '' : 'locked') + '">' + (ok ? '' : '<span class="lock">🔒</span>') + medalSvg(x.a) + '<h5>' + h(x.a.title) + '</h5><div class="pct num">' + Math.round(x.pct * 100) + '% · ' + x.done + ' من ' + x.total + '</div></div>'; }).join('') + '</div></section>';
+    mark('badges', '🏅', 'أوسمتي', pr.axes.filter(x => x.pct >= BADGE_THRESHOLD).length + ' من ' + pr.axes.length);
     const fuc = followupCardsHtml(); if (fuc) out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📈 متابعة ما بعد البرنامج</h2></div>' + fuc + '</section>';
+    if (fuc) mark('followup', '📈', 'متابعة ما بعد البرنامج', '30 · 60 · 90 يومًا');
     if (Points.cfg().enabled) { const pt = Points.table(); const mine = pt.map[me.uid] || { pts: 0 }; const rank = pt.list.findIndex(x => x.uid === me.uid) + 1; const bd = Points.badges(me.uid);
       out += '<section class="section"><div class="sec-head"><h2 class="sec-title">⭐ نقاطي</h2><span class="pill">المركز <span class="num">' + (rank || '—') + '</span> من <span class="num">' + pt.list.length + '</span></span></div><div class="card pad"><div class="row"><div class="big-pct num">' + mine.pts + '</div><div class="muted" style="font-family:var(--f-ui)">نقطة · <span class="num">' + (mine.ex || 0) + '</span> تمرين · <span class="num">' + (mine.likes || 0) + '</span> إعجاب · <span class="num">' + (mine.att || 0) + '</span> يوم حضور</div></div>' + (bd.length ? '<div class="sp-badges">' + bd.map(b => '<div class="sp-badge"><span>' + b[0] + '</span><b>' + h(b[1]) + '</b><em>' + h(b[2]) + '</em></div>').join('') + '</div>' : '<div class="muted" style="font-family:var(--f-ui);margin-top:8px">شارك مبكرًا واحصل على إعجابات لتفتح الشارات الخاصة.</div>') + '</div></section>'; }
+    if (Points.cfg().enabled) mark('points', '⭐', 'نقاطي', 'الترتيب والشارات');
     out += '<section class="section"><div class="card pad row plan-cta"><div class="grow"><h3>🚀 خطتي للنمو (PDF)</h3><p class="muted" style="font-family:var(--f-ui);font-size:14px">ملف أنيق يجمع خطة نمو مشروعك وخريطة قنواتك وأولويات الإطلاق وأتمتتك الأولى ونتائج محاكياتك ومخرجات مجموعتك في المختبر، مع جدول عمل 30/60/90 يومًا.</p></div><button class="btn btn-primary" data-act="plan-pdf">📘 إنشاء خطتي</button><button class="btn btn-ghost" data-go="tools">🧰 صندوق الأدوات</button></div></section>';
-    out += '<section class="section">' + leadFormHtml('acc') + '</section>';
+    mark('plan', '🚀', 'خطتي للنمو', 'ملف PDF لمشروعك');
+    const lf = leadFormHtml('acc'); if (lf) { out += '<section class="section">' + lf + '</section>'; mark('lead', '🤝', 'برامج بنك قطر للتنمية', 'اهتمامك بالبرامج'); }
     // شهادة المشاركة (بالحضور)
     const cc = Content.cert();
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🎓 شهادة المشاركة</h2><span class="pill">تُمنح عند حضور <span class="num">' + ac.threshold + '%</span> من مدة البرنامج</span></div>';
     if (!Attend.eligible(me.uid)) out += '<div class="card pad center"><div style="font-size:44px;filter:grayscale(1);opacity:.5">🎓</div><h3>نسبة حضورك الحالية <span class="num">' + att + '%</span></h3><p class="muted" style="font-family:var(--f-ui)">يسجّل المدرّب الحضور في كل يوم تدريبي (<span class="num">' + ac.days + '</span> أيام × <span class="num">' + ac.hours + '</span> ساعات). تُفتح الشهادة تلقائيًا عند بلوغ <span class="num">' + ac.threshold + '%</span>.</p><div class="progress" style="max-width:420px;margin:10px auto 0"><i style="width:' + Math.min(100, att / Math.max(1, ac.threshold) * 100) + '%"></i></div></div>';
     else out += '<div class="congrats-card cert-card">' + congratsInner(me.name, 'cert') + '</div><div class="row" style="margin-top:12px"><button class="btn btn-primary" data-act="congrats-pdf" data-kind="cert">📥 تحميل الشهادة PDF</button></div><div class="notice">ℹ️ ' + h(cc.notice) + '</div>';
     out += '</section>';
+    mark('cert', '🎓', 'شهادة المشاركة', Attend.eligible(me.uid) ? 'جاهزة للتحميل' : 'الحضور ' + att + '%');
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🎉 تهنئة إنجاز</h2></div>';
     if (!unlocked) out += '<div class="card pad center"><div style="font-size:44px;filter:grayscale(1);opacity:.5">🔒</div><h3>تُفتح التهنئة عند إنجاز <span class="num">80%</span> من التمارين</h3><p class="muted" style="font-family:var(--f-ui)">إنجازك الحالي <span class="num">' + pct + '%</span></p><div class="progress" style="max-width:420px;margin:10px auto 0"><i style="width:' + Math.min(100, pct / 0.8) + '%"></i></div></div>';
     else out += '<div class="congrats-card">' + congratsInner(me.name, 'congrats') + '</div><div class="row" style="margin-top:12px"><button class="btn btn-primary" data-act="congrats-pdf" data-kind="congrats">📥 تحميل / حفظ كـ PDF</button><button class="btn btn-ghost" data-act="congrats-mail">✉️ إرسال نسخة لبريدي</button></div><div class="notice">⏳ ' + h(c.notice) + '</div>';
     out += '</section>';
+    mark('congrats', '🎉', 'تهنئة الإنجاز', unlocked ? 'مفتوحة 🎉' : 'تُفتح عند 80%');
     if (pdf.enabled !== false) out += '<section class="section"><div class="card pad row"><div class="grow"><h3>📄 استخراج المحتوى (PDF)</h3><p class="muted" style="font-family:var(--f-ui);font-size:14px">ملف مصمَّم بمقاس A5 يضم كل شرائح البرنامج بأحدث نسخة، جاهز للطباعة.</p></div><button class="btn btn-dark" data-act="content-pdf">📄 استخراج المحتوى (PDF)</button></div></section>';
-    return out;
+    if (pdf.enabled !== false) mark('pdf', '📄', 'محتوى البرنامج', 'ملف PDF للطباعة');
+    return crumbs + sideShell(S, UIState.accSec || SafeLS.get('ec_acc_sec'), 'acc-sec', 'أقسام حسابي');
   }
 };
 

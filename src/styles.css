@@ -1353,3 +1353,4 @@ html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-
 .google-btn:hover{background:#F8F9FA;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .al-email{margin-top:12px;font-family:var(--f-ui);font-size:13.5px}
 .al-email summary{cursor:pointer;color:var(--ink-3);margin-bottom:8px}
+.home-pane>.section:first-child,.home-pane>.card:first-child{margin-top:0!important}

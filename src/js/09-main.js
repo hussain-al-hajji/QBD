@@ -19,7 +19,7 @@ const App = {
     App.onLanding = view === Views.landing;
     if (App.onLanding && !App._wasLanding) { Views.landing._played = false; Views.landing._seen = new Set(); Views.landing._counted = false; } App._wasLanding = App.onLanding;
     let body = '';
-    try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
+    try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">المنصة التعليمية</button></div>'; }
     const html = (v === 'present' && view === Views.present) || (v === 'show' && view === Views.show) ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
       (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
     // صفحة الهبوط: لا نعيد رسمها إن لم يتغير شيء حتى لا تتكرر الحركات مع كل تحديث للبيانات
@@ -482,11 +482,11 @@ document.addEventListener('click', async ev => {
     case 'lp-save': { const k = t.getAttribute('data-k'); const o = {}; ['kicker', 'title', 'sub', 'cta', 'cta2', 'items'].forEach(f => { const el = document.getElementById('lp_' + k + '_' + f); if (el) o[f] = el.value.trim(); }); await DB.set('site/landing/' + k, o); UI.toast('✅ حُفظ قسم «' + LANDING_NAMES[k] + '»'); break; }
     case 'lp-reset': { const k = t.getAttribute('data-k'); if (await UI.confirm('استرجاع النصوص الافتراضية لقسم «' + LANDING_NAMES[k] + '»؟', { ok: 'استرجاع' })) { DB.remove('site/landing/' + k); $$('[data-keep^="lp-' + k + '-"]').forEach(el => el.removeAttribute('data-keep')); } break; }
     case 'home-layout': DB.set('site/homeLayout', t.getAttribute('data-v')); UI.toast(t.getAttribute('data-v') === 'classic' ? 'عادت الرئيسية إلى التخطيط الطويل' : 'فُعّل تخطيط القائمة الجانبية'); break;
-    case 'home-sec': {
-      UIState.homeSec = t.getAttribute('data-k'); SafeLS.set('ec_home_sec', UIState.homeSec); App.render();
+    case 'home-sec': case 'acc-sec': {
+      if (act === 'acc-sec') { UIState.accSec = t.getAttribute('data-k'); SafeLS.set('ec_acc_sec', UIState.accSec); } else { UIState.homeSec = t.getAttribute('data-k'); SafeLS.set('ec_home_sec', UIState.homeSec); } App.render();
       const pane = document.getElementById('homePane'); const nav = document.querySelector('.home-nav');
       if (pane) { const top = pane.getBoundingClientRect().top + window.scrollY - (window.innerWidth <= 860 && nav ? nav.offsetHeight + 76 : 84); if (window.scrollY > top || t.classList.contains('hn-next') || window.innerWidth <= 860) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
-      const act = document.querySelector('.hn-item.active'); if (act && act.scrollIntoView && window.innerWidth <= 860) act.scrollIntoView({ block: 'nearest', inline: 'center' });
+      const actEl = document.querySelector('.hn-item.active'); if (actEl && actEl.scrollIntoView && window.innerWidth <= 860) actEl.scrollIntoView({ block: 'nearest', inline: 'center' });
       break;
     }
     case 'sec-save': Views.secEdit.save(root); break;

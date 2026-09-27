@@ -89,7 +89,7 @@ const Layout = {
   },
   crumbs(extra = '') {
     const b = Router.backOf(Router.cur);
-    return '<div class="crumbs">' + (b ? '<button class="back-btn" data-back>→ رجوع</button>' : '') + '<button class="back-btn" data-go="home">' + iconSvg('home', 15) + ' الرئيسية</button>' + extra + '</div>';
+    return '<div class="crumbs">' + (b ? '<button class="back-btn" data-back>→ رجوع</button>' : '') + '<button class="back-btn" data-go="home">' + iconSvg('home', 15) + ' المنصة التعليمية</button>' + extra + '</div>';
   }
 };
 
