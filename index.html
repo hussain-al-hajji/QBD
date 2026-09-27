@@ -1059,6 +1059,58 @@ main.wrap:has(> .lp)+.footer{margin-top:0}
   .lp-btn.big{font-size:17px;padding:16px 24px}
 }
 
+/* ---------- لوحة الإدارة بقائمة جانبية ---------- */
+.adm-shell{display:grid;grid-template-columns:272px minmax(0,1fr);gap:24px;align-items:start;margin:16px 0 40px}
+.adm-shell.editing{grid-template-columns:360px minmax(0,1fr)}
+.adm-nav{position:sticky;top:84px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:12px 10px;box-shadow:var(--sh-1);max-height:calc(100vh - 100px);overflow:auto}
+.adm-nav-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 8px 10px;border-bottom:1px dashed var(--line);margin-bottom:8px;font-family:var(--f-ui);font-size:12px;font-weight:800;color:var(--ink-3)}
+.adm-nav nav{display:flex;flex-direction:column;gap:4px}
+.adm-nav-item{display:flex;align-items:center;gap:10px;width:100%;text-align:start;background:transparent;border:0;border-radius:14px;padding:8px 10px;cursor:pointer;color:var(--ink);position:relative;transition:background .15s}
+.adm-nav-item:hover{background:var(--surface-2)}
+.adm-ico{flex:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:18px;background:var(--surface-2);border:1px solid var(--line)}
+.adm-ico.big{width:50px;height:50px;font-size:24px;border-radius:15px}
+.adm-t{flex:1;min-width:0;font-weight:700;font-size:14.5px;line-height:1.4}
+.adm-count{flex:none;font-family:var(--f-ui);font-size:11.5px;font-weight:700;min-width:24px;height:22px;padding:0 7px;border-radius:999px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line)}
+.adm-nav-item.active{background:linear-gradient(135deg,rgba(138,21,56,.09),rgba(200,112,42,.08))}
+.adm-nav-item.active::before{content:"";position:absolute;inset-inline-start:-6px;top:10px;bottom:10px;width:4px;border-radius:4px;background:var(--grad)}
+.adm-nav-item.active .adm-ico{background:var(--grad);border-color:transparent;box-shadow:0 6px 14px rgba(138,21,56,.25)}
+.adm-nav-item.active .adm-t{color:var(--brand)}
+.adm-nav-item.active .adm-count{background:var(--brand);color:#fff;border-color:transparent}
+.adm-nav-item.edit{flex-wrap:wrap;gap:6px;border:1.5px dashed var(--line);padding:8px;cursor:default;margin-bottom:4px}
+.adm-nav-item.edit.drop-target{border-color:var(--brand);background:rgba(138,21,56,.07);outline:none}
+.adm-ico-in{width:42px;flex:none;text-align:center;font-size:17px;border:1px solid var(--line);border-radius:10px;padding:5px 2px;background:var(--surface)}
+.adm-title-in{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-weight:700;font-size:14px;background:var(--surface);color:var(--ink)}
+.adm-nav-tools{display:flex;gap:4px;width:100%;justify-content:flex-end}
+.adm-nav-foot{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.adm-pane{min-width:0;animation:paneIn .25s ease}
+.adm-pane-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.adm-pane-head h2{font-size:22px;font-weight:800}
+.adm-pane-head .muted{font-family:var(--f-ui);font-size:12.5px}
+.adm-pane>.tools-grid{margin-bottom:14px}
+.adm-wide{margin-bottom:12px}
+.adm-wide>.acc:first-child,.adm-wide>.blk-actions:first-child{margin-top:0}
+.blk-actions{margin-bottom:10px}
+.adm-help{font-family:var(--f-ui);font-size:12.5px;margin-top:0}
+.adm-cards{display:grid;gap:8px}
+.adm-card{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);cursor:grab}
+.adm-card.dragging{opacity:.45}
+.adm-card.drop-target{outline:2px dashed var(--brand);outline-offset:2px}
+.adm-card select{border:1px solid var(--line);border-radius:10px;padding:5px 8px;font-size:12.5px;max-width:100%}
+html[data-theme="dark"] .adm-nav-item.active .adm-t{color:#FF9DB8}
+@media (max-width:860px){
+  .adm-shell,.adm-shell.editing{grid-template-columns:minmax(0,1fr);gap:14px}
+  .adm-nav{position:sticky;top:64px;z-index:20;max-height:none;padding:8px;border-radius:16px;background:var(--topbar-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .adm-shell:not(.editing) .adm-nav nav{flex-direction:row;overflow-x:auto;scrollbar-width:none;gap:6px}
+  .adm-shell:not(.editing) .adm-nav nav::-webkit-scrollbar{display:none}
+  .adm-shell:not(.editing) .adm-nav-item{width:auto;flex:none;padding:5px 12px 5px 6px;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px}
+  .adm-shell:not(.editing) .adm-nav-item.active::before{display:none}
+  .adm-shell:not(.editing) .adm-ico{width:28px;height:28px;font-size:14px;border-radius:999px}
+  .adm-shell:not(.editing) .adm-t{font-size:13px;white-space:nowrap}
+  .adm-nav-top{padding-bottom:6px;margin-bottom:6px}
+  .adm-shell.editing .adm-nav{position:static}
+}
+.adm-shell.editing .adm-nav{position:static;max-height:none}
+
 </style>
 </head>
 <body>
@@ -2268,7 +2320,7 @@ const Layout = {
       '<div class="brand" data-go="home"><div class="brand-logo">' + iconSvg('store', 22, '#fff', 2.2) + '</div><div class="brand-text"><div class="brand-title" id="brandTitle">' + h(s.headerTitle) + '</div><div class="brand-sub">' + h(s.headerSub) + '</div></div></div>' +
       '<div class="top-actions">' +
       (me ? '<div class="user-chip" title="' + h(me.name) + '"><span class="av">' + h(initials(me.name)) + '</span><span class="nm">' + h(me.name) + '</span></div><button class="btn btn-soft btn-sm" data-go="account">' + iconSvg('user', 16) + '<span class="lbl">حسابي</span></button>' : (Me.guest ? '<span class="pill">👀 زائر</span>' : '')) +
-      (!me && !Me.guest ? '<button class="btn btn-primary btn-sm top-cta" data-act="open-login"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">الدخول</span> <span class="lp-arrow">←</span></button>' :
+      (!me && !Me.guest ? (!App.onLanding ? '' : '<button class="btn btn-primary btn-sm top-cta" data-act="open-login"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">الدخول</span> <span class="lp-arrow">←</span></button>') :
         (App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '') +
         '<button class="btn btn-ghost btn-sm" data-act="switch-user" title="تسجيل مستخدم جديد (يعيدك إلى الصفحة التعريفية)">' + iconSvg('users', 16) + '<span class="lbl">مستخدم جديد</span></button>') +
       '<button class="btn btn-ghost btn-sm notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض">Aa</button>' +
@@ -3740,88 +3792,100 @@ Views.admin = {
   html() {
     const users = Store.users || {}; const uids = Object.keys(users).sort((a, b) => (users[a].ts || 0) - (users[b].ts || 0));
     const ach = Progress.achievers(); const s = Content.site(); const pdf = Content.pdf();
-    let out = adminHeader('لوحة الإدارة');
-    // ---- إدارة المسجلين ----
-    out += band('إدارة المسجلين', '#8A1538') + '<div class="tools-grid">';
+    let out = ''; const blocks = {}; let curId = null; const B = id => { if (curId) blocks[curId] = (blocks[curId] || '') + out; out = ''; curId = id; };
+    B('users');
     out += tool('users', '👥', '#8A1538', 'المسجّلون', '<div class="bigno num">' + uids.length + '</div>اسم مسجّل في قاعدة البيانات', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="users">' + (UIState.openDrop.has('users') ? 'إخفاء' : 'عرض') + ' القائمة</button><button class="btn btn-danger btn-xs" data-act="clear-names">مسح أسماء المسجّلين فقط</button>');
     out += drop('users', '<div class="field"><input data-keep="users-search" data-filter=".person" placeholder="🔍 بحث بالاسم…"></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><span class="muted">' + h(users[u].role || '') + '</span><span class="pill num">#' + pad4(users[u].member || 0) + '</span><span class="muted">' + fmtDate(users[u].ts) + '</span></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
+    B('groups');
     out += tool('groups', '🧩', '#138A5E', 'إدارة المجموعات', '<div class="row"><input type="number" min="2" max="30" id="grpCount" data-keep="grp-count" value="' + Groups.count() + '" style="width:80px;border:1px solid var(--line);border-radius:10px;padding:6px 8px"><button class="btn btn-soft btn-xs" data-act="save-groups">حفظ العدد</button></div><div style="margin-top:6px">عدد المجموعات (2–30). التوزيع اليدوي إرشادي لا إلزامي.</div>', '<button class="btn btn-primary btn-xs" data-act="assign-open">🧭 توزيع</button>');
+    B('preview');
     out += tool('preview', '👀', '#1F3A5F', 'معاينة كمتدرب', 'اعرض الصفحة الرئيسية تمامًا كما يراها المتدرب، مع زر عائم للعودة.', '<button class="btn btn-soft btn-xs" data-act="preview">فتح المعاينة</button>');
+    B('congrats');
     out += tool('congrats', '🏆', '#C8702A', 'تهنئة الإنجاز', '<div class="bigno num">' + ach.length + '</div>متدرب بلغ <span class="num">80%</span> إجمالًا', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="ach">الأسماء</button><button class="btn btn-soft btn-xs" data-act="congrats-preview" data-kind="congrats">معاينة</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="congEdit">تعديل المحتوى</button>');
     out += drop('ach', ach.length ? '<div class="people-list">' + ach.map(u => '<div class="person"><span class="nm">🏆 ' + h(u.name) + '</span><span class="muted">' + h(u.role || '') + '</span></div>').join('') + '</div>' : '<div class="empty">لم يبلغ أحد 80% بعد.</div>');
     out += drop('congEdit', Views.admin.congratsEditor('congrats'));
+    B('regform');
     out += tool('regform', '📝', '#5B3A8A', 'نموذج التسجيل والخصوصية', '<span class="num">' + RegFields.visible().length + '</span> حقول ظاهرة من <span class="num">' + RegFields.all().length + '</span>. تحكم في الحقول المطلوبة والاختيارية وأضف حقولًا جديدة، وعدّل إشعار الخصوصية.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="regEdit">حقول التسجيل</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="privEdit">إشعار الخصوصية</button><button class="btn btn-ghost btn-xs" data-act="users-csv">⬇️ المسجّلون CSV</button>');
     out += drop('regEdit', Views.admin.regEditor());
     out += drop('privEdit', Views.admin.privacyEditor());
     const ac = Attend.cfg(); const holders = Attend.holders();
+    B('attend');
     out += tool('attend', '📍', '#0E7C7B', 'الحضور وشهادة المشاركة', '<div class="bigno num">' + holders.length + '</div>مستحق للشهادة (حضور ≥ <span class="num">' + ac.threshold + '%</span>)' + Attend.days().map(d => { const cd = ac.codes['d' + d] || {}; return '<div class="att-day"><b>اليوم <span class="num">' + d + '</span></b>' + (cd.code ? '<span class="att-code num notranslate" translate="no">' + h(cd.code) + '</span>' : '') + '<span class="pill ' + (cd.open ? 'open-pill' : '') + '">' + (cd.open ? 'مفتوح' : 'مغلق') + '</span></div>'; }).join(''), '<button class="btn btn-primary btn-xs" data-act="drop" data-k="attCtl">إدارة الحضور</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="attSheet">سجل الحضور</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="certEdit">محتوى الشهادة</button><button class="btn btn-ghost btn-xs" data-act="congrats-preview" data-kind="cert">معاينة</button>');
     out += drop('attCtl', Views.admin.attCtl());
     out += drop('attSheet', Views.admin.attSheet());
     out += drop('certEdit', Views.admin.congratsEditor('cert'));
     const acfg = Assess.cfg(); const apre = Assess.avg('pre'), apost = Assess.avg('post');
+    B('assess');
     out += tool('assess', '📋', '#2F5D8A', 'التقييم القبلي والبعدي', '<div class="row" style="gap:14px"><div><div class="bigno num">' + (apre == null ? '—' : Math.round(apre) + '%') + '</div>قبلي · <span class="num">' + Assess.list('pre').length + '</span></div><div><div class="bigno num">' + (apost == null ? '—' : Math.round(apost) + '%') + '</div>بعدي · <span class="num">' + Assess.list('post').length + '</span></div></div>' + (apre != null && apost != null ? '<div style="margin-top:4px">التحسن: <b class="num">' + (apost - apre >= 0 ? '+' : '') + Math.round(apost - apre) + '</b> نقطة</div>' : ''),
       '<button class="btn btn-xs ' + (acfg.pre === 'open' ? 'btn-danger' : 'btn-primary') + '" data-act="as-toggle" data-ph="pre">' + (acfg.pre === 'open' ? '🔒 إغلاق القبلي' : '🟢 فتح القبلي') + '</button><button class="btn btn-xs ' + (acfg.post === 'open' ? 'btn-danger' : 'btn-primary') + '" data-act="as-toggle" data-ph="post">' + (acfg.post === 'open' ? '🔒 إغلاق البعدي' : '🟢 فتح البعدي') + '</button><button class="btn btn-mint btn-xs" data-act="as-reveal">' + (acfg.reveal ? '🔒 إخفاء النتائج' : '🔓 كشف النتائج') + '</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="asRes">النتائج</button><button class="btn btn-ghost btn-xs" data-go="assessEdit">✏️ الأسئلة</button>');
     out += drop('asRes', Views.admin.assessResults());
+    B('broadcast');
     out += tool('broadcast', '📣', '#C8702A', 'بث رسالة مباشرة', '<textarea id="bcText" data-keep="bc-text" rows="2" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-family:var(--f-body)" placeholder="رسالة تظهر كشريط أعلى الصفحة لكل المتصفحين الآن"></textarea>' + (Store.broadcast && Store.broadcast.text ? '<div class="muted" style="margin-top:4px">الحالية: ' + h(Store.broadcast.text) + '</div>' : ''), '<button class="btn btn-primary btn-xs" data-act="bc-send">إرسال</button>' + (Store.broadcast && Store.broadcast.text ? '<button class="btn btn-ghost btn-xs" data-act="bc-stop">إيقاف البث</button>' : ''));
-    out += '</div>';
-    // ---- الجهة الراعية ----
-    out += band('الجهة الراعية والدفعات', '#8A1538') + '<div class="tools-grid">';
     const mc = Monitor.cfg(); const lds = Leads.list(); const coh = Cohort.cur(); const cl = Cohort.list();
+    B('monitor');
     out += tool('monitor', '👁', '#1F3A5F', 'رابط متابعة للمشرف', 'لوحة حية للقراءة فقط لممثل الجهة الراعية: الحضور والتقييمات والمشاركة والرضا والاهتمامات، مع تنزيل التقرير. ' + (mc.enabled ? '<span class="tag added">مفعّل</span>' : '<span class="tag off">معطّل</span>'), '<button class="btn btn-xs ' + (mc.enabled ? 'btn-danger' : 'btn-primary') + '" data-act="mon-toggle">' + (mc.enabled ? 'إيقاف الرابط' : 'تفعيل الرابط') + '</button>' + (mc.enabled ? '<button class="btn btn-soft btn-xs" data-act="mon-copy">📋 نسخ الرابط</button><button class="btn btn-ghost btn-xs" data-act="mon-open">👀 معاينة</button><button class="btn btn-ghost btn-xs" data-act="mon-new">رابط جديد</button>' : ''));
+    B('leads');
     out += tool('leads', '🤝', '#138A5E', 'المهتمون ببرامج البنك', '<div class="bigno num">' + lds.length + '</div>مشروع طلب التواصل بخصوص برامج بنك قطر للتنمية', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="leadsList">القائمة</button><button class="btn btn-primary btn-xs" data-act="leads-csv">⬇️ CSV</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="leadsCfg">إعدادات النموذج</button>');
     out += drop('leadsList', lds.length ? '<div class="table-wrap"><table class="att-table"><thead><tr><th>الاسم</th><th>المشروع</th><th>البرامج</th><th>الاحتياج</th><th>التواصل</th><th>التاريخ</th></tr></thead><tbody>' + lds.map(l => { const u = Store.users[l.uid] || {}; return '<tr><td><b>' + h(l.name || u.name || '') + '</b></td><td>' + h(l.org || RegFields.val(u, 'org')) + '<div class="muted" style="font-size:11.5px">' + h(RegFields.val(u, 'sector')) + '</div></td><td>' + l.programs.map(h).join('<br>') + '</td><td>' + h(l.need || '') + '</td><td>' + h(l.method || '') + '<div class="num">' + h(l.contact || '') + '</div></td><td>' + fmtDate(l.ts) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="empty">لا توجد طلبات بعد.</div>');
     const lc = Leads.cfg();
     out += drop('leadsCfg', '<div class="field"><label>النص التعريفي</label><textarea id="lcIntro" data-keep="lc-intro" rows="2">' + h(lc.intro) + '</textarea></div><div class="field"><label>البرامج (سطر لكل برنامج)</label><textarea id="lcProgs" data-keep="lc-progs" rows="6">' + h(lc.programs.join('\n')) + '</textarea></div><div class="field"><label>نص الموافقة</label><input id="lcConsent" data-keep="lc-consent" value="' + h(lc.consent) + '"></div><div class="field"><label>يظهر النموذج أيضًا أسفل المحور</label><select id="lcAxis"><option value="">— لا يظهر في محور —</option>' + Content.axes({ all: true }).map(a => '<option value="' + h(a.id) + '" ' + (a.id === lc.axis ? 'selected' : '') + '>' + h(a.title) + '</option>').join('') + '</select><span class="help">ويظهر دائمًا في صفحة «حسابي».</span></div><div class="row"><button class="btn btn-primary btn-sm" data-act="leads-cfg-save">💾 حفظ</button><button class="btn btn-ghost btn-sm" data-act="leads-cfg-reset">↺ الافتراضي</button></div>');
     const fuc = Followup.cfg(); const endD = Followup.endDate();
+    B('followup');
     out += tool('followup', '📈', '#5B3A8A', 'المتابعة بعد البرنامج', 'نماذج قياس الأثر بعد 30 و60 و90 يومًا من تاريخ نهاية الدفعة' + (endD ? ' (<span class="num">' + fmtDate(endD) + '</span>)' : ' — <b>حدد تاريخ نهاية الدفعة أولًا</b>') + '.' + FU_DAYS.map(n => '<div class="att-day"><b>بعد <span class="num">' + n + '</span> يومًا</b><span class="pill ' + (Followup.isOpen(n) ? 'open-pill' : '') + '">' + (Followup.isOpen(n) ? 'مفتوحة' : 'مغلقة') + '</span><span class="muted num">' + Followup.list(n).length + ' رد</span></div>').join(''), '<button class="btn btn-soft btn-xs" data-act="drop" data-k="fuCtl">إدارة وإرسال التذكير</button><button class="btn btn-ghost btn-xs" data-act="fu-csv">⬇️ النتائج CSV</button>');
     out += drop('fuCtl', '<p class="help muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:0">تُفتح كل متابعة تلقائيًا في موعدها، ويمكنك فتحها أو إغلاقها يدويًا. الإرسال الآلي للبريد يحتاج خادم بريد؛ لذلك يفتح زر البريد رسالة جاهزة في برنامج بريدك إلى من وافقوا على المتابعة ولم يردوا بعد (نسخة مخفية BCC)، ويمكنك نسخ رسالة واتساب لمجموعة البرنامج.</p>' +
       FU_DAYS.map(n => { const st = fuc.open[n] || 'auto'; return '<div class="att-row"><b>بعد <span class="num">' + n + '</span> يومًا</b><span class="muted">' + (Followup.due(n) ? 'موعدها ' + fmtDate(Followup.due(n)) : 'بلا موعد') + '</span><button class="btn btn-ghost btn-xs" data-act="fu-state" data-n="' + n + '">الحالة: ' + ({ auto: '⏱ تلقائي', open: '🟢 مفتوحة يدويًا', closed: '🔒 مغلقة يدويًا' })[st] + '</button><button class="btn btn-primary btn-xs" data-act="fu-mail" data-n="' + n + '">📧 تذكير بالبريد</button><button class="btn btn-soft btn-xs" data-act="fu-wa" data-n="' + n + '">💬 رسالة واتساب</button><span class="pill num">' + Followup.list(n).length + ' رد</span></div>'; }).join(''));
     const gm = Points.cfg();
+    B('gamify');
     out += tool('gamify', '🏆', '#D07A32', 'النقاط ولوحة الصدارة', 'نقاط للمشاركة والإعجابات والحضور والتقييمات، ولوحة صدارة للأفراد والمجموعات، وشارات خاصة (أول مشارك، الأكثر إعجابًا…).', '<button class="btn btn-xs ' + (gm.enabled ? 'btn-danger' : 'btn-primary') + '" data-act="gm-toggle" data-k="enabled">' + (gm.enabled ? 'إيقاف النقاط' : 'تفعيل النقاط') + '</button><button class="btn btn-ghost btn-xs" data-act="gm-toggle" data-k="names">' + (gm.names ? '🙈 إخفاء الأسماء في اللوحة' : '👁 إظهار الأسماء') + '</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="lbView">عرض اللوحة</button>');
     out += drop('lbView', leaderboardHtml(20));
+    B('tplTool');
     out += tool('tplTool', '📚', '#0E7C7B', 'صندوق الأدوات والقوالب', '7 حاسبات عملية و' + TEMPLATES.length + ' قوالب قابلة للتحميل للمتدربين.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="tplVis">إظهار/إخفاء القوالب</button><button class="btn btn-ghost btn-xs" data-go="tools">👀 فتح الصندوق</button>');
     out += drop('tplVis', '<div class="people-list">' + TEMPLATES.map(t => '<div class="person"><span class="nm">' + t.icon + ' ' + h(t.title) + '</span><button class="btn btn-ghost btn-xs" data-act="tpl-vis" data-id="' + t.id + '">' + (Content.isHidden('tpl_' + t.id) ? '👁 إظهار' : '🙈 إخفاء') + '</button></div>').join('') + '</div>');
+    B('cohorts');
     out += tool('cohorts', '📦', '#9A7412', 'الدفعات والأرشيف', 'الدفعة الحالية: <b>' + h(coh.name) + '</b> · في الأرشيف: <b class="num">' + cl.length + '</b> دفعة', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="cohList">المقارنة والأرشيف</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="cohEdit">بيانات الدفعة</button><button class="btn btn-danger btn-xs" data-act="cohort-close">📦 إغلاق وأرشفة</button>');
     out += drop('cohEdit', '<div class="grid2"><div class="field"><label>اسم الدفعة</label><input id="cohName" data-keep="coh-name" value="' + h(coh.name) + '"></div><div class="field"><label>تاريخ البداية</label><input id="cohStart" type="date" data-keep="coh-start" value="' + h(coh.start) + '"></div><div class="field"><label>تاريخ النهاية</label><input id="cohEnd" type="date" data-keep="coh-end" value="' + h(coh.end) + '"></div></div><button class="btn btn-primary btn-sm" data-act="cohort-save">💾 حفظ</button>');
     if (UIState.openDrop.has('cohList')) { const live = cohortSummary(reportData()); const rows = cl.map(c => ({ c, s: c.summary || {} })).concat([{ c: Object.assign({ id: '' }, coh), s: live, live: true }]); const v = x => x == null ? '—' : x;
       out += drop('cohList', '<div class="table-wrap"><table class="att-table"><thead><tr><th>الدفعة</th><th>المشاركون</th><th>الحضور</th><th>الشهادات</th><th>قبلي</th><th>بعدي</th><th>التحسن</th><th>الرضا</th><th>NPS</th><th>المهتمون</th><th></th></tr></thead><tbody>' +
         rows.map(r => '<tr><td><b>' + h(r.c.name || '') + '</b>' + (r.live ? ' <span class="tag added">حالية</span>' : '') + '<div class="muted num" style="font-size:11.5px">' + h(r.c.start || '') + (r.c.end ? ' — ' + h(r.c.end) : '') + '</div></td><td class="num">' + v(r.s.participants) + '</td><td class="num">' + v(r.s.attAvg) + '%</td><td class="num">' + v(r.s.certs) + '</td><td class="num">' + (r.s.preAvg == null ? '—' : r.s.preAvg + '%') + '</td><td class="num">' + (r.s.postAvg == null ? '—' : r.s.postAvg + '%') + '</td><td class="num">' + (r.s.gain == null ? '—' : (r.s.gain >= 0 ? '+' : '') + r.s.gain) + '</td><td class="num">' + v(r.s.sat) + '</td><td class="num">' + v(r.s.nps) + '</td><td class="num">' + v(r.s.leads) + '</td><td>' +
           (r.live ? '' : '<button class="btn btn-soft btn-xs" data-act="coh-report" data-cid="' + h(r.c.id) + '" data-lang="ar">PDF</button><button class="btn btn-ghost btn-xs" data-act="coh-report" data-cid="' + h(r.c.id) + '" data-lang="en">EN</button><button class="btn btn-ghost btn-xs" data-act="coh-csv" data-cid="' + h(r.c.id) + '">CSV</button><button class="btn btn-ghost btn-xs" data-act="coh-json" data-cid="' + h(r.c.id) + '">JSON</button><button class="btn btn-danger btn-xs" data-act="coh-del" data-cid="' + h(r.c.id) + '">🗑</button>') + '</td></tr>').join('') + '</tbody></table></div>'); }
-    out += '</div>';
-    // ---- التصدير والنسخ ----
-    out += band('التصدير والنسخ', '#138A5E') + '<div class="tools-grid">';
+    B('pdf');
     out += tool('pdf', '📄', '#00827F', 'ملف المحتوى PDF', 'A5 مصمَّم: أغلفة، فهرس، وشرائح كل محور. ' + (pdf.enabled === false ? '<span class="tag off">معطّل للمتدربين</span>' : '<span class="tag added">متاح للمتدربين</span>'), '<button class="btn btn-soft btn-xs" data-act="drop" data-k="pdfEdit">بيانات الملف</button><button class="btn btn-primary btn-xs" data-act="content-pdf">معاينة الآن</button>');
     out += drop('pdfEdit', Views.admin.pdfEditor());
+    B('guide');
     out += tool('guide', '📘', '#1F3A5F', 'دليل المدرب', 'ملف PDF يضم أهداف البرنامج ومنهجيته وجدول اليومين ومخرجات كل محور وملاحظة لكل شريحة، إضافة إلى التمارين ومفتاح إجابات التقييم — جاهز للتسليم قبل التدريب.', '<button class="btn btn-primary btn-xs" data-act="guide-pdf">📘 تصدير الدليل PDF</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="guideEdit">تعديل الأهداف والجدول</button>');
     out += drop('guideEdit', Views.admin.guideEditor());
+    B('report');
     out += tool('report', '📑', '#8A1538', 'تقرير ختام البرنامج', 'تقرير مؤسسي آلي بشعار البنك: ملخص تنفيذي، ملف المشاركين، نتائج التقييم القبلي والبعدي، التفاعل، الرضا وNPS، الاهتمام ببرامج البنك، وتوصيات آلية — بالعربية أو الإنجليزية.', '<button class="btn btn-primary btn-xs" data-act="report-pdf" data-lang="ar">📑 عربي</button><button class="btn btn-primary btn-xs" data-act="report-pdf" data-lang="en">📑 English</button><button class="btn btn-soft btn-xs" data-act="report-csv">📊 CSV</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="logoEdit">شعار البنك</button>');
     out += drop('logoEdit', '<p class="help muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:0">ارفع الشعار الرسمي لبنك قطر للتنمية (PNG بخلفية شفافة أو بيضاء). يظهر في الغلاف وأعلى كل صفحة من التقرير. بدون شعار يُستخدم اسم البنك نصيًا.</p>' + ImgPick.html('brandLogo', (Store.site || {}).brandLogo) + '<div class="row" style="margin-top:8px"><button class="btn btn-primary btn-sm" data-act="logo-save">💾 حفظ الشعار</button></div>');
+    B('csv');
     out += tool('csv', '📊', '#138A5E', 'تصدير المشاركات', 'كل إجابات المحاور والأنشطة والاستطلاع والمختبر والتقييمين في ملف CSV واحد يفتح في Excel.', '<button class="btn btn-primary btn-xs" data-act="export-csv">⬇️ تصدير CSV</button>');
+    B('person');
     out += tool('person', '🗂️', '#1F3A5F', 'مشاركات فردية', 'ملف PDF وCSV لمشاركات كل متدرب على حدة، أو للجميع في ملف ZIP.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="persons">' + (UIState.openDrop.has('persons') ? 'إخفاء' : 'فتح') + ' القائمة</button>');
     out += drop('persons', '<div class="row" style="margin-bottom:10px"><input data-keep="persons-search" data-filter=".person" placeholder="🔍 بحث بالاسم…" style="flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;padding:8px 10px"><button class="btn btn-primary btn-xs" data-act="export-all-pdf">📦 تصدير الكل PDF</button><button class="btn btn-soft btn-xs" data-act="export-all-csv">📦 تصدير الكل CSV</button></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><button class="btn btn-soft btn-xs" data-act="person-pdf" data-uid="' + h(u) + '">PDF</button><button class="btn btn-ghost btn-xs" data-act="person-csv" data-uid="' + h(u) + '">CSV</button></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
+    B('backup');
     out += tool('backup', '💾', '#E8960C', 'النسخة الاحتياطية للمحتوى', 'كل تعديلات وإضافات المحتوى (بلا مشاركات المتدربين) في ملف JSON.', '<button class="btn btn-soft btn-xs" data-act="backup">⬇️ تنزيل</button><label class="btn btn-ghost btn-xs">⬆️ استيراد<input type="file" accept="application/json,.json" hidden data-act-change="import-backup"></label>');
     const bks = Object.keys(Store.backupIndex || {}).sort().reverse();
+    B('autobk');
     out += tool('autobk', '🛟', '#138A5E', 'نسخ يومي تلقائي للمدخلات', 'نسخة يومية تلقائية من التسجيل والمشاركات والتقييمات والحضور (آخر <span class="num">' + BACKUP_KEEP + '</span> يومًا). آخر نسخة: <b class="num">' + (bks[0] || '—') + '</b>', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="bkList">النسخ المتاحة</button><button class="btn btn-ghost btn-xs" data-act="bk-now">نسخة الآن</button>');
     out += drop('bkList', bks.length ? '<div class="people-list">' + bks.map(d => { const x = Store.backupIndex[d]; return '<div class="person"><span class="nm num">' + h(d) + '</span><span class="muted"><span class="num">' + (x.users || 0) + '</span> مسجّل · <span class="num">' + (x.posts || 0) + '</span> مشاركة · <span class="num">' + (x.kb || 0) + '</span> KB</span><button class="btn btn-soft btn-xs" data-act="bk-dl" data-d="' + h(d) + '">⬇️ تنزيل</button><button class="btn btn-danger btn-xs" data-act="bk-restore" data-d="' + h(d) + '">↺ استعادة</button></div>'; }).join('') + '</div>' : '<div class="empty">لا توجد نسخ بعد — تُؤخذ أول نسخة تلقائيًا عند توفر مدخلات.</div>');
-    out += '</div>';
-    // ---- واجهة الصفحة الرئيسية (أكورديون مضمَّن) ----
-    out += band('واجهة الصفحة الرئيسية', '#C8702A');
     const accH = UIState.openAcc.has('home-ui');
+    B('homeUi');
     out += '<div class="acc ' + (accH ? 'open' : '') + '" style="--ac:#C8702A;--acg:' + tint('#C8702A', .08) + '"><div class="acc-head" data-act="acc" data-k="home-ui"><span class="aico">' + iconSvg('home', 20, '#fff') + '</span><h3>تعديل الشريط العلوي والقسم البارز والتذييل وعدد المسجّلين</h3><span class="arrow">◀</span></div><div class="acc-body">' + (accH ? Views.admin.homeEditor() : '') + '</div></div>';
     const accL = UIState.openAcc.has('landing');
+    B('landing');
     out += '<div class="acc ' + (accL ? 'open' : '') + '" style="--ac:#8A1538;--acg:' + tint('#8A1538', .08) + '"><div class="acc-head" data-act="acc" data-k="landing"><span class="aico">🛬</span><h3>الصفحة التعريفية (قبل الدخول) — نبذة، أهداف، مزايا، محتوى، رحلة، مخرجات</h3><span class="arrow">◀</span></div><div class="acc-body">' + (accL ? Views.admin.landingEditor() : '') + '</div></div>';
     const accS = UIState.openAcc.has('home-secs');
+    B('homeSecs');
     out += '<div class="acc ' + (accS ? 'open' : '') + '" style="--ac:#C8702A;--acg:' + tint('#C8702A', .08) + '"><div class="acc-head" data-act="acc" data-k="home-secs"><span class="aico">' + iconSvg('grid', 20, '#fff') + '</span><h3>أقسام الصفحة الرئيسية — ترتيب، إظهار وإخفاء، تعديل، إضافة وحذف <span class="muted num" style="font-size:12.5px">(' + Content.homeSections({ all: true }).length + ')</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (accS ? Views.admin.sectionsList() : '') + '</div></div>';
-    // ---- قصص النجاح ----
-    out += band('قصص النجاح', '#9A7412', '<button class="btn btn-primary btn-sm" data-go="storyEdit" data-id="new">➕ إضافة قصة</button>');
+    B('stories'); out += '<div class="row blk-actions">' + '<button class="btn btn-primary btn-sm" data-go="storyEdit" data-id="new">➕ إضافة قصة</button>' + '</div>';
     const accSt = UIState.openAcc.has('storiesAcc'); const sts = Content.stories({ all: true });
     out += '<div class="acc ' + (accSt ? 'open' : '') + '" style="--ac:#9A7412;--acg:' + tint('#9A7412', .08) + '"><div class="acc-head" data-act="acc" data-k="storiesAcc"><span class="aico">🌟</span><h3>قصص النجاح الحقيقية <span class="muted num" style="font-size:12.5px">(' + sts.length + ')</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (accSt ? sts.map((st, i) => '<div class="ex-row"><div class="top"><span style="font-size:18px">' + h(st.flag || '🌟') + '</span><span class="nm">' + h(st.title) + ' ' + tags(st) + '<span class="tag fmt"><span class="num">' + st.sources.length + '</span> مصادر · 👏 <span class="num">' + Object.keys((Store.storyLikes[st.id] || {}).likes || {}).length + '</span></span></span>' +
       '<button class="btn btn-ghost btn-xs" data-act="story-move" data-d="-1" data-id="' + h(st.id) + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button class="btn btn-ghost btn-xs" data-act="story-move" data-d="1" data-id="' + h(st.id) + '" ' + (i === sts.length - 1 ? 'disabled' : '') + '>↓</button><button class="btn btn-soft btn-xs" data-go="storyEdit" data-id="' + h(st.id) + '">✏️ تعديل</button><button class="btn btn-ghost btn-xs" data-act="toggle-vis" data-id="' + h(st.id) + '">' + (st._hidden ? '👁 إظهار' : '🙈 إخفاء') + '</button><button class="btn btn-ghost btn-xs" data-go="story" data-id="' + h(st.id) + '">👀 عرض</button>' +
       (st._added ? '<button class="btn btn-danger btn-xs" data-act="story-delete" data-id="' + h(st.id) + '">🗑 حذف نهائي</button>' : (st._modified ? '<button class="btn btn-ghost btn-xs" data-act="story-reset" data-id="' + h(st.id) + '">↺ استرجاع الافتراضي</button>' : '')) + '</div></div>').join('') : '') + '</div></div>';
-    // ---- المحاور والتمارين ----
-    out += band('المحاور والتمارين', '#C8702A', '<button class="btn btn-primary btn-sm" data-go="axisEdit" data-id="new">➕ إضافة محور جديد</button><button class="btn btn-soft btn-sm" data-go="actEdit" data-id="new">➕ إضافة نشاط جديد</button>');
+    const axBtns = '<button class="btn btn-primary btn-sm" data-go="axisEdit" data-id="new">➕ إضافة محور جديد</button><button class="btn btn-soft btn-sm" data-go="actEdit" data-id="new">➕ إضافة نشاط جديد</button>'; B('units');
     const accU = UIState.openAcc.has('units');
     out += '<div class="acc ' + (accU ? 'open' : '') + '" style="--ac:#1F3A5F;--acg:' + tint('#1F3A5F', .08) + '"><div class="acc-head" data-act="acc" data-k="units"><span class="aico">' + iconSvg('layers', 20, '#fff') + '</span><h3>أسماء الوحدات (العناوين الجانبية فوق المحاور)</h3><span class="arrow">◀</span></div><div class="acc-body">' + (accU ? Views.admin.unitsEditor() : '') + '</div></div>';
+    B('axes'); out += '<div class="row blk-actions">' + axBtns + '</div>';
     out += '<p class="muted" style="font-family:var(--f-ui);font-size:13px;margin:10px 0">اسحب المحاور من المقبض ⠿ أو استخدم ↑↓ لإعادة ترتيبها. اضغط عنوان المحور لعرض تمارينه.</p><div id="axisAcc">';
     Content.axes({ all: true }).forEach(a => {
       const col = Content.color(a); const open = UIState.openAcc.has(a.id); const isDef = !!DEF_AXIS[a.id];
@@ -3832,17 +3896,19 @@ Views.admin = {
         '<div class="acc-body">' + (open ? (exs.length ? exs.map(e => exRow(e, { axis: a.id })).join('') : '<div class="empty">لا توجد تمارين.</div>') + '<div style="margin-top:10px"><button class="btn btn-soft btn-sm" data-go="exEdit" data-id="new" data-axis="' + h(a.id) + '">➕ أضف تمرينًا لهذا المحور</button></div>' : '') + '</div></div>';
     });
     out += '</div>';
-    // ---- الأنشطة والاستطلاع الختامي ----
-    out += band('الأنشطة والاستطلاع الختامي', '#1F3A5F');
     const openAct = UIState.openAcc.has('acts');
+    B('acts');
     out += '<div class="acc ' + (openAct ? 'open' : '') + '" style="--ac:#1F3A5F;--acg:' + tint('#1F3A5F', .08) + '"><div class="acc-head" data-act="acc" data-k="acts"><span class="aico">⚡</span><h3>قسم «أنشطة» <span class="muted num" style="font-size:12.5px">(' + Content.activities({ all: true }).length + ')</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (openAct ? Content.activities({ all: true }).map(e => exRow(e, { kind: 'activity' })).join('') : '') + '</div></div>';
     const sv = Content.survey({ all: true }); const openSv = UIState.openAcc.has('survey');
+    B('survey');
     out += '<div class="acc ' + (openSv ? 'open' : '') + '" style="--ac:#C8702A;--acg:' + tint('#C8702A', .08) + '"><div class="acc-head" data-act="acc" data-k="survey"><span class="aico">🎓</span><h3>ختام البرنامج — ' + h(sv.title) + ' ' + tags(sv) + '</h3><span class="arrow">◀</span></div><div class="acc-body">' + (openSv ? exRow(sv, { kind: 'survey' }) : '') + '</div></div>';
     const L = Content.lab(); const openLab = UIState.openAcc.has('labAcc');
+    B('lab');
     out += '<div class="acc ' + (openLab ? 'open' : '') + '" style="--ac:#0F6E8C;--acg:' + tint('#0F6E8C', .08) + '"><div class="acc-head" data-act="acc" data-k="labAcc"><span class="aico">🧪</span><h3>المختبر الختامي — ' + h(L.title) + ' ' + (L._modified ? '<span class="tag mod">معدَّل</span> ' : '') + (Content.isHidden('home_lab') ? '<span class="tag hid">مخفي من الرئيسية</span>' : '') + '</h3><span class="arrow">◀</span></div><div class="acc-body">' + (openLab ? '<div class="ex-row"><div class="top"><span class="nm"><span class="num">' + L.stages.length + '</span> مراحل × <span class="num">' + L.minutes + '</span> دقائق · <span class="num">' + Object.keys(Store.labAnswers || {}).length + '</span> مجموعة شاركت</span><button class="btn btn-soft btn-xs" data-go="labEdit">✏️ تعديل المختبر ومراحله</button>' + (L._modified ? '<button class="btn btn-ghost btn-xs" data-act="lab-reset-content">↺ استرجاع الافتراضي</button>' : '') + '<button class="btn btn-danger btn-xs" data-act="lab-clear">🧹 مسح إجابات ومؤقتات المختبر</button></div></div>' : '') + '</div></div>';
-    // ---- إجراء إتلافي مستقل ----
-    out += '<div class="tool danger-tool" style="margin-top:34px;min-height:0"><div class="th"><span class="ti" style="background:#FDECEC;color:#C62F35">⚠️</span><h4>إعادة ضبط شاملة — مسح جميع المدخلات من السيرفر</h4></div><div class="tb">يأخذ نسخة احتياطية تلقائيًا ثم يمسح كل مشاركات التمارين والأنشطة (عدا الاستطلاع الختامي)، ومؤقتات وإجابات المختبر، والتقييم القبلي والبعدي، وسجل الحضور، وقائمة المسجّلين والتعيينات، ويُلزم كل متصفح قديم بتسجيل اسم جديد. لا يمس المحتوى وتعديلاته.</div><div class="tf"><button class="btn btn-danger btn-sm" data-act="global-reset">مسح جميع المدخلات من السيرفر</button></div></div>';
-    return out;
+    B('reset');
+    out += '<div class="tool danger-tool" style="min-height:0"><div class="th"><span class="ti" style="background:#FDECEC;color:#C62F35">⚠️</span><h4>إعادة ضبط شاملة — مسح جميع المدخلات من السيرفر</h4></div><div class="tb">يأخذ نسخة احتياطية تلقائيًا ثم يمسح كل مشاركات التمارين والأنشطة (عدا الاستطلاع الختامي)، ومؤقتات وإجابات المختبر، والتقييم القبلي والبعدي، وسجل الحضور، وقائمة المسجّلين والتعيينات، ويُلزم كل متصفح قديم بتسجيل اسم جديد. لا يمس المحتوى وتعديلاته.</div><div class="tf"><button class="btn btn-danger btn-sm" data-act="global-reset">مسح جميع المدخلات من السيرفر</button></div></div>';
+    B(null);
+    return Views.admin.shell(blocks);
   },
   homeEditor() {
     const s = Content.site();
@@ -3939,7 +4005,7 @@ Views.admin = {
       '<button class="btn btn-primary btn-sm" data-act="pdf-save">💾 حفظ بيانات الملف</button>';
   },
   after(root) {
-    RTE.mount(root); ImgPick.mount(root);
+    RTE.mount(root); ImgPick.mount(root); Views.admin.afterNav(root);
     // السحب والإفلات لترتيب المحاور
     let dragId = null;
     $$('[data-axis-drag]', root).forEach(el => {
@@ -4282,6 +4348,98 @@ Views.storyEdit = {
     else await DB.set('added/stories/' + id, Object.assign({}, Store.addedStories[id] || {}, data));
     UI.toast('✅ حُفظت القصة ونُشرت حيًا'); UIState.openAcc.add('storiesAcc'); Router.go('admin');
   }
+};
+
+
+/* ===== 07b-adminnav.js ===== */
+// ---------------------------------------------------------------------
+// لوحة الإدارة بقائمة جانبية: عناوين تضم أدوات اللوحة، قابلة لإعادة التسمية والترتيب
+// ونقل أي أداة من عنوان إلى آخر بالسحب (أو بقائمة «نقل إلى» على الجوال) — تُحفظ في site/adminNav
+// ---------------------------------------------------------------------
+const ADMIN_BLOCKS = {
+  users: { icon: '👥', title: 'المسجّلون' }, groups: { icon: '🧩', title: 'إدارة المجموعات' }, preview: { icon: '👀', title: 'معاينة كمتدرب' },
+  congrats: { icon: '🏆', title: 'تهنئة الإنجاز' }, regform: { icon: '📝', title: 'نموذج التسجيل والخصوصية' }, attend: { icon: '📍', title: 'الحضور وشهادة المشاركة' },
+  assess: { icon: '📋', title: 'التقييم القبلي والبعدي' }, broadcast: { icon: '📣', title: 'بث رسالة مباشرة' },
+  monitor: { icon: '👁', title: 'رابط متابعة للمشرف' }, leads: { icon: '🤝', title: 'المهتمون ببرامج البنك' }, followup: { icon: '📈', title: 'المتابعة بعد البرنامج' },
+  gamify: { icon: '🏆', title: 'النقاط ولوحة الصدارة' }, tplTool: { icon: '📚', title: 'صندوق الأدوات والقوالب' }, cohorts: { icon: '📦', title: 'الدفعات والأرشيف' },
+  pdf: { icon: '📄', title: 'ملف المحتوى PDF' }, guide: { icon: '📘', title: 'دليل المدرب' }, report: { icon: '📑', title: 'تقرير ختام البرنامج' },
+  csv: { icon: '📊', title: 'تصدير المشاركات' }, person: { icon: '🗂️', title: 'مشاركات فردية' }, backup: { icon: '💾', title: 'النسخة الاحتياطية للمحتوى' },
+  autobk: { icon: '🛟', title: 'نسخ يومي تلقائي للمدخلات' }, reset: { icon: '⚠️', title: 'إعادة ضبط شاملة' },
+  homeUi: { icon: '🏠', title: 'الشريط العلوي والقسم البارز والتذييل', wide: true }, landing: { icon: '🛬', title: 'الصفحة التعريفية (قبل الدخول)', wide: true },
+  homeSecs: { icon: '🧱', title: 'أقسام الصفحة الرئيسية', wide: true }, stories: { icon: '🌟', title: 'قصص النجاح', wide: true },
+  units: { icon: '🗂', title: 'أسماء الوحدات', wide: true }, axes: { icon: '🗺️', title: 'المحاور وتمارينها', wide: true },
+  acts: { icon: '⚡', title: 'قسم «أنشطة»', wide: true }, survey: { icon: '🎓', title: 'ختام البرنامج (الاستطلاع)', wide: true }, lab: { icon: '🧪', title: 'المختبر الختامي', wide: true }
+};
+const ADMIN_GROUPS_DEF = [
+  { id: 'g_users', icon: '👥', title: 'إدارة المسجلين', blocks: ['users', 'groups', 'preview', 'congrats', 'regform', 'attend', 'assess', 'broadcast'] },
+  { id: 'g_sponsor', icon: '🤝', title: 'الجهة الراعية والدفعات', blocks: ['monitor', 'leads', 'followup', 'gamify', 'tplTool', 'cohorts'] },
+  { id: 'g_export', icon: '📤', title: 'التصدير والنسخ', blocks: ['pdf', 'guide', 'report', 'csv', 'person', 'backup', 'autobk', 'reset'] },
+  { id: 'g_home', icon: '🏠', title: 'واجهة الصفحة الرئيسية', blocks: ['homeUi', 'landing', 'homeSecs'] },
+  { id: 'g_stories', icon: '🌟', title: 'قصص النجاح', blocks: ['stories'] },
+  { id: 'g_axes', icon: '🗺️', title: 'المحاور والتمارين', blocks: ['units', 'axes'] },
+  { id: 'g_acts', icon: '⚡', title: 'الأنشطة والاستطلاع الختامي', blocks: ['acts', 'survey', 'lab'] }
+];
+const AdminNav = {
+  groups() {
+    const cfg = (Store.site && Store.site.adminNav) || null;
+    let gs = cfg && arr(cfg.groups).length
+      ? arr(cfg.groups).filter(g => g && g.id).map(g => ({ id: g.id, icon: g.icon || '📁', title: g.title || 'عنوان', blocks: arr((cfg.place || {})[g.id]) }))
+      : ADMIN_GROUPS_DEF.map(g => ({ id: g.id, icon: g.icon, title: g.title, blocks: g.blocks.slice() }));
+    const seen = new Set();
+    gs.forEach(g => { g.blocks = g.blocks.filter(b => ADMIN_BLOCKS[b] && !seen.has(b) && seen.add(b)); });
+    // أي أداة جديدة أو غير موزعة تعود إلى عنوانها الافتراضي (أو أول عنوان)
+    Object.keys(ADMIN_BLOCKS).forEach(b => { if (seen.has(b)) return; const d = ADMIN_GROUPS_DEF.find(x => x.blocks.indexOf(b) > -1); const g = (d && gs.find(x => x.id === d.id)) || gs[0]; if (g) g.blocks.push(b); });
+    return gs;
+  },
+  active(gs) { const k = UIState.adminGrp || SafeLS.get('ec_admin_grp'); return gs.find(g => g.id === k) || gs[0]; },
+  save(gs) { const place = {}; gs.forEach(g => { place[g.id] = g.blocks; }); return DB.set('site/adminNav', { groups: gs.map(g => ({ id: g.id, icon: g.icon, title: g.title })), place }); },
+  move(blk, toG, before) {
+    const gs = AdminNav.groups(); gs.forEach(g => { g.blocks = g.blocks.filter(b => b !== blk); });
+    const g = gs.find(x => x.id === toG); if (!g) return; const i = before ? g.blocks.indexOf(before) : -1;
+    if (i > -1) g.blocks.splice(i, 0, blk); else g.blocks.push(blk);
+    return AdminNav.save(gs);
+  },
+  blockTitle(b) { return ADMIN_BLOCKS[b].title; }
+};
+Views.admin.shell = function (blocks) {
+  const gs = AdminNav.groups(); const cur = AdminNav.active(gs); const edit = !!UIState.adminEdit;
+  const nav = '<aside class="adm-nav"><div class="adm-nav-top"><span>أقسام اللوحة</span><button class="btn btn-xs ' + (edit ? 'btn-primary' : 'btn-ghost') + '" data-act="adm-edit">' + (edit ? '✓ إنهاء التخصيص' : '✏️ تخصيص') + '</button></div><nav>' +
+    gs.map((g, i) => edit
+      ? '<div class="adm-nav-item edit ' + (g.id === cur.id ? 'active' : '') + '" data-adm-drop="' + h(g.id) + '"><input class="adm-ico-in" data-adm-icon="' + h(g.id) + '" data-keep="adm-i-' + h(g.id) + '" value="' + h(g.icon) + '" maxlength="4" aria-label="أيقونة"><input class="adm-title-in" data-adm-title="' + h(g.id) + '" data-keep="adm-t-' + h(g.id) + '" value="' + h(g.title) + '" aria-label="اسم العنوان"><span class="adm-count num">' + g.blocks.length + '</span>' +
+        '<div class="adm-nav-tools"><button class="btn btn-ghost btn-xs" data-act="adm-grp" data-g="' + h(g.id) + '" title="عرض أدواته">👁</button><button class="btn btn-ghost btn-xs" data-act="adm-gmove" data-g="' + h(g.id) + '" data-d="-1" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button class="btn btn-ghost btn-xs" data-act="adm-gmove" data-g="' + h(g.id) + '" data-d="1" ' + (i === gs.length - 1 ? 'disabled' : '') + '>↓</button>' + (gs.length > 1 ? '<button class="btn btn-ghost btn-xs" data-act="adm-gdel" data-g="' + h(g.id) + '" title="حذف العنوان (تنتقل أدواته إلى عنوان آخر)">🗑</button>' : '') + '</div></div>'
+      : '<button class="adm-nav-item ' + (g.id === cur.id ? 'active' : '') + '" data-act="adm-grp" data-g="' + h(g.id) + '"><span class="adm-ico">' + h(g.icon) + '</span><span class="adm-t">' + h(g.title) + '</span><span class="adm-count num">' + g.blocks.length + '</span></button>').join('') +
+    '</nav>' + (edit ? '<div class="adm-nav-foot"><button class="btn btn-soft btn-xs" data-act="adm-gadd">➕ عنوان جديد</button><button class="btn btn-ghost btn-xs" data-act="adm-reset">↺ الترتيب الافتراضي</button></div>' : '') + '</aside>';
+  let pane = '<div class="adm-pane"><div class="adm-pane-head"><span class="adm-ico big">' + h(cur.icon) + '</span><div><h2>' + h(cur.title) + '</h2><span class="muted"><span class="num">' + cur.blocks.length + '</span> أداة</span></div></div>';
+  if (edit) {
+    pane += '<p class="help muted adm-help">اسحب أي أداة وأفلتها على عنوان في القائمة الجانبية لنقلها إليه، أو فوق أداة أخرى لترتيبها. على الجوال استخدم قائمة «نقل إلى». عدّل اسم العنوان وأيقونته مباشرة من القائمة الجانبية.</p><div class="adm-cards">' +
+      (cur.blocks.length ? cur.blocks.map(b => '<div class="adm-card" draggable="true" data-adm-blk="' + b + '"><span class="drag-handle">⠿</span><span class="adm-ico">' + ADMIN_BLOCKS[b].icon + '</span><b class="grow">' + h(AdminNav.blockTitle(b)) + '</b><select data-adm-to="' + b + '" aria-label="نقل إلى"><option value="">نقل إلى…</option>' + gs.filter(g => g.id !== cur.id).map(g => '<option value="' + h(g.id) + '">' + h(g.icon + ' ' + g.title) + '</option>').join('') + '</select></div>').join('') : '<div class="empty">لا توجد أدوات تحت هذا العنوان — اسحب إليه أدوات من عناوين أخرى.</div>') + '</div>';
+  } else {
+    let grid = []; const flush = () => { if (grid.length) { pane += '<div class="tools-grid">' + grid.join('') + '</div>'; grid = []; } };
+    cur.blocks.forEach(b => { const html = blocks[b] || ''; if (ADMIN_BLOCKS[b].wide) { flush(); pane += '<div class="adm-wide" data-blk="' + b + '">' + html + '</div>'; } else grid.push(html); });
+    flush();
+    if (!cur.blocks.length) pane += '<div class="empty">لا توجد أدوات تحت هذا العنوان. اضغط «✏️ تخصيص» لنقل أدوات إليه.</div>';
+  }
+  pane += '</div>';
+  return adminHeader('لوحة الإدارة') + '<div class="adm-shell' + (edit ? ' editing' : '') + '">' + nav + pane + '</div>';
+};
+Views.admin.afterNav = function (root) {
+  if (!UIState.adminEdit) return;
+  let dragBlk = null;
+  $$('[data-adm-blk]', root).forEach(el => {
+    el.addEventListener('dragstart', e => { dragBlk = el.getAttribute('data-adm-blk'); el.classList.add('dragging'); try { e.dataTransfer.setData('text/plain', dragBlk); e.dataTransfer.effectAllowed = 'move'; } catch (x) {} });
+    el.addEventListener('dragend', () => { el.classList.remove('dragging'); $$('.drop-target', root).forEach(x => x.classList.remove('drop-target')); });
+    el.addEventListener('dragover', e => { if (!dragBlk || dragBlk === el.getAttribute('data-adm-blk')) return; e.preventDefault(); el.classList.add('drop-target'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drop-target'));
+    el.addEventListener('drop', e => { e.preventDefault(); el.classList.remove('drop-target'); const target = el.getAttribute('data-adm-blk'); if (!dragBlk || dragBlk === target) return; const g = AdminNav.active(AdminNav.groups()); AdminNav.move(dragBlk, g.id, target); dragBlk = null; });
+  });
+  $$('[data-adm-drop]', root).forEach(el => {
+    el.addEventListener('dragover', e => { if (!dragBlk) return; e.preventDefault(); el.classList.add('drop-target'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drop-target'));
+    el.addEventListener('drop', e => { e.preventDefault(); el.classList.remove('drop-target'); if (!dragBlk) return; const to = el.getAttribute('data-adm-drop'); const nm = AdminNav.blockTitle(dragBlk); const gt = (AdminNav.groups().find(g => g.id === to) || {}).title; AdminNav.move(dragBlk, to); UI.toast('نُقلت «' + nm + '» إلى «' + gt + '»'); dragBlk = null; });
+  });
+  $$('[data-adm-to]', root).forEach(sel => sel.addEventListener('change', () => { if (!sel.value) return; const b = sel.getAttribute('data-adm-to'); const gt = (AdminNav.groups().find(g => g.id === sel.value) || {}).title; AdminNav.move(b, sel.value); UI.toast('نُقلت «' + AdminNav.blockTitle(b) + '» إلى «' + gt + '»'); }));
+  const saveField = (attr, key) => $$('[' + attr + ']', root).forEach(inp => inp.addEventListener('change', () => { const gs = AdminNav.groups(); const g = gs.find(x => x.id === inp.getAttribute(attr)); if (!g) return; g[key] = inp.value.trim() || (key === 'icon' ? '📁' : 'عنوان'); AdminNav.save(gs); UI.toast('✅ حُفظ'); }));
+  saveField('data-adm-title', 'title'); saveField('data-adm-icon', 'icon');
 };
 
 
@@ -5159,6 +5317,12 @@ document.addEventListener('click', async ev => {
     case 'sec-copy': { const k = t.getAttribute('data-k'); const cur = ((Store.site || {}).sections || {})[k]; if (!cur) break; await DB.set('site/sections/c' + genId(), Object.assign({}, cur, { title: (cur.title || '') + ' (نسخة)', ts: DB.now() })); UI.toast('🧬 تم نسخ القسم'); break; }
     case 'sec-del': { const k = t.getAttribute('data-k'); if (await UI.confirm('حذف هذا القسم نهائيًا من الصفحة الرئيسية؟', { danger: true, ok: 'حذف' })) DB.update('', { ['site/sections/' + k]: null, ['visibility/home_' + k]: null }); break; }
     case 'sec-reset-order': DB.remove('site/homeOrder'); break;
+    case 'adm-edit': UIState.adminEdit = !UIState.adminEdit; App.render(); break;
+    case 'adm-grp': UIState.adminGrp = t.getAttribute('data-g'); SafeLS.set('ec_admin_grp', UIState.adminGrp); App.render(); { const p = document.querySelector('.adm-pane'); if (p && window.innerWidth <= 860) window.scrollTo({ top: p.getBoundingClientRect().top + window.scrollY - 130, behavior: 'smooth' }); else window.scrollTo(0, 0); } break;
+    case 'adm-gmove': { const gs = AdminNav.groups(); const i = gs.findIndex(g => g.id === t.getAttribute('data-g')), j = i + (+t.getAttribute('data-d')); if (i < 0 || j < 0 || j >= gs.length) break; [gs[i], gs[j]] = [gs[j], gs[i]]; AdminNav.save(gs); break; }
+    case 'adm-gadd': { const title = await UI.prompt('اسم العنوان الجديد', { title: '➕ عنوان جديد في القائمة', placeholder: 'مثال: أدوات اليوم الأول', ok: 'إضافة' }); if (!title || !title.trim()) break; const gs = AdminNav.groups(); const id = 'g' + Date.now().toString(36); gs.push({ id, icon: '📁', title: title.trim(), blocks: [] }); await AdminNav.save(gs); UIState.adminGrp = id; SafeLS.set('ec_admin_grp', id); App.render(); break; }
+    case 'adm-gdel': { const gs = AdminNav.groups(); const g = gs.find(x => x.id === t.getAttribute('data-g')); if (!g || gs.length < 2) break; const rest = gs.filter(x => x !== g); if (!(await UI.confirm('حذف العنوان «' + h(g.title) + '»؟' + (g.blocks.length ? ' ستنتقل أدواته (<span class="num">' + g.blocks.length + '</span>) إلى «' + h(rest[0].title) + '».' : ''), { ok: 'حذف', danger: true }))) break; rest[0].blocks = rest[0].blocks.concat(g.blocks); await AdminNav.save(rest); if (UIState.adminGrp === g.id) UIState.adminGrp = rest[0].id; App.render(); break; }
+    case 'adm-reset': if (await UI.confirm('استرجاع العناوين الافتراضية وتوزيع الأدوات الأصلي؟', { ok: 'استرجاع' })) { $$('[data-keep^="adm-"]').forEach(el => el.removeAttribute('data-keep')); DB.remove('site/adminNav'); } break;
     case 'lp-move': { const k = t.getAttribute('data-k'); const ids = Landing.order(); const i = ids.indexOf(k), j = i + (+t.getAttribute('data-d')); if (j < 0 || j >= ids.length) break; [ids[i], ids[j]] = [ids[j], ids[i]]; DB.set('site/landing/_order', ids); break; }
     case 'lp-vis': { const k = t.getAttribute('data-k'); DB.set('site/landing/_hidden/' + k, Landing.hidden(k) ? null : true); break; }
     case 'lp-reset-order': DB.remove('site/landing/_order'); break;
