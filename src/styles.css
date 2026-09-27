@@ -1381,3 +1381,26 @@ html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-
 /* بطاقة المختبر على الجوال: النص بعرض كامل والزر في سطر مستقل */
 @media (max-width:640px){.lab-banner{flex-wrap:wrap;gap:14px;padding:18px}.lab-banner .lab-ico{width:54px;height:54px;font-size:26px;border-radius:16px}.lab-banner .grow{flex:1 1 calc(100% - 70px);min-width:0}.lab-banner h3{font-size:19px}.lab-banner>.btn{flex:1 1 100%;justify-content:center}}
 @media (max-width:640px){.card.row{flex-wrap:wrap}.card.row>.grow{flex:1 1 100%;min-width:0}.card.row>.btn{flex:1 1 100%;justify-content:center}.pr-brand{min-width:0}.pr-brand b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}}
+/* ===== أيقونات خطية بدل الإيموجي (تأخذ لون النص وحجمه) ===== */
+.ei{width:1.08em;height:1.08em;display:inline-block;vertical-align:-.17em;flex:none;stroke-width:2}
+.btn .ei,.pill .ei,.tag .ei{width:1em;height:1em;vertical-align:-.14em}
+.hn-ico,.adm-ico,.act-ico,.ex-head .ico,.tpl-ico,.lead-ico,.lp-ico,.story-flag,.sp-badge i{color:var(--brand)}
+.hn-ico .ei,.adm-ico .ei{width:20px;height:20px}
+.act-ico .ei,.tpl-ico .ei,.lead-ico .ei{width:26px;height:26px}
+.ex-head .ico .ei{width:32px;height:32px}
+.lp-ico .ei{width:24px;height:24px}.lp-ico.big .ei{width:30px;height:30px}
+.hn-item.active .hn-ico,.adm-nav-item.active .adm-ico,.lab-ico,.acc-head .aico,.lpop-ico{color:#fff}
+.lab-ico .ei{width:32px;height:32px}
+.lp-feat-card .lp-ico{color:#FFD98A}
+html[data-theme="dark"] .hn-ico,html[data-theme="dark"] .adm-ico,html[data-theme="dark"] .act-ico,html[data-theme="dark"] .tpl-ico,html[data-theme="dark"] .lead-ico,html[data-theme="dark"] .lp-ico{color:#FFB3C8}
+html[data-theme="dark"] .hn-item.active .hn-ico,html[data-theme="dark"] .adm-nav-item.active .adm-ico{color:#fff}
+@media (max-width:860px){.hn-ico .ei,.adm-ico .ei{width:16px;height:16px}}
+/* منتقي الأيقونات */
+.icon-in{display:flex;gap:8px;align-items:center}.icon-in input{flex:1;min-width:0}
+.icon-pick-btn{flex:none;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--brand);display:grid;place-items:center;cursor:pointer;font-size:18px}
+.icon-pick-btn .ei{width:22px;height:22px}
+.adm-nav-item.edit .icon-pick-btn{width:34px;height:34px;border-radius:10px}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:8px;max-height:52vh;overflow:auto;margin:10px 0}
+.icon-cell{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.icon-cell:hover{border-color:var(--brand);color:var(--brand)}.icon-cell.on{background:var(--grad);color:#fff;border-color:transparent}
+.icon-cell .ei{width:22px;height:22px}

@@ -260,6 +260,7 @@ document.addEventListener('click', async ev => {
     // ----- عام -----
     case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، وستعود إلى الصفحة التعريفية للبرنامج لتسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تسجيل مستخدم جديد' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; syncWatchers(); Router.go('home'); window.scrollTo(0, 0); } break; }
     case 'open-login': LoginModal.open(); break;
+    case 'icon-pick': IconPick.open(t); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
     case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
     case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
@@ -701,6 +702,7 @@ function adminLogin() {
 
 // ---------- الإقلاع ----------
 function boot() {
+  EmojiIcons.start(); // الإيموجي في الواجهة ← أيقونات خطية بلون مكانها
   Me.load(); Session.boot();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) Session.check(); });
   document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('brand')) { e.preventDefault(); e.target.click(); } });

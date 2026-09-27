@@ -153,7 +153,7 @@ const LoginModal = {
     LoginModal.m.el.classList.add('login-modal');
     $('[data-x]', LoginModal.m.el).onclick = () => LoginModal.close();
     // الأزرار داخل النافذة تمر عبر معالج النقرات العام (المستمع على المستند)
-    const first = $('input,select', LoginModal.m.el); if (first) setTimeout(() => { try { first.focus({ preventScroll: true }); } catch (e) {} }, 60);
+    const el = LoginModal.m.el; const first = $('input,select', el); if (first) setTimeout(() => { try { if (!el.contains(document.activeElement)) first.focus({ preventScroll: true }); } catch (e) {} }, 60); // لا نسحب التركيز إن بدأ المستخدم الكتابة في حقل آخر
   },
   close() { if (LoginModal.m) { const m = LoginModal.m; LoginModal.m = null; m.close(); } }
 };
