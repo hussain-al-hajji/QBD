@@ -10,11 +10,16 @@ const App = {
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
     const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor';
-    const view = needLogin ? Views.login : (Views[v] || Views.home);
+    const view = needLogin ? Views.landing : (Views[v] || Views.home);
+    App.onLanding = view === Views.landing;
+    if (App.onLanding && !App._wasLanding) { Views.landing._played = false; Views.landing._seen = new Set(); Views.landing._counted = false; } App._wasLanding = App.onLanding;
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
     const html = v === 'present' && view === Views.present ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
       (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
+    // صفحة الهبوط: لا نعيد رسمها إن لم يتغير شيء حتى لا تتكرر الحركات مع كل تحديث للبيانات
+    if (App.onLanding && html === App._lastLanding && root.firstChild) return;
+    App._lastLanding = App.onLanding ? html : null;
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
     $$('[data-filter]', root).forEach(applyFilter);
@@ -73,7 +78,7 @@ async function doRegister() {
     await DB.set('users/' + uid, { name, role, f: data.f, member, ts, consent: { privacy: ts, followup: follow } });
     DB.transaction('stats/registered', c => (Number(c) || 0) + 1);
     const me = { uid, name, role, member, ts }; Me.save(me);
-    App.render(); welcomeModal(me);
+    LoginModal.close(); App.render(); window.scrollTo(0, 0); welcomeModal(me);
   } catch (e) { UI.alert('تعذر التسجيل: ' + h(e.message || e)); if (btn) { btn.disabled = false; btn.textContent = 'ابدأ 🚀'; } }
 }
 function privacyModal() { const pv = Content.privacy(); const m = UI.modal('<h3>🔒 إشعار الخصوصية</h3><div style="line-height:1.9">' + richHtml(pv.text) + '</div><div class="actions"><button class="btn btn-primary" data-x>حسنًا</button></div>', { wide: true }); $('[data-x]', m.el).onclick = () => m.close(); }
@@ -101,7 +106,7 @@ async function memberLogin() {
   const uid = Object.keys(users).find(u => +users[u].member === num);
   if (!uid) { UI.alert('لم نجد حسابًا بهذا الرقم (ربما حُذف لاحقًا). يُرجى التسجيل من جديد باسمك.', 'رقم غير مطابق'); return; }
   const u = users[uid]; Me.save({ uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || DB.now(), group: u.group || null });
-  UI.toast('مرحبًا بعودتك يا ' + u.name + ' 👋'); App.render();
+  LoginModal.close(); UI.toast('مرحبًا بعودتك يا ' + u.name + ' 👋'); App.render(); window.scrollTo(0, 0);
 }
 
 // ---------- حفظ الإجابات ----------
@@ -181,7 +186,11 @@ document.addEventListener('click', async ev => {
   const root = document.getElementById('app');
   switch (act) {
     // ----- عام -----
-    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، ويمكنك تسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تبديل المستخدم' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); } break; }
+    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، وستعود إلى الصفحة التعريفية للبرنامج لتسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تسجيل مستخدم جديد' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); window.scrollTo(0, 0); } break; }
+    case 'open-login': LoginModal.open(); break;
+    case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
+    case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
+    case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
     case 'admin-enter': {
       if (Admin.ok()) { SafeSS.del('ec_preview'); Router.go('admin'); break; }
       const v = await UI.prompt('أدخل الرمز السري للوحة الإدارة', { title: '🔐 لوحة الإدارة', type: 'password', inputmode: 'numeric', ok: 'دخول' });
@@ -194,7 +203,7 @@ document.addEventListener('click', async ev => {
     case 'bc-close': SafeLS.set('ec_bc_closed', t.getAttribute('data-id')); App.render(); break;
     case 'register': doRegister(); break;
     case 'member-login': memberLogin(); break;
-    case 'guest': Me.setGuest(); App.render(); break;
+    case 'guest': LoginModal.close(); Me.setGuest(); App.render(); window.scrollTo(0, 0); break;
     case 'open-axis': { const a = Content.axis(id); if (a && a._disabled && !Admin.ctl()) UI.alert('هذا المحور غير متاح بعد — سيُفتح قريبًا.', '⏳ قريبًا'); else Router.go('axis', { id }); break; }
     // ----- التمارين -----
     case 'pick-group': { const g = +t.getAttribute('data-g'); Me.setGroup(g); Object.keys(UIState.draft).forEach(k => { const e = Content.ex(k); if (e && e.mode === 'group') delete UIState.draft[k]; }); UIState.editing = {}; App.render(); break; }
@@ -378,6 +387,11 @@ document.addEventListener('click', async ev => {
     case 'sec-copy': { const k = t.getAttribute('data-k'); const cur = ((Store.site || {}).sections || {})[k]; if (!cur) break; await DB.set('site/sections/c' + genId(), Object.assign({}, cur, { title: (cur.title || '') + ' (نسخة)', ts: DB.now() })); UI.toast('🧬 تم نسخ القسم'); break; }
     case 'sec-del': { const k = t.getAttribute('data-k'); if (await UI.confirm('حذف هذا القسم نهائيًا من الصفحة الرئيسية؟', { danger: true, ok: 'حذف' })) DB.update('', { ['site/sections/' + k]: null, ['visibility/home_' + k]: null }); break; }
     case 'sec-reset-order': DB.remove('site/homeOrder'); break;
+    case 'lp-move': { const k = t.getAttribute('data-k'); const ids = Landing.order(); const i = ids.indexOf(k), j = i + (+t.getAttribute('data-d')); if (j < 0 || j >= ids.length) break; [ids[i], ids[j]] = [ids[j], ids[i]]; DB.set('site/landing/_order', ids); break; }
+    case 'lp-vis': { const k = t.getAttribute('data-k'); DB.set('site/landing/_hidden/' + k, Landing.hidden(k) ? null : true); break; }
+    case 'lp-reset-order': DB.remove('site/landing/_order'); break;
+    case 'lp-save': { const k = t.getAttribute('data-k'); const o = {}; ['kicker', 'title', 'sub', 'cta', 'cta2', 'items'].forEach(f => { const el = document.getElementById('lp_' + k + '_' + f); if (el) o[f] = el.value.trim(); }); await DB.set('site/landing/' + k, o); UI.toast('✅ حُفظ قسم «' + LANDING_NAMES[k] + '»'); break; }
+    case 'lp-reset': { const k = t.getAttribute('data-k'); if (await UI.confirm('استرجاع النصوص الافتراضية لقسم «' + LANDING_NAMES[k] + '»؟', { ok: 'استرجاع' })) { DB.remove('site/landing/' + k); $$('[data-keep^="lp-' + k + '-"]').forEach(el => el.removeAttribute('data-keep')); } break; }
     case 'home-layout': DB.set('site/homeLayout', t.getAttribute('data-v')); UI.toast(t.getAttribute('data-v') === 'classic' ? 'عادت الرئيسية إلى التخطيط الطويل' : 'فُعّل تخطيط القائمة الجانبية'); break;
     case 'home-sec': {
       UIState.homeSec = t.getAttribute('data-k'); SafeLS.set('ec_home_sec', UIState.homeSec); App.render();

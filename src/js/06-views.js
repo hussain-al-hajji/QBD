@@ -3,22 +3,6 @@
 // ---------------------------------------------------------------------
 const Views = {};
 
-// ============ شاشة الدخول ============
-Views.login = {
-  html() {
-    const pv = Content.privacy();
-    return '<div class="login"><div class="login-art">' + Scenes.render('hero') + '</div><div class="login-form">' +
-      '<span class="sec-kicker">أهلًا بك في البرنامج التدريبي</span><h1>' + h(Content.site().heroTitle) + '</h1><p class="muted">سجّل لتشارك في التقييمات والتمارين الحية وترى مشاركات زملائك لحظيًا، وتتابع إنجازك وحضورك وشهادتك.</p>' +
-      '<div class="reg-grid">' + RegFields.visible().map(f => RegFields.input(f, '', 'reg_')).join('') + '</div>' +
-      '<label class="consent"><input type="checkbox" id="regConsent" data-keep="reg-consent"> <span>' + h(pv.consent) + ' — <a href="#" data-act="privacy-show">اقرأ إشعار الخصوصية</a></span></label>' +
-      '<label class="consent"><input type="checkbox" id="regFollow" data-keep="reg-follow"> <span>' + h(pv.followup) + ' <span class="muted">(اختياري)</span></span></label>' +
-      '<button class="btn btn-primary btn-block" data-act="register">ابدأ 🚀</button>' +
-      '<button class="btn btn-mint btn-block" style="margin-top:10px" data-act="member-login">مسجّل مسبقًا؟ الدخول برقم العضوية</button>' +
-      '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button>' +
-      '</div></div>';
-  }
-};
-
 // ============ الرئيسية ============
 function axisArt(a, big) {
   const col = Content.color(a);

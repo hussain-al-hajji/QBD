@@ -795,6 +795,270 @@ html[data-theme="dark"] .hn-item.active .hn-txt b{color:#FF9DB8}
   .hn-count{height:20px;min-width:20px;font-size:11px}
 }
 
+/* =====================================================================
+   صفحة الهبوط (قبل الدخول)
+   ===================================================================== */
+.lp{--lp-deep:#1C0710;--lp-maroon:#8A1538;--lp-wine:#5A0E26;--lp-gold:#E2B24A;--lp-gold-2:#FFD98A;--lp-cream:#FBF7F2;margin-inline:calc(50% - 50vw);overflow:hidden;color:var(--ink)}
+.lp-wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.top-cta{gap:6px;box-shadow:0 6px 18px rgba(138,21,56,.28)}
+.top-cta .cta-s{display:none}
+.top-cta .lp-arrow,.lp-btn .lp-arrow{display:inline-block;transition:transform .25s}
+.top-cta:hover .lp-arrow,.lp-btn:hover .lp-arrow{transform:translateX(-5px)}
+@media (max-width:720px){.top-cta .cta-l{display:none}.top-cta .cta-s{display:inline}}
+
+/* ---- الواجهة الافتتاحية ---- */
+.lp-hero{position:relative;min-height:calc(100vh - 64px);display:flex;align-items:center;background:radial-gradient(120% 90% at 85% 10%,#6B1330 0%,var(--lp-deep) 55%,#12040A 100%);color:#fff;padding:56px 0 90px;isolation:isolate}
+.lp-aurora{position:absolute;inset:0;overflow:hidden;z-index:-1;pointer-events:none}
+.lp-aurora i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:lpFloat 18s ease-in-out infinite alternate}
+.lp-aurora i:nth-child(1){width:520px;height:520px;background:#B0204E;top:-160px;inset-inline-start:-120px}
+.lp-aurora i:nth-child(2){width:420px;height:420px;background:#C8702A;bottom:-180px;inset-inline-end:10%;opacity:.35;animation-duration:22s}
+.lp-aurora i:nth-child(3){width:300px;height:300px;background:#E2B24A;top:30%;inset-inline-end:-120px;opacity:.22;animation-duration:26s}
+@keyframes lpFloat{0%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,30px) scale(1.08)}100%{transform:translate(-30px,-20px) scale(.95)}}
+.lp-grid-bg{position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:56px 56px;-webkit-mask-image:radial-gradient(70% 60% at 50% 40%,#000 30%,transparent 80%);mask-image:radial-gradient(70% 60% at 50% 40%,#000 30%,transparent 80%)}
+.lp-hero-in{max-width:1180px;margin:0 auto;padding:0 20px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;align-items:center;width:100%}
+.lp-badge{display:inline-flex;align-items:center;gap:10px;padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,217,138,.35);font-family:var(--f-ui);font-size:13px;font-weight:600;color:var(--lp-gold-2);backdrop-filter:blur(6px);animation:lpUp .8s .1s both}
+.lp-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--lp-gold);box-shadow:0 0 0 0 rgba(226,178,74,.7);animation:lpPulse 2s infinite}
+@keyframes lpPulse{70%{box-shadow:0 0 0 10px rgba(226,178,74,0)}100%{box-shadow:0 0 0 0 rgba(226,178,74,0)}}
+.lp-h1{font-family:var(--f-display);font-weight:900;font-size:clamp(32px,5vw,60px);line-height:1.25;margin:20px 0 16px;color:#fff;background:linear-gradient(100deg,#fff 0%,#fff 40%,var(--lp-gold-2) 50%,#fff 60%,#fff 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:lpUp .9s .2s both,lpShine 6s 1.4s ease-in-out infinite}
+@keyframes lpShine{0%{background-position:100% 0}60%,100%{background-position:-100% 0}}
+.lp-lead{font-size:clamp(15.5px,1.6vw,18px);line-height:1.95;color:rgba(255,255,255,.8);max-width:620px;margin:0;animation:lpUp .9s .35s both}
+.lp-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px;animation:lpUp .9s .5s both}
+.lp-btn{display:inline-flex;align-items:center;gap:12px;border:0;cursor:pointer;font-family:var(--f-display);font-weight:800;font-size:16.5px;padding:15px 26px;border-radius:16px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.lp-btn.gold{background:linear-gradient(135deg,#F6D27A,var(--lp-gold) 50%,#C98F22);color:#2A0A14;box-shadow:0 14px 34px rgba(226,178,74,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+.lp-btn.gold::after{content:"";position:absolute;top:0;bottom:0;width:40%;inset-inline-start:-60%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:lpSweep 3.6s 2s ease-in-out infinite}
+@keyframes lpSweep{0%{inset-inline-start:-60%}40%,100%{inset-inline-start:130%}}
+.lp-btn.gold:hover{transform:translateY(-2px);box-shadow:0 20px 44px rgba(226,178,74,.45)}
+.lp-btn.ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.22)}
+.lp-btn.ghost:hover{background:rgba(255,255,255,.12)}
+.lp-btn.big{font-size:19px;padding:18px 34px;border-radius:18px}
+.lp-arrow.down{animation:lpBob 1.6s ease-in-out infinite}
+@keyframes lpBob{50%{transform:translateY(4px)}}
+.lp-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:38px;max-width:620px;animation:lpUp .9s .65s both}
+.lp-stat{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px)}
+.lp-stat b{display:block;font-family:var(--f-display);font-size:clamp(22px,2.6vw,30px);font-weight:900;color:var(--lp-gold-2);line-height:1.2}
+.lp-stat span{font-family:var(--f-ui);font-size:12px;color:rgba(255,255,255,.65)}
+@keyframes lpUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+/* المشهد: جهاز ولوحة متجر وبطاقات عائمة */
+.lp-visual{position:relative;height:460px;--mx:0;--my:0;animation:lpIn 1.1s .3s both}
+@keyframes lpIn{from{opacity:0;transform:scale(.92) translateY(20px)}to{opacity:1;transform:none}}
+.lp-orbit{position:absolute;inset:0;display:grid;place-items:center}
+.lp-orbit span{position:absolute;border-radius:50%;border:1px dashed rgba(255,217,138,.25);animation:lpSpin 40s linear infinite}
+.lp-orbit span:nth-child(1){width:420px;height:420px}
+.lp-orbit span:nth-child(2){width:300px;height:300px;animation-direction:reverse;animation-duration:30s;border-color:rgba(255,255,255,.14)}
+@keyframes lpSpin{to{transform:rotate(360deg)}}
+.lp-device{position:absolute;top:50%;left:50%;width:300px;transform:translate(calc(-50% + var(--mx) * -16px),calc(-50% + var(--my) * -16px)) rotate(-4deg);background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.2);border-radius:24px;box-shadow:0 40px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.2);backdrop-filter:blur(14px);overflow:hidden;transition:transform .3s ease-out}
+.lp-dev-top{display:flex;align-items:center;gap:6px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.lp-dev-top i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3)}
+.lp-dev-top i:first-child{background:#FF7A8A}.lp-dev-top i:nth-child(2){background:#FFD98A}.lp-dev-top i:nth-child(3){background:#7FE0B0}
+.lp-dev-top b{margin-inline-start:auto;font-family:var(--f-ui);font-size:11.5px;color:rgba(255,255,255,.7);font-weight:600}
+.lp-dev-body{padding:14px}
+.lp-dev-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lp-dev-kpis div{background:rgba(255,255,255,.07);border-radius:12px;padding:8px 10px}
+.lp-dev-kpis small{display:block;font-family:var(--f-ui);font-size:10.5px;color:rgba(255,255,255,.6)}
+.lp-dev-kpis b{font-family:var(--f-display);font-size:15px;color:#fff}
+.lp-bars{display:flex;align-items:flex-end;gap:7px;height:96px;margin-top:14px;padding:0 2px;direction:ltr}
+.lp-bars i{flex:1;height:var(--h);border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,var(--lp-gold-2),#C8702A);transform-origin:bottom;animation:lpGrow 1s calc(.8s + var(--d)) cubic-bezier(.2,.8,.2,1) both}
+@keyframes lpGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.lp-line{width:100%;height:46px;margin-top:-50px;position:relative;direction:ltr}
+.lp-line path{stroke-dasharray:320;stroke-dashoffset:320;animation:lpDraw 2s 1.4s ease-out forwards;filter:drop-shadow(0 2px 6px rgba(255,217,138,.6))}
+@keyframes lpDraw{to{stroke-dashoffset:0}}
+.lp-dev-rows{display:grid;gap:7px;margin-top:12px}
+.lp-dev-rows div{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:10px;padding:7px 9px}
+.lp-dev-rows em{flex:1;height:7px;border-radius:9px;background:linear-gradient(90deg,rgba(255,255,255,.35),rgba(255,255,255,.08))}
+.lp-dev-rows b{font-family:var(--f-ui);font-size:12px;color:#7FE0B0}
+.lp-chip{position:absolute;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:rgba(255,255,255,.95);color:#1C2340;box-shadow:0 18px 40px rgba(0,0,0,.35);font-family:var(--f-ui);white-space:nowrap;animation:lpChip .8s both,lpHover 6s ease-in-out infinite;transform:translate(calc(var(--mx) * 22px),calc(var(--my) * 22px))}
+.lp-chip>span{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:17px;background:#F6EEF1}
+.lp-chip b{display:block;font-size:13px;font-weight:700}
+.lp-chip small{font-size:11px;color:#7D879C}
+.lp-chip.c1{top:6%;inset-inline-start:0;animation-delay:1s,1.8s}
+.lp-chip.c2{top:30%;inset-inline-end:-2%;animation-delay:1.3s,2.6s}
+.lp-chip.c3{bottom:14%;inset-inline-start:-2%;animation-delay:1.6s,3.2s}
+.lp-chip.c4{bottom:2%;inset-inline-end:10%;animation-delay:1.9s,2.2s}
+.lp-chip.c4 b{color:#138A5E;font-family:var(--f-display);font-size:16px}
+@keyframes lpChip{from{opacity:0;scale:.6}to{opacity:1;scale:1}}
+@keyframes lpHover{0%,100%{translate:0 0}50%{translate:0 -10px}}
+.lp-scroll-hint{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:28px;height:46px;border-radius:16px;border:2px solid rgba(255,255,255,.35);background:transparent;cursor:pointer;padding:0}
+.lp-scroll-hint span{position:absolute;top:8px;left:50%;width:4px;height:9px;margin-left:-2px;border-radius:4px;background:var(--lp-gold-2);animation:lpWheel 1.8s ease-in-out infinite}
+@keyframes lpWheel{0%{opacity:0;transform:translateY(0)}30%{opacity:1}100%{opacity:0;transform:translateY(16px)}}
+
+/* ---- شريط المنصات ---- */
+.lp-logos{background:#12040A;padding:20px 0 22px;border-top:1px solid rgba(255,255,255,.06)}
+.lp-logos-t{text-align:center;font-family:var(--f-ui);font-size:12px;letter-spacing:.5px;color:rgba(255,255,255,.5);margin-bottom:12px}
+.lp-marquee{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);direction:ltr}
+.lp-track{display:flex;align-items:center;gap:26px;width:max-content;animation:lpMarq 40s linear infinite}
+.lp-marquee:hover .lp-track{animation-play-state:paused}
+.lp-track span{font-family:var(--f-display);font-weight:800;font-size:19px;color:rgba(255,255,255,.72);white-space:nowrap}
+.lp-track i{color:var(--lp-gold);font-style:normal;font-size:12px;opacity:.7}
+@keyframes lpMarq{to{transform:translateX(-50%)}}
+
+/* ---- أقسام عامة ---- */
+.lp-sec{padding:96px 0;position:relative}
+.lp-head{text-align:center;max-width:760px;margin:0 auto 46px}
+.lp-kicker{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-ui);font-size:13px;font-weight:700;color:var(--lp-maroon);letter-spacing:.3px}
+.lp-kicker::before,.lp-kicker::after{content:"";width:26px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--lp-gold))}
+.lp-kicker::after{transform:scaleX(-1)}
+.lp-h2{font-family:var(--f-display);font-weight:900;font-size:clamp(26px,3.6vw,42px);line-height:1.35;margin:10px 0 0;color:var(--ink)}
+.lp-sub{color:var(--ink-2);font-size:16.5px;line-height:1.95;margin:14px auto 0}
+.lp-ico{flex:none;width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:23px;background:linear-gradient(135deg,#FFF3DD,#FBE3EA);box-shadow:inset 0 0 0 1px rgba(138,21,56,.08)}
+.lp-ico.big{width:60px;height:60px;font-size:28px;border-radius:18px}
+.rv{opacity:0;transform:translateY(34px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0) * 90ms)}
+.rv.in{opacity:1;transform:none}
+.lp.played .lp-badge,.lp.played .lp-h1,.lp.played .lp-lead,.lp.played .lp-actions,.lp.played .lp-stats,.lp.played .lp-visual,.lp.played .lp-bars i,.lp.played .lp-chip{animation-delay:0s;animation-duration:.01s,6s}
+.lp.played .lp-h1{animation:none}
+.lp.played .lp-line path{animation:none;stroke-dashoffset:0}
+
+/* نبذة */
+.lp-about{background:var(--lp-cream)}
+.lp-about-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+.lp-about .lp-head{text-align:start;margin:0}
+.lp-about .lp-kicker::before{display:none}
+.lp-pillars{display:grid;gap:14px}
+.lp-pillar{display:flex;gap:16px;align-items:flex-start;padding:20px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 30px rgba(28,35,64,.06);transition:transform .25s,box-shadow .25s}
+.lp-pillar:hover{transform:translateX(-6px);box-shadow:0 16px 36px rgba(138,21,56,.12)}
+.lp-pillar b{font-family:var(--f-display);font-size:18px}
+.lp-pillar p,.lp-out-card p,.lp-aud-card p,.lp-step-card p{margin:4px 0 0;color:var(--ink-2);font-size:14.5px;line-height:1.8}
+
+/* الأهداف */
+.lp-obj{background:var(--surface)}
+.lp-obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.lp-obj-card{position:relative;padding:24px 22px 22px;border-radius:22px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--line);overflow:hidden;transition:transform .3s,border-color .3s,box-shadow .3s}
+.lp-obj-card::before{content:"";position:absolute;inset-inline-start:0;top:0;height:3px;width:0;background:linear-gradient(90deg,var(--lp-maroon),var(--lp-gold));transition:width .5s}
+.lp-obj-card:hover{transform:translateY(-6px);border-color:rgba(138,21,56,.25);box-shadow:0 20px 40px rgba(138,21,56,.1)}
+.lp-obj-card:hover::before{width:100%}
+.lp-obj-n{font-family:var(--f-display);font-weight:900;font-size:40px;line-height:1;background:linear-gradient(135deg,var(--lp-maroon),var(--lp-gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;opacity:.9}
+.lp-obj-card p{margin:12px 0 0;font-size:15.5px;line-height:1.85;color:var(--ink)}
+
+/* المزايا (داكن) */
+.lp-feat{background:linear-gradient(180deg,#1C0710,#2A0A18);color:#fff;overflow:hidden}
+.lp-feat::before{content:"";position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(176,32,78,.45),transparent 65%);top:-200px;inset-inline-end:-200px}
+.lp-feat .lp-h2.light{color:#fff}.lp-feat .lp-sub{color:rgba(255,255,255,.7)}.lp-feat .lp-kicker{color:var(--lp-gold-2)}
+.lp-feat-grid{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.lp-feat-card{padding:28px 24px;border-radius:24px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px);transition:transform .3s,border-color .3s,background .3s}
+.lp-feat-card:hover{transform:translateY(-8px);border-color:rgba(255,217,138,.45);background:linear-gradient(160deg,rgba(255,217,138,.12),rgba(255,255,255,.03))}
+.lp-feat-card .lp-ico{background:linear-gradient(135deg,rgba(255,217,138,.2),rgba(176,32,78,.3));box-shadow:inset 0 0 0 1px rgba(255,217,138,.25)}
+.lp-feat-card h3{font-family:var(--f-display);font-size:19px;color:#fff;margin:18px 0 6px}
+.lp-feat-card p{margin:0;color:rgba(255,255,255,.7);font-size:14.5px;line-height:1.85}
+
+/* المحتوى */
+.lp-content{background:var(--lp-cream)}
+.lp-units{display:grid;grid-template-columns:300px minmax(0,1fr);gap:22px;align-items:start}
+.lp-unit-tabs{display:flex;flex-direction:column;gap:8px;position:sticky;top:84px}
+.lp-unit-tab{text-align:start;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink);transition:all .25s;position:relative;overflow:hidden}
+.lp-unit-tab small{display:block;font-family:var(--f-ui);font-size:11.5px;color:var(--lp-maroon);font-weight:700}
+.lp-unit-tab b{font-family:var(--f-display);font-size:15px;line-height:1.5}
+.lp-unit-tab:hover{border-color:rgba(138,21,56,.3)}
+.lp-unit-tab.on{background:linear-gradient(135deg,var(--lp-maroon),#5A0E26);color:#fff;border-color:transparent;box-shadow:0 14px 30px rgba(138,21,56,.3)}
+.lp-unit-tab.on small{color:var(--lp-gold-2)}
+.lp-unit-pane{display:grid;gap:14px}
+.lp-axis{display:flex;gap:16px;padding:20px;border-radius:20px;background:var(--surface);border:1px solid var(--line);border-inline-start:4px solid var(--ac);box-shadow:0 10px 26px rgba(28,35,64,.05);animation:lpUp .5s calc(var(--i) * 80ms) both}
+.lp-axis-ico{flex:none;width:50px;height:50px;border-radius:15px;display:grid;place-items:center}
+.lp-axis b{font-family:var(--f-display);font-size:17px;display:block}
+.lp-axis small{display:block;font-family:var(--f-ui);color:var(--ink-3);font-size:12.5px}
+.lp-axis p{margin:6px 0 0;color:var(--ink-2);font-size:14.5px;line-height:1.8}
+.lp-axis-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lp-axis-meta span{font-family:var(--f-ui);font-size:12px;padding:3px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2)}
+
+/* الرحلة */
+.lp-journey{background:var(--surface)}
+.lp-timeline{position:relative;max-width:880px;margin:0 auto;--prog:0}
+.lp-tl-line{position:absolute;top:0;bottom:0;left:50%;width:3px;margin-left:-1.5px;background:var(--line);border-radius:3px}
+.lp-tl-line i{position:absolute;top:0;left:0;right:0;height:calc(var(--prog) * 100%);background:linear-gradient(180deg,var(--lp-maroon),var(--lp-gold));border-radius:3px;box-shadow:0 0 12px rgba(226,178,74,.6);transition:height .15s linear}
+.lp-step{position:relative;display:grid;grid-template-columns:1fr 64px 1fr;align-items:center;margin-bottom:22px}
+.lp-step-dot{grid-column:2;justify-self:center;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:var(--surface);border:3px solid var(--lp-gold);box-shadow:0 0 0 6px var(--surface),0 10px 24px rgba(138,21,56,.2);z-index:1}
+.lp-step-card{grid-row:1;padding:18px 20px;border-radius:20px;background:var(--surface-2);border:1px solid var(--line);position:relative;transition:transform .3s,box-shadow .3s}
+.lp-step-card:hover{transform:translateY(-4px);box-shadow:0 16px 34px rgba(28,35,64,.08)}
+.lp-step:nth-child(even) .lp-step-card{grid-column:1}
+.lp-step:nth-child(odd) .lp-step-card{grid-column:3}
+.lp-step-n{font-family:var(--f-display);font-weight:900;font-size:13px;color:var(--lp-gold);letter-spacing:1px}
+.lp-step-card b{display:block;font-family:var(--f-display);font-size:17.5px;margin-top:2px}
+
+/* المخرجات */
+.lp-out{background:linear-gradient(180deg,var(--lp-cream),var(--surface))}
+.lp-out-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.lp-out-card{position:relative;display:flex;gap:14px;align-items:flex-start;padding:22px;border-radius:22px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 26px rgba(28,35,64,.05);transition:transform .3s,box-shadow .3s}
+.lp-out-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(138,21,56,.12)}
+.lp-out-card b{font-family:var(--f-display);font-size:17px}
+.lp-check{position:absolute;top:14px;inset-inline-end:14px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;background:#138A5E;transform:scale(0);transition:transform .4s .3s cubic-bezier(.3,1.6,.5,1)}
+.lp-out-card.in .lp-check{transform:scale(1)}
+
+/* الفئة المستهدفة */
+.lp-aud{background:var(--surface)}
+.lp-aud-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.lp-aud-card{text-align:center;padding:28px 20px;border-radius:24px;background:var(--surface-2);border:1px solid var(--line);transition:transform .3s,box-shadow .3s}
+.lp-aud-card .lp-ico{margin:0 auto 14px}
+.lp-aud-card b{font-family:var(--f-display);font-size:16.5px;display:block}
+.lp-aud-card:hover{transform:translateY(-6px) rotate(-.5deg);box-shadow:0 18px 36px rgba(28,35,64,.1)}
+
+/* الختام */
+.lp-final{position:relative;isolation:isolate;padding:100px 0;text-align:center;color:#fff;background:radial-gradient(90% 120% at 50% 0%,#7A1434,#1C0710 70%)}
+.lp-final h2{font-family:var(--f-display);font-weight:900;font-size:clamp(28px,4vw,46px);color:#fff;margin:0}
+.lp-final p{color:rgba(255,255,255,.75);font-size:17px;margin:12px auto 30px;max-width:600px}
+
+/* الوضع الليلي */
+html[data-theme="dark"] .lp{--lp-cream:#151923}
+html[data-theme="dark"] .lp-kicker{color:#FF9DB8}
+html[data-theme="dark"] .lp-ico{background:linear-gradient(135deg,#3A2A14,#3A1622)}
+html[data-theme="dark"] .lp-unit-tab small{color:#FF9DB8}
+html[data-theme="dark"] .lp-unit-tab.on small{color:var(--lp-gold-2)}
+
+/* الجوال */
+@media (max-width:900px){
+  .lp-hero{min-height:0;padding:34px 0 80px}
+  .lp-hero-in{grid-template-columns:minmax(0,1fr);gap:10px}
+  .lp-visual{height:360px;order:-1;max-width:420px;width:100%;margin:0 auto}
+  .lp-orbit span:nth-child(1){width:320px;height:320px}.lp-orbit span:nth-child(2){width:230px;height:230px}
+  .lp-device{width:240px}
+  .lp-bars{height:70px}
+  .lp-chip{padding:8px 10px;gap:8px}.lp-chip>span{width:28px;height:28px;font-size:14px}.lp-chip b{font-size:12px}.lp-chip small{font-size:10px}
+  .lp-chip.c2{inset-inline-end:0}.lp-chip.c3{inset-inline-start:0}
+  .lp-about-in,.lp-units{grid-template-columns:minmax(0,1fr)}
+  .lp-unit-tabs{position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+  .lp-unit-tabs::-webkit-scrollbar{display:none}
+  .lp-unit-tab{flex:none;max-width:230px}
+  .lp-feat-grid,.lp-out-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lp-aud-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .lp-sec{padding:64px 0}
+  .lp-head{margin-bottom:30px}
+  .lp-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lp-actions .lp-btn{flex:1 1 100%;justify-content:center}
+  .lp-feat-grid,.lp-out-grid,.lp-aud-grid{grid-template-columns:minmax(0,1fr)}
+  .lp-tl-line{left:auto;right:27px;margin:0}
+  .lp-step{grid-template-columns:56px minmax(0,1fr);gap:14px}
+  .lp-step-dot{grid-column:1}
+  .lp-step:nth-child(n) .lp-step-card{grid-column:2}
+  .lp-axis{flex-direction:column;gap:10px}
+  .lp-scroll-hint{display:none}
+}
+html[data-motion="reduce"] .rv{opacity:1;transform:none}
+html[data-motion="reduce"] .lp-line path{stroke-dashoffset:0}
+
+/* نافذة الدخول */
+.login-modal{max-width:640px!important;padding:0!important;overflow:auto}
+.login-pop{padding:0 24px 24px}
+.lpop-head{display:flex;align-items:center;gap:14px;margin:0 -24px 16px;padding:20px 24px;background:linear-gradient(135deg,#1C0710,#6B1330);color:#fff;position:sticky;top:0;z-index:2}
+.lpop-head .sec-kicker{color:#FFD98A}
+.lpop-head h3{color:#fff;font-size:18px;margin:2px 0 0;line-height:1.45}
+.lpop-ico{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#F6D27A,#C98F22)}
+.lpop-x{margin-inline-start:auto;flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:15px}
+.lpop-x:hover{background:rgba(255,255,255,.2)}
+.lp-obj-grid{display:flex;flex-wrap:wrap;justify-content:center}
+.lp-obj-card{flex:1 1 240px;max-width:262px}
+main.wrap:has(> .lp)+.footer{margin-top:0}
+@media (max-width:900px){
+  .lp-visual{order:0;height:320px;margin-top:26px}
+  .lp-obj-card{max-width:none}
+}
+@media (max-width:640px){
+  .lp-feat-card,.lp-aud-card{display:grid;grid-template-columns:52px minmax(0,1fr);column-gap:14px;text-align:start;padding:18px}
+  .lp-feat-card .lp-ico,.lp-aud-card .lp-ico{grid-row:span 2;width:52px;height:52px;font-size:24px;margin:0}
+  .lp-feat-card h3{margin:2px 0 2px;font-size:17px}
+  .lp-aud-card b{align-self:end}
+  .lp-final{padding:70px 0}
+  .lp-btn.big{font-size:17px;padding:16px 24px}
+}
+
 </style>
 </head>
 <body>
@@ -2004,7 +2268,9 @@ const Layout = {
       '<div class="brand" data-go="home"><div class="brand-logo">' + iconSvg('store', 22, '#fff', 2.2) + '</div><div class="brand-text"><div class="brand-title" id="brandTitle">' + h(s.headerTitle) + '</div><div class="brand-sub">' + h(s.headerSub) + '</div></div></div>' +
       '<div class="top-actions">' +
       (me ? '<div class="user-chip" title="' + h(me.name) + '"><span class="av">' + h(initials(me.name)) + '</span><span class="nm">' + h(me.name) + '</span></div><button class="btn btn-soft btn-sm" data-go="account">' + iconSvg('user', 16) + '<span class="lbl">حسابي</span></button>' : (Me.guest ? '<span class="pill">👀 زائر</span>' : '')) +
-      '<button class="btn btn-ghost btn-sm" data-act="switch-user" title="تبديل المستخدم / تسجيل مستخدم جديد">' + iconSvg('users', 16) + '<span class="lbl">تبديل المستخدم</span></button>' +
+      (!me && !Me.guest ? '<button class="btn btn-primary btn-sm top-cta" data-act="open-login"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">الدخول</span> <span class="lp-arrow">←</span></button>' :
+        (App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '') +
+        '<button class="btn btn-ghost btn-sm" data-act="switch-user" title="تسجيل مستخدم جديد (يعيدك إلى الصفحة التعريفية)">' + iconSvg('users', 16) + '<span class="lbl">مستخدم جديد</span></button>') +
       '<button class="btn btn-ghost btn-sm notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض">Aa</button>' +
       Translate.button() +
       '<button class="icon-btn" data-act="admin-enter" title="لوحة الإدارة">' + iconSvg('gear', 18) + '</button>' +
@@ -2262,22 +2528,6 @@ const ImgPick = {
 // الشاشات العامة: الدخول، الرئيسية، المحور، التمرين، المختبر، حسابي
 // ---------------------------------------------------------------------
 const Views = {};
-
-// ============ شاشة الدخول ============
-Views.login = {
-  html() {
-    const pv = Content.privacy();
-    return '<div class="login"><div class="login-art">' + Scenes.render('hero') + '</div><div class="login-form">' +
-      '<span class="sec-kicker">أهلًا بك في البرنامج التدريبي</span><h1>' + h(Content.site().heroTitle) + '</h1><p class="muted">سجّل لتشارك في التقييمات والتمارين الحية وترى مشاركات زملائك لحظيًا، وتتابع إنجازك وحضورك وشهادتك.</p>' +
-      '<div class="reg-grid">' + RegFields.visible().map(f => RegFields.input(f, '', 'reg_')).join('') + '</div>' +
-      '<label class="consent"><input type="checkbox" id="regConsent" data-keep="reg-consent"> <span>' + h(pv.consent) + ' — <a href="#" data-act="privacy-show">اقرأ إشعار الخصوصية</a></span></label>' +
-      '<label class="consent"><input type="checkbox" id="regFollow" data-keep="reg-follow"> <span>' + h(pv.followup) + ' <span class="muted">(اختياري)</span></span></label>' +
-      '<button class="btn btn-primary btn-block" data-act="register">ابدأ 🚀</button>' +
-      '<button class="btn btn-mint btn-block" style="margin-top:10px" data-act="member-login">مسجّل مسبقًا؟ الدخول برقم العضوية</button>' +
-      '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button>' +
-      '</div></div>';
-  }
-};
 
 // ============ الرئيسية ============
 function axisArt(a, big) {
@@ -3267,6 +3517,168 @@ const Present = {
 Views.present = Present;
 
 
+/* ===== 06e-landing.js ===== */
+// ---------------------------------------------------------------------
+// صفحة الهبوط: أول ما يراه الزائر قبل الدخول — نبذة، أهداف، مزايا، محتوى، رحلة، مخرجات
+// النصوص قابلة للتعديل من لوحة الإدارة (site/landing) مع إظهار وإخفاء وترتيب الأقسام
+// العناصر تُكتب سطرًا لكل عنصر بصيغة: أيقونة | عنوان | وصف
+// ---------------------------------------------------------------------
+const LANDING_KEYS = ['hero', 'logos', 'about', 'objectives', 'features', 'content', 'journey', 'outcomes', 'audience', 'cta'];
+const LANDING_NAMES = { hero: 'الواجهة الافتتاحية', logos: 'شريط المنصات والأدوات', about: 'نبذة عن البرنامج', objectives: 'الأهداف', features: 'المزايا', content: 'المحتوى (من المحاور تلقائيًا)', journey: 'مراحل الرحلة', outcomes: 'المخرجات', audience: 'الفئة المستهدفة', cta: 'دعوة الختام' };
+const DEFAULT_LANDING = {
+  hero: { kicker: 'بنك قطر للتنمية · إدارة تنمية ريادة الأعمال', title: '', sub: 'برنامج تطبيقي مكثّف يأخذ مشروعك من اختيار المنصة المناسبة إلى متجر إلكتروني يبيع داخل قطر وخارجها — بالدفع الآمن، والتوصيل الذكي، والتسويق المبني على البيانات، والعمليات القابلة للتوسع.', cta: 'الدخول للمنصة التعليمية', cta2: 'اكتشف البرنامج' },
+  logos: { title: 'منصات وأدوات ستتعامل معها', items: 'Shopify\nWooCommerce\nسلة\nزد\nNoon\nAmazon\nسنونو\nQPay\nSkipCash\nTap\nMyFatoorah\nStripe\nPayPal\nAramex\nDHL\nGoogle Analytics\nMeta Ads\nTikTok Shop' },
+  about: { kicker: 'نبذة عن البرنامج', title: 'من فكرة متجر… إلى نموٍّ قابل للتوسع', sub: 'صُمّم البرنامج لأصحاب المشاريع الصغيرة والمتوسطة في مختلف مراحل نضجهم الرقمي. يركّز على التطبيق قبل النظرية: كل مفهوم يتحول إلى تمرين حي أو محاكاة أو قرار على مشروعك الحقيقي، لتخرج بأدوات عملية وخارطة طريق واضحة لتسريع مبيعاتك الإلكترونية.',
+    items: '🎯 | تطبيقي أولًا | عروض قصيرة يتبعها تطبيق فوري على حالات ومشاريع حقيقية\n🇶🇦 | مصمم للسوق القطري | بوابات دفع محلية، شركاء توصيل، وقصص نجاح من قطر والخليج\n📈 | يقيس أثره | تقييم قبلي وبعدي يكشف مقدار تقدمك بالأرقام' },
+  objectives: { kicker: 'أهداف البرنامج', title: 'ماذا ستُتقن بنهاية البرنامج؟', sub: '', items: '' },
+  features: { kicker: 'مزايا التجربة', title: 'تجربة تعلّم تفاعلية لا تشبه القاعات التقليدية', sub: 'منصة تعليمية حية تعمل من جوالك طوال البرنامج وبعده.',
+    items: '⚡ | تمارين حية ونتائج لحظية | صوّت وأجب وشاهد إجابات زملائك تظهر مباشرة على شاشة القاعة\n🛠️ | ثلاثة محاكيات تطبيقية | أعدّ متجرك، صمّم صفحة إتمام الشراء، ووزّع ميزانية التسويق\n🌟 | قصص نجاح حقيقية | رفيق وسنونو وسلة وتاب وغيرها — بمصادرها ودروسها\n🧪 | مختبر نمو ختامي | مشروع جماعي بمؤقّت حي يجمع كل المحاور في خطة واحدة\n🧮 | حاسبات وقوالب جاهزة | التكلفة الإجمالية، رسوم الدفع، نقطة إعادة الطلب، CAC وCLV وROAS\n🏅 | نقاط وأوسمة وشهادة | لوحة صدارة تحفيزية وشهادة مشاركة عند إتمام الحضور' },
+  content: { kicker: 'محتوى البرنامج', title: 'وحدات مترابطة تغطي رحلة المتجر كاملة', sub: 'اختر وحدة لترى محاورها.' },
+  journey: { kicker: 'مراحل الرحلة', title: 'رحلتك خطوة بخطوة', sub: '',
+    items: '🧭 | التسجيل والتقييم القبلي | انضم للمنصة وقِس نقطة انطلاقك بعشرة أسئلة تطبيقية\n🏗️ | اليوم الأول: البناء | اختيار المنصة، الدفع الآمن، التنفيذ والشحن داخل قطر وخارجها\n🚀 | اليوم الثاني: النمو | قصص النجاح، التسويق بالبيانات، الأتمتة، التحليلات والذكاء الاصطناعي\n🧪 | مختبر النمو الختامي | فرق عمل تبني خطة نمو متكاملة لحالة واقعية\n🏁 | التقييم البعدي والشهادة | قِس تقدمك واحصل على شهادة المشاركة وخطة عملك الشخصية\n🤝 | متابعة 30/60/90 يومًا | تذكيرات ومتابعة لما طبّقته فعلًا بعد البرنامج' },
+  outcomes: { kicker: 'المخرجات', title: 'ماذا تأخذ معك بعد البرنامج؟', sub: '',
+    items: '🗺️ | قرار منصة مدروس | مصفوفة موزونة وتكلفة تشغيل إجمالية لمشروعك\n💳 | بوابة دفع مناسبة | مقارنة فعلية للرسوم ومدة التسوية ووسائل الدفع المحلية\n🚚 | خطة تنفيذ وشحن | نقطة إعادة الطلب ومسار المرتجعات والتكلفة الواصلة للعميل الدولي\n📣 | خطة تسويق بالأرقام | توزيع ميزانية يُحكم عليه بالعائد وقيمة العميل الدائمة\n⚙️ | إجراءات وأتمتة | إجراء تشغيل قياسي وأول أتمتة لمتجرك\n📄 | خطة عمل شخصية PDF | خطة نمو من خمس ركائز مع برنامج الدعم المناسب من بنك قطر للتنمية' },
+  audience: { kicker: 'لمن هذا البرنامج؟', title: 'صُمّم لمن يريد أن يبيع أونلاين بجدية', sub: '',
+    items: '👤 | أصحاب المشاريع ورواد الأعمال | الساعون للتوسع في المبيعات الإلكترونية\n🤝 | المؤسسون والشركاء المؤسسون | لمشاريع قائمة على المنتجات أو الخدمات\n🏪 | المستعدون لإطلاق متجرهم | من يجهّز لافتتاح واجهته الرقمية الأولى\n👥 | فرق التحول والتسويق والعمليات | المسؤولون عن التحول الرقمي داخل المشروع' },
+  cta: { title: 'جاهز لتسريع متجرك الإلكتروني؟', sub: 'سجّل خلال ثوانٍ باسمك، وابدأ التمارين الحية مع زملائك.', cta: 'الدخول للمنصة التعليمية' }
+};
+const Landing = {
+  raw() { return (Store.site && Store.site.landing) || {}; },
+  sec(k) { const o = Landing.raw()[k] || {}; const s = Object.assign({}, DEFAULT_LANDING[k] || {}, o); s._modified = !!Landing.raw()[k]; return s; },
+  hidden(k) { return !!((Landing.raw()._hidden || {})[k]); },
+  order() { const saved = arr(Landing.raw()._order).filter(k => LANDING_KEYS.indexOf(k) > -1); return saved.concat(LANDING_KEYS.filter(k => saved.indexOf(k) === -1)); },
+  items(s, k) {
+    let txt = s.items;
+    if (k === 'objectives' && !String(txt || '').trim()) return Content.guide().objectives.map((t, i) => ({ icon: String(i + 1), title: t, desc: '' }));
+    return String(txt || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => { const p = l.split('|').map(x => x.trim()); return p.length === 1 ? { icon: '', title: p[0], desc: '' } : { icon: p[0], title: p[1] || '', desc: p.slice(2).join(' | ') }; });
+  },
+  objectivesText() { return Content.guide().objectives.join('\n'); }
+};
+function lpHead(s, light) { return '<div class="lp-head rv">' + (s.kicker ? '<span class="lp-kicker">' + h(s.kicker) + '</span>' : '') + '<h2 class="lp-h2' + (light ? ' light' : '') + '">' + h(s.title || '') + '</h2>' + (s.sub ? '<p class="lp-sub">' + h(s.sub) + '</p>' : '') + '</div>'; }
+function lpCta(label, cls) { return '<button class="lp-btn ' + (cls || '') + '" data-act="' + (Me.isReg() || Me.guest ? 'lp-enter' : 'open-login') + '"><span>' + h(label || 'الدخول للمنصة التعليمية') + '</span><span class="lp-arrow">←</span></button>'; }
+const LandingSections = {
+  hero(s) {
+    const axes = Content.axes(); const units = Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length;
+    const exCount = Content.eligibleAxes().reduce((n, a) => n + Content.exercisesOf(a.id).length, 0);
+    const title = s.title || Content.site().heroTitle;
+    const stat = (n, l) => '<div class="lp-stat"><b class="num" data-count="' + n + '">' + n + '</b><span>' + l + '</span></div>';
+    return '<section class="lp-hero"><div class="lp-aurora"><i></i><i></i><i></i></div><div class="lp-grid-bg"></div>' +
+      '<div class="lp-hero-in"><div class="lp-hero-txt">' + (s.kicker ? '<span class="lp-badge"><span class="dot"></span>' + h(s.kicker) + '</span>' : '') +
+      '<h1 class="lp-h1">' + h(title) + '</h1><p class="lp-lead">' + h(s.sub || '') + '</p>' +
+      '<div class="lp-actions">' + lpCta(s.cta, 'gold') + (s.cta2 ? '<button class="lp-btn ghost" data-act="lp-scroll"><span>' + h(s.cta2) + '</span><span class="lp-arrow down">↓</span></button>' : '') + '</div>' +
+      '<div class="lp-stats">' + stat(units, 'وحدات') + stat(axes.length, 'محورًا') + stat(exCount, 'تمرينًا تفاعليًا') + stat(Content.stories().length, 'قصص نجاح') + '</div></div>' +
+      '<div class="lp-visual" aria-hidden="true"><div class="lp-orbit"><span></span><span></span></div>' +
+      '<div class="lp-device"><div class="lp-dev-top"><i></i><i></i><i></i><b>متجري.qa</b></div><div class="lp-dev-body">' +
+      '<div class="lp-dev-kpis"><div><small>المبيعات</small><b class="num">QAR 48,200</b></div><div><small>التحويل</small><b class="num">3.8%</b></div></div>' +
+      '<div class="lp-bars">' + [38, 52, 45, 64, 58, 76, 70, 92].map((v, i) => '<i style="--h:' + v + '%;--d:' + (i * 0.09).toFixed(2) + 's"></i>').join('') + '</div>' +
+      '<svg class="lp-line" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0 50 C25 44 35 30 60 34 S100 20 120 22 S160 8 200 6" fill="none" stroke="#FFD98A" stroke-width="2.5" stroke-linecap="round"/></svg>' +
+      '<div class="lp-dev-rows"><div><span>🛍️</span><em></em><b class="num">+24</b></div><div><span>🚚</span><em></em><b class="num">98%</b></div></div></div></div>' +
+      '<div class="lp-chip c1"><span>🛒</span><div><b>طلب جديد <span class="num">#1042</span></b><small class="num">QAR 340 · الدوحة</small></div></div>' +
+      '<div class="lp-chip c2"><span>✅</span><div><b>تم الدفع بنجاح</b><small>QPay · Apple Pay</small></div></div>' +
+      '<div class="lp-chip c3"><span>🚚</span><div><b>شحنة في الطريق</b><small>الرياض · <span class="num">48</span> ساعة</small></div></div>' +
+      '<div class="lp-chip c4"><span>📈</span><div><b class="num">+38%</b><small>معدل الإتمام</small></div></div>' +
+      '</div></div><button class="lp-scroll-hint" data-act="lp-scroll" aria-label="انزل للأسفل"><span></span></button></section>';
+  },
+  logos(s) {
+    const it = Landing.items(s, 'logos'); if (!it.length) return '';
+    const row = it.map(x => '<span class="notranslate" translate="no">' + h(x.title) + '</span>').join('<i>✦</i>');
+    return '<section class="lp-logos">' + (s.title ? '<div class="lp-logos-t">' + h(s.title) + '</div>' : '') + '<div class="lp-marquee"><div class="lp-track">' + row + '<i>✦</i>' + row + '<i>✦</i></div></div></section>';
+  },
+  about(s) {
+    const it = Landing.items(s, 'about');
+    return '<section class="lp-sec lp-about"><div class="lp-wrap lp-about-in"><div>' + lpHead(s) + '</div><div class="lp-pillars">' + it.map((x, i) => '<div class="lp-pillar rv" style="--i:' + i + '"><span class="lp-ico">' + h(x.icon) + '</span><div><b>' + h(x.title) + '</b><p>' + h(x.desc) + '</p></div></div>').join('') + '</div></div></section>';
+  },
+  objectives(s) {
+    const it = Landing.items(s, 'objectives'); if (!it.length) return '';
+    return '<section class="lp-sec lp-obj"><div class="lp-wrap">' + lpHead(s) + '<div class="lp-obj-grid">' + it.map((x, i) => '<div class="lp-obj-card rv" style="--i:' + (i % 4) + '"><span class="lp-obj-n num">' + String(i + 1).padStart(2, '0') + '</span><p>' + (x.icon && !/^\d+$/.test(x.icon) ? h(x.icon) + ' ' : '') + h(x.title) + (x.desc ? ' — <span class="muted">' + h(x.desc) + '</span>' : '') + '</p></div>').join('') + '</div></div></section>';
+  },
+  features(s) {
+    const it = Landing.items(s, 'features');
+    return '<section class="lp-sec lp-feat"><div class="lp-wrap">' + lpHead(s, true) + '<div class="lp-feat-grid">' + it.map((x, i) => '<div class="lp-feat-card rv" style="--i:' + (i % 3) + '"><span class="lp-ico big">' + h(x.icon) + '</span><h3>' + h(x.title) + '</h3><p>' + h(x.desc) + '</p></div>').join('') + '</div></div></section>';
+  },
+  content(s) {
+    const axes = Content.axes(); if (!axes.length) return '';
+    const groups = []; axes.forEach(a => { let g = groups.find(x => x.unit === a.unit); if (!g) { g = { unit: a.unit, axes: [] }; groups.push(g); } g.axes.push(a); });
+    const cur = Math.min(groups.length - 1, Math.max(0, UIState.lpUnit || 0)); const g = groups[cur];
+    return '<section class="lp-sec lp-content"><div class="lp-wrap">' + lpHead(s) + '<div class="lp-units rv"><div class="lp-unit-tabs" role="tablist">' + groups.map((x, i) => '<button role="tab" class="lp-unit-tab ' + (i === cur ? 'on' : '') + '" data-act="lp-unit" data-i="' + i + '"><small>' + h(Content.unitKicker(x.unit) || 'محاور إضافية') + '</small><b>' + h(Content.unitName(x.unit) || 'محاور أُضيفت للبرنامج') + '</b></button>').join('') + '</div>' +
+      '<div class="lp-unit-pane" id="lpUnitPane">' + g.axes.map((a, i) => { const col = Content.color(a); return '<div class="lp-axis" style="--ac:' + col + ';--i:' + i + '"><span class="lp-axis-ico" style="background:linear-gradient(135deg,' + col + ',' + shade(col, -0.35) + ')">' + iconSvg(a.icon || 'star', 22, '#fff', 1.9) + '</span><div><b>' + h(a.title) + '</b>' + (a.classic ? '<small>' + h(a.classic) + '</small>' : '') + '<p>' + h(clip(stripHtml(a.desc || ''), 150)) + '</p><div class="lp-axis-meta"><span>🎞️ <span class="num">' + a.slides.length + '</span> شريحة</span><span>✍️ <span class="num">' + Content.exercisesOf(a.id).length + '</span> تمرين</span>' + (a.duration ? '<span>⏱ ' + h(a.duration) + '</span>' : '') + '</div></div></div>'; }).join('') + '</div></div></div></section>';
+  },
+  journey(s) {
+    const it = Landing.items(s, 'journey'); if (!it.length) return '';
+    return '<section class="lp-sec lp-journey"><div class="lp-wrap">' + lpHead(s) + '<div class="lp-timeline"><div class="lp-tl-line"><i></i></div>' + it.map((x, i) => '<div class="lp-step rv" style="--i:' + i + '"><div class="lp-step-dot"><span>' + h(x.icon) + '</span></div><div class="lp-step-card"><span class="lp-step-n num">' + String(i + 1).padStart(2, '0') + '</span><b>' + h(x.title) + '</b><p>' + h(x.desc) + '</p></div></div>').join('') + '</div></div></section>';
+  },
+  outcomes(s) {
+    const it = Landing.items(s, 'outcomes'); if (!it.length) return '';
+    return '<section class="lp-sec lp-out"><div class="lp-wrap">' + lpHead(s) + '<div class="lp-out-grid">' + it.map((x, i) => '<div class="lp-out-card rv" style="--i:' + (i % 3) + '"><span class="lp-ico">' + h(x.icon) + '</span><div><b>' + h(x.title) + '</b><p>' + h(x.desc) + '</p></div><span class="lp-check">✓</span></div>').join('') + '</div></div></section>';
+  },
+  audience(s) {
+    const it = Landing.items(s, 'audience'); if (!it.length) return '';
+    return '<section class="lp-sec lp-aud"><div class="lp-wrap">' + lpHead(s) + '<div class="lp-aud-grid">' + it.map((x, i) => '<div class="lp-aud-card rv" style="--i:' + i + '"><span class="lp-ico big">' + h(x.icon) + '</span><b>' + h(x.title) + '</b><p>' + h(x.desc) + '</p></div>').join('') + '</div></div></section>';
+  },
+  cta(s) {
+    return '<section class="lp-final"><div class="lp-aurora"><i></i><i></i><i></i></div><div class="lp-wrap lp-final-in rv"><h2>' + h(s.title || '') + '</h2>' + (s.sub ? '<p>' + h(s.sub) + '</p>' : '') + lpCta(s.cta, 'gold big') + '</div></section>';
+  }
+};
+Views.landing = {
+  html() {
+    let out = '<div class="lp' + (Views.landing._played ? ' played' : '') + '">';
+    Landing.order().forEach(k => { if (Landing.hidden(k) || !LandingSections[k]) return; try { out += LandingSections[k](Landing.sec(k)); } catch (e) { console.error(e); } });
+    return out + '</div>';
+  },
+  after(root) {
+    const L = Views.landing; const seen = L._seen || (L._seen = new Set());
+    setTimeout(() => { L._played = true; }, 2500); // بعد أول عرض لا تتكرر حركات الدخول عند إعادة الرسم
+    const els = $$('.lp .rv', root); els.forEach((e, i) => { e.setAttribute('data-rv', i); if (seen.has(i)) e.classList.add('in'); });
+    const reduce = document.documentElement.getAttribute('data-motion') === 'reduce';
+    if (reduce || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); }
+    else {
+      if (L._io) L._io.disconnect();
+      const io = L._io = new IntersectionObserver(en => en.forEach(x => { if (x.isIntersecting) { x.target.classList.add('in'); seen.add(+x.target.getAttribute('data-rv')); io.unobserve(x.target); } }), { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      els.forEach(e => { if (!e.classList.contains('in')) io.observe(e); });
+    }
+    // خط الرحلة يمتد مع التمرير
+    const tl = $('.lp-timeline', root);
+    if (tl && !Views.landing._scrollBound) {
+      Views.landing._scrollBound = true;
+      window.addEventListener('scroll', () => { const t = document.querySelector('.lp-timeline'); if (!t) return; const r = t.getBoundingClientRect(); const p = Math.max(0, Math.min(1, (innerHeight * 0.7 - r.top) / r.height)); t.style.setProperty('--prog', p.toFixed(3)); }, { passive: true });
+    }
+    // عدّاد الأرقام مرة واحدة
+    if (!reduce && !L._played && !L._counted) {
+      L._counted = true;
+      $$('.lp-stat b[data-count]', root).forEach(b => { const n = +b.getAttribute('data-count'); const t0 = performance.now(); const step = t => { const p = Math.min(1, (t - t0) / 1400); b.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); }; b.textContent = '0'; requestAnimationFrame(step); });
+    }
+    // حركة خفيفة للبطاقات العائمة مع المؤشر
+    const vis = $('.lp-visual', root);
+    if (vis && !reduce && !vis._bound) { vis._bound = true; const hero = vis.closest('.lp-hero'); hero.addEventListener('mousemove', e => { const r = hero.getBoundingClientRect(); vis.style.setProperty('--mx', ((e.clientX - r.left) / r.width - 0.5).toFixed(3)); vis.style.setProperty('--my', ((e.clientY - r.top) / r.height - 0.5).toFixed(3)); }); }
+  }
+};
+
+// ---------- نافذة الدخول (نموذج التسجيل الحالي داخل نافذة منبثقة) ----------
+function loginFormHtml() {
+  const pv = Content.privacy();
+  return '<div class="login-pop"><div class="lpop-head"><span class="lpop-ico">' + iconSvg('store', 24, '#fff', 2.1) + '</span><div><span class="sec-kicker">أهلًا بك في البرنامج التدريبي</span><h3>' + h(Content.site().heroTitle) + '</h3></div><button class="lpop-x" data-x aria-label="إغلاق">✕</button></div>' +
+    '<p class="muted" style="margin-top:0">سجّل لتشارك في التقييمات والتمارين الحية وترى مشاركات زملائك لحظيًا، وتتابع إنجازك وحضورك وشهادتك.</p>' +
+    '<div class="reg-grid">' + RegFields.visible().map(f => RegFields.input(f, '', 'reg_')).join('') + '</div>' +
+    '<label class="consent"><input type="checkbox" id="regConsent"> <span>' + h(pv.consent) + ' — <a href="#" data-act="privacy-show">اقرأ إشعار الخصوصية</a></span></label>' +
+    '<label class="consent"><input type="checkbox" id="regFollow"> <span>' + h(pv.followup) + ' <span class="muted">(اختياري)</span></span></label>' +
+    '<button class="btn btn-primary btn-block" data-act="register">ابدأ 🚀</button>' +
+    '<button class="btn btn-mint btn-block" style="margin-top:10px" data-act="member-login">مسجّل مسبقًا؟ الدخول برقم العضوية</button>' +
+    '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button></div>';
+}
+const LoginModal = {
+  m: null,
+  open() {
+    if (LoginModal.m) return;
+    LoginModal.m = UI.modal(loginFormHtml(), { wide: true, onClose: () => { LoginModal.m = null; } });
+    LoginModal.m.el.classList.add('login-modal');
+    $('[data-x]', LoginModal.m.el).onclick = () => LoginModal.close();
+    // الأزرار داخل النافذة تمر عبر معالج النقرات العام (المستمع على المستند)
+    const first = $('input,select', LoginModal.m.el); if (first) setTimeout(() => { try { first.focus({ preventScroll: true }); } catch (e) {} }, 60);
+  },
+  close() { if (LoginModal.m) { const m = LoginModal.m; LoginModal.m = null; m.close(); } }
+};
+
+
 /* ===== 07-admin.js ===== */
 // ---------------------------------------------------------------------
 // لوحة الأدمن — شاشة واحدة متصلة + نماذج الإنشاء/التعديل
@@ -3396,6 +3808,8 @@ Views.admin = {
     out += band('واجهة الصفحة الرئيسية', '#C8702A');
     const accH = UIState.openAcc.has('home-ui');
     out += '<div class="acc ' + (accH ? 'open' : '') + '" style="--ac:#C8702A;--acg:' + tint('#C8702A', .08) + '"><div class="acc-head" data-act="acc" data-k="home-ui"><span class="aico">' + iconSvg('home', 20, '#fff') + '</span><h3>تعديل الشريط العلوي والقسم البارز والتذييل وعدد المسجّلين</h3><span class="arrow">◀</span></div><div class="acc-body">' + (accH ? Views.admin.homeEditor() : '') + '</div></div>';
+    const accL = UIState.openAcc.has('landing');
+    out += '<div class="acc ' + (accL ? 'open' : '') + '" style="--ac:#8A1538;--acg:' + tint('#8A1538', .08) + '"><div class="acc-head" data-act="acc" data-k="landing"><span class="aico">🛬</span><h3>الصفحة التعريفية (قبل الدخول) — نبذة، أهداف، مزايا، محتوى، رحلة، مخرجات</h3><span class="arrow">◀</span></div><div class="acc-body">' + (accL ? Views.admin.landingEditor() : '') + '</div></div>';
     const accS = UIState.openAcc.has('home-secs');
     out += '<div class="acc ' + (accS ? 'open' : '') + '" style="--ac:#C8702A;--acg:' + tint('#C8702A', .08) + '"><div class="acc-head" data-act="acc" data-k="home-secs"><span class="aico">' + iconSvg('grid', 20, '#fff') + '</span><h3>أقسام الصفحة الرئيسية — ترتيب، إظهار وإخفاء، تعديل، إضافة وحذف <span class="muted num" style="font-size:12.5px">(' + Content.homeSections({ all: true }).length + ')</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (accS ? Views.admin.sectionsList() : '') + '</div></div>';
     // ---- قصص النجاح ----
@@ -3488,6 +3902,18 @@ Views.admin = {
     let out = '<h4 style="margin:4px 0 8px">نسبة الإجابة الصحيحة لكل سؤال</h4><div class="q-compare">' + A.items.map((it, i) => '<div class="qc-row"><span class="qn num">' + (i + 1) + '</span><span class="grow qc-q">' + h(clip(it.q, 90)) + '</span><span class="qc-bars"><span class="qc-bar pre" style="width:' + (pq[i] || 0) + '%"></span><span class="qc-bar post" style="width:' + (qq[i] || 0) + '%"></span></span><span class="num qc-v">' + (pq[i] == null ? '—' : pq[i] + '%') + ' ← ' + (qq[i] == null ? '—' : qq[i] + '%') + '</span></div>').join('') + '</div><div class="muted" style="font-family:var(--f-ui);font-size:12px;margin-top:4px">■ قبلي (فاتح) · ■ بعدي (داكن)</div>';
     out += '<h4 style="margin:14px 0 8px">النتائج الفردية <span class="pill num">' + uids.length + '</span></h4>' + (uids.length ? '<div class="table-wrap"><table class="att-table"><thead><tr><th>المتدرب</th><th>القبلي</th><th>البعدي</th><th>التغير</th></tr></thead><tbody>' + uids.map(u => { const a = pre[u], b = post[u]; const nm = (a || b).name || ((Store.users || {})[u] || {}).name || ''; return '<tr><td>' + h(nm) + '</td><td class="num">' + (a ? a.score + '/' + n : '—') + '</td><td class="num">' + (b ? b.score + '/' + n : '—') + '</td><td class="num"><b>' + (a && b ? ((b.score - a.score) >= 0 ? '+' : '') + (b.score - a.score) : '—') + '</b></td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="empty">لا توجد إجابات بعد.</div>');
     return out + '<div class="row" style="margin-top:10px"><button class="btn btn-danger btn-xs" data-act="as-clear" data-ph="pre">🧹 مسح نتائج القبلي</button><button class="btn btn-danger btn-xs" data-act="as-clear" data-ph="post">🧹 مسح نتائج البعدي</button></div>';
+  },
+  landingEditor() {
+    const ord = Landing.order(); const F = { kicker: 'السطر الصغير', title: 'العنوان', sub: 'الوصف', cta: 'نص الزر الرئيسي', cta2: 'نص الزر الثانوي' };
+    return '<p class="help muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:0">أول ما يراه الزائر قبل التسجيل، وينتهي بزر «الدخول للمنصة التعليمية» الذي يفتح نموذج التسجيل. العناصر تُكتب سطرًا لكل عنصر بصيغة: <b>أيقونة | عنوان | وصف</b>. قسم «المحتوى» يُبنى تلقائيًا من المحاور والوحدات.</p><div class="row" style="margin-bottom:10px"><button class="btn btn-primary btn-sm" data-go="landing">👁 معاينة الصفحة التعريفية</button></div>' +
+      ord.map((k, i) => { const sc = Landing.sec(k); const hid = Landing.hidden(k); const open = UIState.openDrop.has('lp_' + k);
+        const fields = Object.keys(F).filter(f => f in DEFAULT_LANDING[k]).map(f => '<div class="field"><label>' + F[f] + (k === 'hero' && f === 'title' ? ' (فارغ = عنوان البرنامج)' : '') + '</label>' + (f === 'sub' ? '<textarea rows="3" id="lp_' + k + '_' + f + '" data-keep="lp-' + k + '-' + f + '">' + h(sc[f] || '') + '</textarea>' : '<input id="lp_' + k + '_' + f + '" data-keep="lp-' + k + '-' + f + '" value="' + h(sc[f] || '') + '">') + '</div>').join('') +
+          ('items' in DEFAULT_LANDING[k] ? '<div class="field"><label>' + (k === 'logos' ? 'الأسماء (سطر لكل اسم)' : k === 'objectives' ? 'الأهداف (سطر لكل هدف — فارغ = أهداف دليل المدرب)' : 'العناصر: أيقونة | عنوان | وصف') + '</label><textarea rows="' + (k === 'logos' ? 6 : 7) + '" id="lp_' + k + '_items" data-keep="lp-' + k + '-items" style="font-family:var(--f-ui);font-size:13px">' + h(k === 'objectives' && !sc.items ? '' : sc.items || '') + '</textarea></div>' : '');
+        return '<div class="sec-row" style="flex-wrap:wrap"><span class="grow"><b>' + h(LANDING_NAMES[k]) + '</b>' + (sc._modified ? ' <span class="tag mod">معدّل</span>' : '') + (hid ? ' <span class="tag hid">مخفي</span>' : '') + '</span>' +
+          '<button class="btn btn-ghost btn-xs" data-act="lp-move" data-d="-1" data-k="' + k + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button class="btn btn-ghost btn-xs" data-act="lp-move" data-d="1" data-k="' + k + '" ' + (i === ord.length - 1 ? 'disabled' : '') + '>↓</button>' +
+          '<button class="btn btn-soft btn-xs" data-act="drop" data-k="lp_' + k + '">' + (open ? 'إغلاق' : '✏️ تعديل') + '</button><button class="btn btn-ghost btn-xs" data-act="lp-vis" data-k="' + k + '">' + (hid ? '👁 إظهار' : '🙈 إخفاء') + '</button></div>' +
+          (open ? '<div class="card pad" style="margin:6px 0 12px">' + fields + '<div class="row"><button class="btn btn-primary btn-sm" data-act="lp-save" data-k="' + k + '">💾 حفظ</button>' + (sc._modified ? '<button class="btn btn-ghost btn-sm" data-act="lp-reset" data-k="' + k + '">↺ استرجاع الافتراضي</button>' : '') + '</div></div>' : ''); }).join('') +
+      '<div class="row" style="margin-top:10px"><button class="btn btn-ghost btn-sm" data-act="lp-reset-order">↺ الترتيب الافتراضي</button></div>';
   },
   sectionsList() {
     const list = Content.homeSections({ all: true });
@@ -4356,11 +4782,16 @@ const App = {
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
     const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor';
-    const view = needLogin ? Views.login : (Views[v] || Views.home);
+    const view = needLogin ? Views.landing : (Views[v] || Views.home);
+    App.onLanding = view === Views.landing;
+    if (App.onLanding && !App._wasLanding) { Views.landing._played = false; Views.landing._seen = new Set(); Views.landing._counted = false; } App._wasLanding = App.onLanding;
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
     const html = v === 'present' && view === Views.present ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
       (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
+    // صفحة الهبوط: لا نعيد رسمها إن لم يتغير شيء حتى لا تتكرر الحركات مع كل تحديث للبيانات
+    if (App.onLanding && html === App._lastLanding && root.firstChild) return;
+    App._lastLanding = App.onLanding ? html : null;
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
     $$('[data-filter]', root).forEach(applyFilter);
@@ -4419,7 +4850,7 @@ async function doRegister() {
     await DB.set('users/' + uid, { name, role, f: data.f, member, ts, consent: { privacy: ts, followup: follow } });
     DB.transaction('stats/registered', c => (Number(c) || 0) + 1);
     const me = { uid, name, role, member, ts }; Me.save(me);
-    App.render(); welcomeModal(me);
+    LoginModal.close(); App.render(); window.scrollTo(0, 0); welcomeModal(me);
   } catch (e) { UI.alert('تعذر التسجيل: ' + h(e.message || e)); if (btn) { btn.disabled = false; btn.textContent = 'ابدأ 🚀'; } }
 }
 function privacyModal() { const pv = Content.privacy(); const m = UI.modal('<h3>🔒 إشعار الخصوصية</h3><div style="line-height:1.9">' + richHtml(pv.text) + '</div><div class="actions"><button class="btn btn-primary" data-x>حسنًا</button></div>', { wide: true }); $('[data-x]', m.el).onclick = () => m.close(); }
@@ -4447,7 +4878,7 @@ async function memberLogin() {
   const uid = Object.keys(users).find(u => +users[u].member === num);
   if (!uid) { UI.alert('لم نجد حسابًا بهذا الرقم (ربما حُذف لاحقًا). يُرجى التسجيل من جديد باسمك.', 'رقم غير مطابق'); return; }
   const u = users[uid]; Me.save({ uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || DB.now(), group: u.group || null });
-  UI.toast('مرحبًا بعودتك يا ' + u.name + ' 👋'); App.render();
+  LoginModal.close(); UI.toast('مرحبًا بعودتك يا ' + u.name + ' 👋'); App.render(); window.scrollTo(0, 0);
 }
 
 // ---------- حفظ الإجابات ----------
@@ -4527,7 +4958,11 @@ document.addEventListener('click', async ev => {
   const root = document.getElementById('app');
   switch (act) {
     // ----- عام -----
-    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، ويمكنك تسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تبديل المستخدم' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); } break; }
+    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، وستعود إلى الصفحة التعريفية للبرنامج لتسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تسجيل مستخدم جديد' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); window.scrollTo(0, 0); } break; }
+    case 'open-login': LoginModal.open(); break;
+    case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
+    case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
+    case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
     case 'admin-enter': {
       if (Admin.ok()) { SafeSS.del('ec_preview'); Router.go('admin'); break; }
       const v = await UI.prompt('أدخل الرمز السري للوحة الإدارة', { title: '🔐 لوحة الإدارة', type: 'password', inputmode: 'numeric', ok: 'دخول' });
@@ -4540,7 +4975,7 @@ document.addEventListener('click', async ev => {
     case 'bc-close': SafeLS.set('ec_bc_closed', t.getAttribute('data-id')); App.render(); break;
     case 'register': doRegister(); break;
     case 'member-login': memberLogin(); break;
-    case 'guest': Me.setGuest(); App.render(); break;
+    case 'guest': LoginModal.close(); Me.setGuest(); App.render(); window.scrollTo(0, 0); break;
     case 'open-axis': { const a = Content.axis(id); if (a && a._disabled && !Admin.ctl()) UI.alert('هذا المحور غير متاح بعد — سيُفتح قريبًا.', '⏳ قريبًا'); else Router.go('axis', { id }); break; }
     // ----- التمارين -----
     case 'pick-group': { const g = +t.getAttribute('data-g'); Me.setGroup(g); Object.keys(UIState.draft).forEach(k => { const e = Content.ex(k); if (e && e.mode === 'group') delete UIState.draft[k]; }); UIState.editing = {}; App.render(); break; }
@@ -4724,6 +5159,11 @@ document.addEventListener('click', async ev => {
     case 'sec-copy': { const k = t.getAttribute('data-k'); const cur = ((Store.site || {}).sections || {})[k]; if (!cur) break; await DB.set('site/sections/c' + genId(), Object.assign({}, cur, { title: (cur.title || '') + ' (نسخة)', ts: DB.now() })); UI.toast('🧬 تم نسخ القسم'); break; }
     case 'sec-del': { const k = t.getAttribute('data-k'); if (await UI.confirm('حذف هذا القسم نهائيًا من الصفحة الرئيسية؟', { danger: true, ok: 'حذف' })) DB.update('', { ['site/sections/' + k]: null, ['visibility/home_' + k]: null }); break; }
     case 'sec-reset-order': DB.remove('site/homeOrder'); break;
+    case 'lp-move': { const k = t.getAttribute('data-k'); const ids = Landing.order(); const i = ids.indexOf(k), j = i + (+t.getAttribute('data-d')); if (j < 0 || j >= ids.length) break; [ids[i], ids[j]] = [ids[j], ids[i]]; DB.set('site/landing/_order', ids); break; }
+    case 'lp-vis': { const k = t.getAttribute('data-k'); DB.set('site/landing/_hidden/' + k, Landing.hidden(k) ? null : true); break; }
+    case 'lp-reset-order': DB.remove('site/landing/_order'); break;
+    case 'lp-save': { const k = t.getAttribute('data-k'); const o = {}; ['kicker', 'title', 'sub', 'cta', 'cta2', 'items'].forEach(f => { const el = document.getElementById('lp_' + k + '_' + f); if (el) o[f] = el.value.trim(); }); await DB.set('site/landing/' + k, o); UI.toast('✅ حُفظ قسم «' + LANDING_NAMES[k] + '»'); break; }
+    case 'lp-reset': { const k = t.getAttribute('data-k'); if (await UI.confirm('استرجاع النصوص الافتراضية لقسم «' + LANDING_NAMES[k] + '»؟', { ok: 'استرجاع' })) { DB.remove('site/landing/' + k); $$('[data-keep^="lp-' + k + '-"]').forEach(el => el.removeAttribute('data-keep')); } break; }
     case 'home-layout': DB.set('site/homeLayout', t.getAttribute('data-v')); UI.toast(t.getAttribute('data-v') === 'classic' ? 'عادت الرئيسية إلى التخطيط الطويل' : 'فُعّل تخطيط القائمة الجانبية'); break;
     case 'home-sec': {
       UIState.homeSec = t.getAttribute('data-k'); SafeLS.set('ec_home_sec', UIState.homeSec); App.render();
