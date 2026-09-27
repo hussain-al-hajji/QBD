@@ -11,7 +11,7 @@ const App = {
     if (document.fullscreenElement && document.fullscreenElement.matches && document.fullscreenElement.matches('.deck')) { App._pendingRender = true; return; }
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
-    if (!App.dataReady) { root.innerHTML = connectScreen(); return; }
+    if (!App.dataReady || !AUTH.resolved) { root.innerHTML = connectScreen(); return; }
     const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor' && v !== 'show';
     const view = needLogin ? Views.landing : (Views[v] || Views.home);
     App.onLanding = view === Views.landing;
@@ -211,11 +211,12 @@ document.addEventListener('click', async ev => {
     case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
     case 'admin-enter': {
       if (Admin.ok()) { SafeSS.del('ec_preview'); Router.go('admin'); break; }
+      if (AUTH.enabled) { adminLogin(); break; }
       const v = await UI.prompt('أدخل الرمز السري للوحة الإدارة', { title: '🔐 لوحة الإدارة', type: 'password', inputmode: 'numeric', ok: 'دخول' });
       if (v == null) break; if (v.trim() === ADMIN_PASS) { SafeSS.set('ec_admin', '1'); SafeSS.del('ec_preview'); Router.go('admin'); } else UI.alert('الرمز غير صحيح.');
       break;
     }
-    case 'admin-exit': SafeSS.del('ec_admin'); SafeSS.del('ec_preview'); Router.go('home'); break;
+    case 'admin-exit': SafeSS.del('ec_admin'); SafeSS.del('ec_preview'); if (AUTH.enabled) { AUTH.isAdmin = false; try { await firebase.auth().signOut(); } catch (e) {} } Router.go('home'); break;
     case 'preview': SafeSS.set('ec_preview', '1'); Router.go('home'); break;
     case 'preview-exit': SafeSS.del('ec_preview'); Router.go('admin'); break;
     case 'bc-close': SafeLS.set('ec_bc_closed', t.getAttribute('data-id')); App.render(); break;
@@ -536,11 +537,55 @@ function connectScreen() {
   return '<div class="connect-screen"><div class="cs-box"><div class="cs-spin' + (noLib || err ? ' stop' : '') + '"></div><h2>' + h(Content.site ? (Content.site().headerTitle || '') : '') + '</h2><p>' + msg + '</p>' + (noLib || err || App.slow ? '<button class="btn btn-primary" onclick="location.reload()">↻ إعادة المحاولة</button>' : '') + '</div></div>';
 }
 
+// ---------- دخول المدرب عبر Firebase Authentication ----------
+function authInit() {
+  AUTH.enabled = !DEMO_MODE && !!firebaseConfig.apiKey && typeof firebase !== 'undefined' && typeof firebase.auth === 'function';
+  if (!AUTH.enabled) return;
+  AUTH.resolved = false;
+  firebase.auth().onAuthStateChanged(async u => {
+    AUTH.user = u; let ok = false;
+    if (u) { try { ok = (await DB.get('admins/' + u.uid)) === true; } catch (e) { ok = false; } }
+    AUTH.isAdmin = ok; AUTH.resolved = true; App.render();
+  });
+}
+function authErr(e) {
+  const c = (e && e.code) || '';
+  if (/invalid-credential|wrong-password|user-not-found|invalid-email|invalid-login/.test(c)) return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+  if (/too-many-requests/.test(c)) return 'محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة، أو استخدم «نسيت كلمة المرور».';
+  if (/network-request-failed/.test(c)) return 'تعذر الاتصال بالإنترنت. تحقق من الشبكة ثم أعد المحاولة.';
+  if (/operation-not-allowed/.test(c)) return 'تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase Authentication.';
+  if (/unauthorized-domain/.test(c)) return 'نطاق الموقع غير مضاف إلى Authorized domains في إعدادات Firebase Authentication.';
+  return 'تعذر الدخول: ' + h((e && e.message) || e);
+}
+function adminLogin() {
+  const m = UI.modal('<h3>🔐 دخول المدرب</h3><p class="muted" style="font-family:var(--f-ui);font-size:13px;margin-top:0">لوحة الإدارة متاحة لحسابات المدربين المسجلة في Firebase فقط.</p>' +
+    '<div class="field"><label>البريد الإلكتروني</label><input id="alEmail" type="email" dir="ltr" autocomplete="username"></div>' +
+    '<div class="field"><label>كلمة المرور</label><input id="alPass" type="password" dir="ltr" autocomplete="current-password"></div>' +
+    '<div id="alErr" style="color:#C62F35;font-family:var(--f-ui);font-size:13px;min-height:20px"></div>' +
+    '<div class="actions"><button class="btn btn-primary" data-ok>دخول</button><button class="btn btn-ghost" data-x>إلغاء</button><button class="btn btn-ghost btn-sm" data-reset style="margin-inline-start:auto">نسيت كلمة المرور؟</button></div>');
+  const $e = $('#alEmail', m.el), $p = $('#alPass', m.el), err = t => { $('#alErr', m.el).innerHTML = t; };
+  setTimeout(() => $e.focus(), 50);
+  const go = async () => {
+    const email = $e.value.trim(), pass = $p.value; if (!email || !pass) { err('اكتب البريد الإلكتروني وكلمة المرور.'); return; }
+    const btn = $('[data-ok]', m.el); btn.disabled = true; btn.textContent = 'جارٍ التحقق…'; err('');
+    try {
+      const cred = await firebase.auth().signInWithEmailAndPassword(email, pass);
+      const ok = (await DB.get('admins/' + cred.user.uid)) === true;
+      if (!ok) { await firebase.auth().signOut(); err('هذا الحساب غير مضاف إلى حسابات المدربين (العقدة admins في قاعدة البيانات).<br><span class="num" dir="ltr" style="user-select:all">UID: ' + h(cred.user.uid) + '</span>'); return; }
+      AUTH.user = cred.user; AUTH.isAdmin = true; m.close(); SafeSS.del('ec_preview'); Router.go('admin');
+    } catch (e) { err(authErr(e)); } finally { btn.disabled = false; btn.textContent = 'دخول'; }
+  };
+  $('[data-ok]', m.el).onclick = go; $p.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }); $e.addEventListener('keydown', e => { if (e.key === 'Enter') $p.focus(); });
+  $('[data-x]', m.el).onclick = () => m.close();
+  $('[data-reset]', m.el).onclick = async () => { const email = $e.value.trim(); if (!email) { err('اكتب بريدك الإلكتروني أولًا ثم اضغط «نسيت كلمة المرور».'); return; } try { await firebase.auth().sendPasswordResetEmail(email); err('<span style="color:#138A5E">✉️ أُرسل رابط تعيين كلمة المرور إلى بريدك.</span>'); } catch (e) { err(authErr(e)); } };
+}
+
 // ---------- الإقلاع ----------
 function boot() {
   Me.load();
   Router.cur = Router.parse();
   SafeHist.replace(Router.cur, Router.url(Router.cur));
+  authInit();
   watchAll();
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();

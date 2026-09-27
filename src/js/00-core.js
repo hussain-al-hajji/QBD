@@ -8,15 +8,22 @@
 // 1) إعدادات Firebase — التفعيل الحقيقي يعتمد على وجود databaseURL فقط
 // ---------------------------------------------------------------------
 const firebaseConfig = {
-  databaseURL: "https://qbd-cdbc3-default-rtdb.firebaseio.com/"
+  databaseURL: "https://qbd-cdbc3-default-rtdb.firebaseio.com/",
+  // لتفعيل دخول المدرب بحساب Firebase (Authentication): الصق هنا قيم تطبيق الويب من
+  // Project settings ← Your apps ← Web app ← SDK setup and configuration ← Config
+  apiKey: "",
+  authDomain: "",
+  projectId: ""
 };
+// للاختبار الآلي فقط (محاكاة Firebase): لا يُستخدم في التشغيل العادي
+try { if (window.__FB_TEST_CONFIG) Object.assign(firebaseConfig, window.__FB_TEST_CONFIG); } catch (e) {}
 // ?demo=1 في الرابط يفرض وضع المحاكاة المحلي (للمعاينة دون لمس قاعدة البيانات الحقيقية)
 const FORCE_DEMO = (function () { try { return /[?&]demo=1/.test(location.search); } catch (e) { return false; } })();
 // وضع المحاكاة المحلي فقط عند طلبه صراحةً (?demo=1) أو عند غياب رابط القاعدة. إذا كان الرابط موجودًا
 // فلا انتقال للتخزين المحلي أبدًا — حتى لو تعذر تحميل مكتبة Firebase أو تأخر الاتصال (يُعرض تنبيه وإعادة محاولة).
 const DEMO_MODE = FORCE_DEMO || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('PASTE') !== -1;
 
-const ADMIN_PASS = '3719';
+const ADMIN_PASS = '3719'; // يُستخدم فقط في وضع المعاينة أو قبل تفعيل Firebase Authentication (عند غياب apiKey)
 const BADGE_THRESHOLD = 0.8;          // 80% لفتح الوسام وتهنئة الإنجاز
 const CONGRATS_DAYS_DEFAULT = 3;      // مدة بقاء التهنئة بعد انتهاء البرنامج
 const MEMBER_NO_FLOOR = 0;            // حد أدنى صريح لرقم العضوية
@@ -128,7 +135,7 @@ const DB = (function () {
       const fail = () => Promise.reject(new Error('تعذر تحميل مكتبة الاتصال بقاعدة البيانات'));
       return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, now() { return Date.now(); } };
     }
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(Object.fromEntries(Object.entries(firebaseConfig).filter(([, v]) => v)));
     const db = firebase.database();
     let offset = 0;
     db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });

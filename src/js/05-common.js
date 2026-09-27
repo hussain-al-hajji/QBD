@@ -2,8 +2,10 @@
 // الموجّه (History API) + الهيكل العام + مكوّنات مشتركة
 // ---------------------------------------------------------------------
 const UIState = { deck: {}, openAcc: new Set(), openDrop: new Set(), draft: {}, fbSel: {}, editing: {}, modelShown: {}, bellOpen: false };
+// دخول المدرب: بحساب Firebase Authentication عند تفعيله (والتحقق من عقدة admins/<uid>)، وإلا بالرمز السري في المعاينة
+const AUTH = { enabled: false, resolved: true, user: null, isAdmin: false };
 const Admin = {
-  ok() { return SafeSS.get('ec_admin') === '1'; },
+  ok() { return AUTH.enabled ? AUTH.isAdmin : SafeSS.get('ec_admin') === '1'; },
   preview() { return SafeSS.get('ec_preview') === '1'; },
   ctl() { return Admin.ok() && !Admin.preview(); }
 };

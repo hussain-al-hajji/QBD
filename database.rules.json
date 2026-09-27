@@ -2,8 +2,133 @@
   "rules": {
     ".read": true,
     ".write": false,
-    "$node": {
-      ".write": "$node.matches(/^(content|added|visibility|enabled|order|site|settings|media|users|posts|assess|attendance|lab|assign|leads|followups|storyLikes|reveal|broadcast|stats|meta|cohorts|cohortIndex|backups|backupIndex)$/)"
+    "admins": {
+      ".write": false
+    },
+    "content": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "added": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "visibility": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "enabled": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "order": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "site": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "settings": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "media": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "reveal": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "broadcast": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "cohorts": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "cohortIndex": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "backups": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "backupIndex": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "users": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".write": true
+      }
+    },
+    "posts": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$ex": {
+        "$key": {
+          ".write": true
+        }
+      }
+    },
+    "assess": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$phase": {
+        "$uid": {
+          ".write": true
+        }
+      }
+    },
+    "attendance": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".write": true
+      }
+    },
+    "lab": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "timers": {
+        "$group": {
+          ".write": true
+        }
+      },
+      "answers": {
+        "$group": {
+          ".write": true
+        }
+      }
+    },
+    "assign": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".write": "!newData.exists()"
+      }
+    },
+    "leads": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".write": true
+      }
+    },
+    "followups": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$round": {
+        "$uid": {
+          ".write": true
+        }
+      }
+    },
+    "storyLikes": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$story": {
+        "likes": {
+          "$uid": {
+            ".write": true
+          }
+        }
+      }
+    },
+    "stats": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "registered": {
+        ".write": true
+      }
+    },
+    "meta": {
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "memberCounter": {
+        ".write": true
+      }
     }
   }
 }

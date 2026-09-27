@@ -12,11 +12,28 @@
   function fire() { if (!M.loaded) return; const v = view(); M.listeners.forEach(l => { try { l.cb(snap(getAt(v, l.path), l.path)); } catch (e) { console.error(e); } }); }
   function fireConn() { M.connListeners.forEach(cb => cb(snap(M.connected && M.loaded))); }
   const snap = (v, path) => ({ val: () => clone(v), key: segs(path).pop() || null });
+  // مقيّم مبسّط لقواعد Realtime Database (.write فقط): true/false، شرط الأدمن، و!newData.exists()
+  function ruleOk(expr, ctx) {
+    if (expr === true || expr === 'true') return true; if (expr === false || expr === 'false' || expr == null) return false;
+    let ok = true; const e = String(expr);
+    if (/auth != null/.test(e)) ok = ok && !!M.authUser;
+    if (/root\.child\('admins'\)\.child\(auth\.uid\)\.val\(\) === true/.test(e)) ok = ok && !!M.authUser && getAt(M.server, 'admins/' + M.authUser.uid) === true;
+    if (/!newData\.exists\(\)/.test(e)) ok = ok && ctx.value == null;
+    if (/\$node\.matches/.test(e)) { const m = e.match(/\^\((.*)\)\$/); ok = ok && m && m[1].split('|').indexOf(ctx.top) > -1; }
+    return ok;
+  }
+  function canWrite(path, value) {
+    if (!cfg.rules) return true; const s = segs(path); let node = cfg.rules.rules; const ctx = { value, top: s[0] };
+    if (ruleOk(node['.write'], ctx)) return true;
+    for (const seg of s) { if (!node) return false; const next = node[seg] !== undefined ? node[seg] : node[Object.keys(node).find(k => k.charAt(0) === '$')]; node = next; if (node && ruleOk(node['.write'], ctx)) return true; }
+    return false;
+  }
+  function allowed(op) { if (op.kind === 'update') return Object.keys(op.value).every(k => canWrite((op.path ? op.path + '/' : '') + k, op.value[k])); return canWrite(op.path, op.value); }
   function flush() {
     if (!M.connected || !M.loaded) return;
     const ops = M.pending.slice(); M.pending = [];
     ops.forEach(op => setTimeout(() => {
-      if (M.rejectWrites) { M.log.push('rejected ' + op.path); fire(); op.reject(Object.assign(new Error('PERMISSION_DENIED: Permission denied'), { code: 'PERMISSION_DENIED' })); return; }
+      if (M.rejectWrites || !allowed(op)) { M.denied = (M.denied || []).concat([op.path + (op.kind === 'update' ? ' {' + Object.keys(op.value).join(',') + '}' : '')]); M.log.push('rejected ' + op.path); fire(); op.reject(Object.assign(new Error('PERMISSION_DENIED: Permission denied'), { code: 'PERMISSION_DENIED' })); return; }
       M.server = applyOp(M.server, op); M.writes.push({ kind: op.kind, path: op.path || '(root)', keys: op.kind === 'update' ? Object.keys(op.value) : null, t: Date.now() }); fire(); op.resolve();
     }, cfg.ackDelay));
   }
@@ -41,5 +58,13 @@
       transaction(fn) { return new Promise((res, rej) => { const run = () => { if (!(M.loaded && M.connected)) return setTimeout(run, 50); const cur = getAt(view(), path); const nv = fn(clone(cur)); if (nv === undefined) return res({ committed: false, snapshot: snap(cur, path) }); queue('set', path, nv).then(() => res({ committed: true, snapshot: snap(nv, path) }), rej); }; run(); }); }
     };
   }
-  window.firebase = { initializeApp() { return {}; }, database() { return { ref: p => ref(p || '') }; } };
+  // محاكاة Firebase Authentication (بريد وكلمة مرور)
+  M.authUser = null; const authCbs = [];
+  const auth = {
+    onAuthStateChanged(cb) { authCbs.push(cb); setTimeout(() => cb(M.authUser), 10); return () => {}; },
+    signInWithEmailAndPassword(email, pass) { const u = (cfg.authUsers || {})[email]; if (!u || u.pass !== pass) return Promise.reject(Object.assign(new Error('bad'), { code: 'auth/invalid-credential' })); M.authUser = { uid: u.uid, email }; authCbs.forEach(cb => cb(M.authUser)); return Promise.resolve({ user: M.authUser }); },
+    signOut() { M.authUser = null; authCbs.forEach(cb => cb(null)); return Promise.resolve(); },
+    sendPasswordResetEmail() { return Promise.resolve(); }
+  };
+  window.firebase = { initializeApp() { return {}; }, database() { return { ref: p => ref(p || '') }; }, auth() { return auth; } };
 })();
