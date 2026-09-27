@@ -248,6 +248,7 @@ function collectRegRows() {
 // ---------- التفاعلات (تفويض أحداث واحد) ----------
 document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-act],[data-go],[data-back],[data-like],[data-deck-go],[data-slide]'); if (!t || t.disabled) return;
+  if (!Session.check()) return;
   if (t.hasAttribute('data-go')) { ev.preventDefault(); const p = {}; ['id', 'axis', 'from'].forEach(k => { if (t.getAttribute('data-' + k)) p[k] = t.getAttribute('data-' + k); }); if (FORM_VIEWS.indexOf(t.getAttribute('data-go')) > -1) { FormState.axisId = null; FormState.exId = null; } Router.go(t.getAttribute('data-go'), p); return; }
   if (t.hasAttribute('data-back')) { const b = Router.backOf(Router.cur) || { view: 'home' }; Router.go(b.view, b.id ? { id: b.id } : {}); return; }
   if (t.hasAttribute('data-like')) { const p = t.getAttribute('data-like'); const cur = getByPath(p); Likes.toggle(p, cur && cur.likes); App.render(); return; }
@@ -609,6 +610,8 @@ function authInit() {
   AUTH.enabled = fb; if (!fb) return;
   AUTH.resolved = false;
   firebase.auth().onAuthStateChanged(async u => {
+    // انتهت مدة الجلسة (72 ساعة): خروج من حساب Firebase الحالي (مدرب أو جلسة متدرب) ثم جلسة جديدة
+    if (u && Session.expired) { Session.expired = false; AUTH.isAdmin = false; try { await firebase.auth().signOut(); return; } catch (e) {} }
     if (!u) { try { await firebase.auth().signInAnonymously(); return; } catch (e) { console.warn('anonymous sign-in', e); AUTH.anonError = e; } }
     AUTH.user = u || null; let ok = false;
     if (u && !u.isAnonymous) { try { ok = (await DB.get('admins/' + u.uid)) === true; } catch (e) { ok = false; } }
@@ -692,11 +695,13 @@ function adminLogin() {
 
 // ---------- الإقلاع ----------
 function boot() {
-  Me.load();
+  Me.load(); Session.boot();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) Session.check(); });
   Router.cur = Router.parse();
   SafeHist.replace(Router.cur, Router.url(Router.cur));
   authInit();
   watchAll();
+  if (Session.notice) setTimeout(() => UI.toast('🔒 انتهت مدة الدخول (72 ساعة من آخر استخدام) — يرجى تسجيل الدخول من جديد.', 7000), 1500);
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();
   // النسخ اليومي التلقائي من جلسة المدرب فقط، وبعد قراءة مؤكدة من الخادم (لا يكتب الزوار شيئًا تلقائيًا)

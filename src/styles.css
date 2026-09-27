@@ -76,6 +76,7 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .user-chip .av{width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
 .user-chip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:720px){.brand-sub{display:none}.user-chip .nm{display:none}.user-chip{padding:3px}.top-actions .lbl{display:none}.brand-title{font-size:14px}}
+@media (max-width:440px){.top-actions .user-chip{display:none}}
 
 .crumbs{display:flex;align-items:center;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
 .back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-family:var(--f-ui);font-weight:600;font-size:14px;color:var(--ink-2)}
@@ -542,7 +543,7 @@ font{background:transparent!important;box-shadow:none!important}
 .sim-cb{display:inline-flex;gap:6px;align-items:center;font-family:var(--f-ui);font-size:14px;cursor:pointer}
 .sim-seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .sim-seg label{padding:7px 12px;font-family:var(--f-ui);font-size:13.5px;cursor:pointer;background:var(--surface)}
-.sim-seg label.on{background:var(--ac);color:#fff}.sim-seg input{display:none}
+.sim-seg label.on{background:var(--ac,var(--brand));color:#fff;font-weight:700}.sim-seg input{display:none}
 .sim-live{background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px;position:sticky;top:80px}
 .sim-score{display:flex;gap:12px;align-items:center;font-family:var(--f-ui)}
 .gauge{--p:0;width:78px;height:78px;border-radius:50%;background:conic-gradient(var(--ac) calc(var(--p)*1%),var(--line) 0);display:flex;align-items:center;justify-content:center;flex:none}

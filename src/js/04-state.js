@@ -250,6 +250,18 @@ const Groups = {
 };
 
 // ---------- الهوية المحلية (طبقات حفظ متعددة) ----------
+// ---------- مدة الجلسة: يبقى المتدرب والمدرب داخل المنصة 72 ساعة من آخر استخدام، ثم يُطلب دخول جديد ----------
+const Session = {
+  TTL: 72 * 3600 * 1000, KEY: 'ec_last', expired: false, _t: 0,
+  last() { return +SafeLS.get(Session.KEY) || 0; },
+  over() { const t = Session.last(); return t > 0 && Date.now() - t > Session.TTL; },
+  touch(force) { const n = Date.now(); if (!force && n - Session._t < 60000) return; Session._t = n; SafeLS.set(Session.KEY, String(n)); },
+  // عند الإقلاع: إن انقضت المدة نمسح هوية الجهاز (يُسجَّل الخروج من Firebase لاحقًا في authInit)
+  boot() { if (Session.over()) { Session.expired = Session.notice = true; Me.clear(); SafeSS.del('ec_admin'); SafeSS.del('ec_preview'); } Session.touch(true); },
+  // الصفحة المفتوحة طويلًا دون استخدام: نتحقق عند العودة إليها أو عند أول نقرة
+  check() { if (Session.over()) { location.reload(); return false; } Session.touch(); return true; }
+};
+
 const Me = {
   data: null, guest: false,
   load() {

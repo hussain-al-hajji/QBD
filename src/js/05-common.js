@@ -49,6 +49,7 @@ const Layout = {
       '<div class="top-actions">' +
       (me ? '<div class="user-chip" title="' + h(me.name) + '"><span class="av">' + h(initials(me.name)) + '</span><span class="nm">' + h(me.name) + '</span></div><button class="btn btn-soft btn-sm" data-go="account">' + iconSvg('user', 16) + '<span class="lbl">حسابي</span></button>' : (Me.guest ? '<span class="pill">👀 زائر</span>' : '')) +
       (!me && !Me.guest ? (!App.onLanding ? '' : '<button class="btn btn-primary btn-sm top-cta" data-act="open-login"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">الدخول</span> <span class="lp-arrow">←</span></button>') :
+        (!App.onLanding ? '<button class="btn btn-ghost btn-sm" data-go="landing" title="الصفحة التعريفية بالبرنامج (دون تسجيل خروج)">' + iconSvg('compass', 16) + '<span class="lbl">التعريف بالبرنامج</span></button>' : '') +
         (App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '') +
         '<button class="btn btn-ghost btn-sm" data-act="switch-user" title="تسجيل مستخدم جديد (يعيدك إلى الصفحة التعريفية)">' + iconSvg('users', 16) + '<span class="lbl">مستخدم جديد</span></button>') +
       '<button class="btn btn-ghost btn-sm notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض">Aa</button>' +

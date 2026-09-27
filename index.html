@@ -98,6 +98,7 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .user-chip .av{width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
 .user-chip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:720px){.brand-sub{display:none}.user-chip .nm{display:none}.user-chip{padding:3px}.top-actions .lbl{display:none}.brand-title{font-size:14px}}
+@media (max-width:440px){.top-actions .user-chip{display:none}}
 
 .crumbs{display:flex;align-items:center;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
 .back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-family:var(--f-ui);font-weight:600;font-size:14px;color:var(--ink-2)}
@@ -564,7 +565,7 @@ font{background:transparent!important;box-shadow:none!important}
 .sim-cb{display:inline-flex;gap:6px;align-items:center;font-family:var(--f-ui);font-size:14px;cursor:pointer}
 .sim-seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .sim-seg label{padding:7px 12px;font-family:var(--f-ui);font-size:13.5px;cursor:pointer;background:var(--surface)}
-.sim-seg label.on{background:var(--ac);color:#fff}.sim-seg input{display:none}
+.sim-seg label.on{background:var(--ac,var(--brand));color:#fff;font-weight:700}.sim-seg input{display:none}
 .sim-live{background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px;position:sticky;top:80px}
 .sim-score{display:flex;gap:12px;align-items:center;font-family:var(--f-ui)}
 .gauge{--p:0;width:78px;height:78px;border-radius:50%;background:conic-gradient(var(--ac) calc(var(--p)*1%),var(--line) 0);display:flex;align-items:center;justify-content:center;flex:none}
@@ -2492,6 +2493,18 @@ const Groups = {
 };
 
 // ---------- الهوية المحلية (طبقات حفظ متعددة) ----------
+// ---------- مدة الجلسة: يبقى المتدرب والمدرب داخل المنصة 72 ساعة من آخر استخدام، ثم يُطلب دخول جديد ----------
+const Session = {
+  TTL: 72 * 3600 * 1000, KEY: 'ec_last', expired: false, _t: 0,
+  last() { return +SafeLS.get(Session.KEY) || 0; },
+  over() { const t = Session.last(); return t > 0 && Date.now() - t > Session.TTL; },
+  touch(force) { const n = Date.now(); if (!force && n - Session._t < 60000) return; Session._t = n; SafeLS.set(Session.KEY, String(n)); },
+  // عند الإقلاع: إن انقضت المدة نمسح هوية الجهاز (يُسجَّل الخروج من Firebase لاحقًا في authInit)
+  boot() { if (Session.over()) { Session.expired = Session.notice = true; Me.clear(); SafeSS.del('ec_admin'); SafeSS.del('ec_preview'); } Session.touch(true); },
+  // الصفحة المفتوحة طويلًا دون استخدام: نتحقق عند العودة إليها أو عند أول نقرة
+  check() { if (Session.over()) { location.reload(); return false; } Session.touch(); return true; }
+};
+
 const Me = {
   data: null, guest: false,
   load() {
@@ -2680,6 +2693,7 @@ const Layout = {
       '<div class="top-actions">' +
       (me ? '<div class="user-chip" title="' + h(me.name) + '"><span class="av">' + h(initials(me.name)) + '</span><span class="nm">' + h(me.name) + '</span></div><button class="btn btn-soft btn-sm" data-go="account">' + iconSvg('user', 16) + '<span class="lbl">حسابي</span></button>' : (Me.guest ? '<span class="pill">👀 زائر</span>' : '')) +
       (!me && !Me.guest ? (!App.onLanding ? '' : '<button class="btn btn-primary btn-sm top-cta" data-act="open-login"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">الدخول</span> <span class="lp-arrow">←</span></button>') :
+        (!App.onLanding ? '<button class="btn btn-ghost btn-sm" data-go="landing" title="الصفحة التعريفية بالبرنامج (دون تسجيل خروج)">' + iconSvg('compass', 16) + '<span class="lbl">التعريف بالبرنامج</span></button>' : '') +
         (App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '') +
         '<button class="btn btn-ghost btn-sm" data-act="switch-user" title="تسجيل مستخدم جديد (يعيدك إلى الصفحة التعريفية)">' + iconSvg('users', 16) + '<span class="lbl">مستخدم جديد</span></button>') +
       '<button class="btn btn-ghost btn-sm notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض">Aa</button>' +
@@ -5762,6 +5776,7 @@ function collectRegRows() {
 // ---------- التفاعلات (تفويض أحداث واحد) ----------
 document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-act],[data-go],[data-back],[data-like],[data-deck-go],[data-slide]'); if (!t || t.disabled) return;
+  if (!Session.check()) return;
   if (t.hasAttribute('data-go')) { ev.preventDefault(); const p = {}; ['id', 'axis', 'from'].forEach(k => { if (t.getAttribute('data-' + k)) p[k] = t.getAttribute('data-' + k); }); if (FORM_VIEWS.indexOf(t.getAttribute('data-go')) > -1) { FormState.axisId = null; FormState.exId = null; } Router.go(t.getAttribute('data-go'), p); return; }
   if (t.hasAttribute('data-back')) { const b = Router.backOf(Router.cur) || { view: 'home' }; Router.go(b.view, b.id ? { id: b.id } : {}); return; }
   if (t.hasAttribute('data-like')) { const p = t.getAttribute('data-like'); const cur = getByPath(p); Likes.toggle(p, cur && cur.likes); App.render(); return; }
@@ -6123,6 +6138,8 @@ function authInit() {
   AUTH.enabled = fb; if (!fb) return;
   AUTH.resolved = false;
   firebase.auth().onAuthStateChanged(async u => {
+    // انتهت مدة الجلسة (72 ساعة): خروج من حساب Firebase الحالي (مدرب أو جلسة متدرب) ثم جلسة جديدة
+    if (u && Session.expired) { Session.expired = false; AUTH.isAdmin = false; try { await firebase.auth().signOut(); return; } catch (e) {} }
     if (!u) { try { await firebase.auth().signInAnonymously(); return; } catch (e) { console.warn('anonymous sign-in', e); AUTH.anonError = e; } }
     AUTH.user = u || null; let ok = false;
     if (u && !u.isAnonymous) { try { ok = (await DB.get('admins/' + u.uid)) === true; } catch (e) { ok = false; } }
@@ -6206,11 +6223,13 @@ function adminLogin() {
 
 // ---------- الإقلاع ----------
 function boot() {
-  Me.load();
+  Me.load(); Session.boot();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) Session.check(); });
   Router.cur = Router.parse();
   SafeHist.replace(Router.cur, Router.url(Router.cur));
   authInit();
   watchAll();
+  if (Session.notice) setTimeout(() => UI.toast('🔒 انتهت مدة الدخول (72 ساعة من آخر استخدام) — يرجى تسجيل الدخول من جديد.', 7000), 1500);
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();
   // النسخ اليومي التلقائي من جلسة المدرب فقط، وبعد قراءة مؤكدة من الخادم (لا يكتب الزوار شيئًا تلقائيًا)
