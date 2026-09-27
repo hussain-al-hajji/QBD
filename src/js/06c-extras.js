@@ -100,16 +100,16 @@ const Points = {
         who.forEach(u => { if (!P[u]) return; P[u].ex++; P[u].pts += e.format === 'sim' ? 15 : 10; P[u].likes += lk; P[u].pts += lk * 2; });
         if ((p.ts || Infinity) < firstTs && e.mode !== 'group') { firstTs = p.ts; firstK = k; } });
       if (firstK && P[firstK]) { P[firstK].first++; P[firstK].pts += 5; } });
-    Object.keys(P).forEach(u => { const d = Attend.days().filter(x => Attend.hoursOf(u, x) > 0).length; P[u].att = d; P[u].pts += d * 20; ['pre', 'post'].forEach(ph => { const r = Assess.rec(ph, u); if (r && r.done) { P[u].as++; P[u].pts += 15; } }); });
+    Object.keys(P).forEach(u => { const d = Attend.on() ? Attend.days().filter(x => Attend.hoursOf(u, x) > 0).length : 0; P[u].att = d; P[u].pts += d * 20; ['pre', 'post'].forEach(ph => { const r = Assess.rec(ph, u); if (r && r.done) { P[u].as++; P[u].pts += 15; } }); });
     const list = Object.values(P).sort((a, b) => b.pts - a.pts); const mostLiked = list.slice().sort((a, b) => b.likes - a.likes)[0];
     const data = { map: P, list, mostLiked: mostLiked && mostLiked.likes ? mostLiked.uid : null };
     Points._cache = { stamp: Points.stamp(), data }; return data;
   },
-  stamp() { return [Store.users, Store.posts, Store.attendance, Store.assess].map(x => JSON.stringify(x || {}).length).join('|'); },
+  stamp() { return [Attend.on(), Store.users, Store.posts, Store.attendance, Store.assess].map(x => JSON.stringify(x || {}).length).join('|'); },
   groups() { const t = Points.table(); const G = {}; Groups.list().forEach(g => { G[g] = { g, pts: 0, n: 0 }; }); Object.keys(t.map).forEach(u => { const g = Groups.assignedOf(u) || (Store.users[u] && +Store.users[u].group); if (g && G[g]) { G[g].pts += t.map[u].pts; G[g].n++; } }); return Object.values(G).filter(x => x.n).sort((a, b) => b.pts - a.pts); },
   badges(uid) { const t = Points.table(); const x = t.map[uid]; if (!x) return []; const out = [];
     if (x.first) out.push(['⚡', 'أول مشارك', 'كنت أول من شارك في ' + x.first + ' تمرين']); if (t.mostLiked === uid) out.push(['💖', 'الأكثر إعجابًا', x.likes + ' إعجاب على مشاركاتك']);
-    if (x.att >= Attend.cfg().days) out.push(['📍', 'حضور كامل', 'حضرت كل أيام البرنامج']); if (Progress.forUser(uid).pct >= BADGE_THRESHOLD) out.push(['🏅', 'مشارك نشط', 'أنجزت 80% من التمارين']); if (x.as === 2) out.push(['🧠', 'قياس كامل', 'أكملت التقييمين القبلي والبعدي']);
+    if (Attend.on() && x.att >= Attend.cfg().days) out.push(['📍', 'حضور كامل', 'حضرت كل أيام البرنامج']); if (Progress.forUser(uid).pct >= BADGE_THRESHOLD) out.push(['🏅', 'مشارك نشط', 'أنجزت 80% من التمارين']); if (x.as === 2) out.push(['🧠', 'قياس كامل', 'أكملت التقييمين القبلي والبعدي']);
     const rank = t.list.findIndex(y => y.uid === uid); if (rank > -1 && rank < 3 && x.pts) out.push([['🥇', '🥈', '🥉'][rank], 'من الثلاثة الأوائل', 'المركز ' + (rank + 1) + ' في لوحة الصدارة']); return out; }
 };
 function leaderboardHtml(limit = 10) {
@@ -117,7 +117,7 @@ function leaderboardHtml(limit = 10) {
   const ind = t.list.filter(x => x.pts).slice(0, limit);
   return '<div class="lb-grid"><div class="card pad"><h3>🏆 المتصدرون</h3>' + (ind.length ? ind.map((x, i) => '<div class="lb-row ' + (x.uid === me ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + (c.names || x.uid === me ? h((Store.users[x.uid] || {}).name || '') : 'مشارك ' + (i + 1)) + '</span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">لا نقاط بعد — شارك في التمارين لتظهر هنا.</div>') + '</div>' +
     '<div class="card pad"><h3>👥 المجموعات</h3>' + (gs.length ? gs.map((x, i) => '<div class="lb-row ' + (Me.group() === x.g ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + h(Groups.label(x.g)) + ' <span class="muted num">(' + x.n + ')</span></span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">تظهر عند اختيار المتدربين مجموعاتهم.</div>') + '</div></div>' +
-    '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:8px">النقاط: 10 لكل تمرين · 15 لكل محاكاة · 2 لكل إعجاب تتلقاه · 5 لأول مشارك في تمرين · 20 لكل يوم حضور · 15 لكل تقييم (قبلي/بعدي)</div>';
+    '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:8px">النقاط: 10 لكل تمرين · 15 لكل محاكاة · 2 لكل إعجاب تتلقاه · 5 لأول مشارك في تمرين ' + (Attend.on() ? '· 20 لكل يوم حضور ' : '') + '· 15 لكل تقييم (قبلي/بعدي)</div>';
 }
 
 // ================= المتابعة بعد البرنامج (30 / 60 / 90 يومًا) =================

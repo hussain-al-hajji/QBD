@@ -1376,6 +1376,15 @@ html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-
 .al-email{margin-top:12px;font-family:var(--f-ui);font-size:13.5px}
 .al-email summary{cursor:pointer;color:var(--ink-3);margin-bottom:8px}
 .home-pane>.section:first-child,.home-pane>.card:first-child{margin-top:0!important}
+/* مفاتيح تفعيل الميزات في لوحة الإدارة */
+.feat-sws{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.feat-sw{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-family:var(--f-ui);font-size:13px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.feat-sw i{width:32px;height:18px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.feat-sw i::after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:inset-inline-start .2s}
+.feat-sw.on{color:var(--ink);border-color:#0E7C7B}
+.feat-sw.on i{background:#0E7C7B}
+.feat-sw.on i::after{inset-inline-start:16px}
+.feat-sw:disabled{opacity:.5;cursor:not-allowed}
 
 </style>
 </head>
@@ -2434,12 +2443,15 @@ const Assess = {
 // ---------- الحضور وشهادة المشاركة ----------
 const Attend = {
   cfg() { const c = Object.assign({ days: ATTEND_DAYS_DEFAULT, hours: ATTEND_HOURS_DEFAULT, threshold: CERT_THRESHOLD_DEFAULT, codes: {} }, Store.attCfg || {}); c.days = Math.max(1, Math.min(10, +c.days || ATTEND_DAYS_DEFAULT)); c.hours = Math.max(1, +c.hours || ATTEND_HOURS_DEFAULT); c.threshold = Math.max(0, Math.min(100, +c.threshold || 0)); c.codes = c.codes || {}; const sec = (Store.secure && Store.secure.attcodes) || {}; c.codes = Object.assign({}, c.codes); Object.keys(sec).forEach(k => { c.codes[k] = Object.assign({}, c.codes[k], { code: (sec[k] || {}).code }); }); return c; },
+  // تسجيل الحضور وشهادة المشاركة ميزتان اختياريتان (قد تتولاهما الجهة الراعية)؛ الشهادة تعتمد على الحضور
+  on() { return (Store.attCfg || {}).enabled !== false; },
+  certOn() { return Attend.on() && (Store.attCfg || {}).cert !== false; },
   days() { const out = []; for (let i = 1; i <= Attend.cfg().days; i++) out.push(i); return out; },
   hoursOf(uid, d) { const man = ((Store.attendance || {})[uid] || {})['d' + d]; if (man != null) return Math.max(0, Math.min(Attend.cfg().hours, +man || 0)); return ((Store.checkins || {})['d' + d] || {})[uid] ? Attend.cfg().hours : 0; }, // الساعات اليدوية من المدرب تتقدم على تسجيل الرمز
   pct(uid) { const c = Attend.cfg(); const tot = c.days * c.hours; const got = Attend.days().reduce((s, d) => s + Attend.hoursOf(uid, d), 0); return tot ? Math.round(got / tot * 100) : 0; },
   eligible(uid) { return Attend.pct(uid) >= Attend.cfg().threshold; },
-  openDays() { const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open); },
-  holders() { return Object.keys(Store.users || {}).filter(Attend.eligible).map(u => Object.assign({ uid: u }, Store.users[u])); }
+  openDays() { if (!Attend.on()) return []; const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open); },
+  holders() { if (!Attend.certOn()) return []; return Object.keys(Store.users || {}).filter(Attend.eligible).map(u => Object.assign({ uid: u }, Store.users[u])); }
 };
 
 // ---------- حقول التسجيل (قابلة للتحكم من لوحة الإدارة) ----------
@@ -3646,7 +3658,7 @@ Views.account = {
     let out = '' +
       '<div class="card pad" style="margin-top:8px"><div class="row" style="align-items:flex-start"><div class="grow"><div class="sec-kicker">نسبة الإنجاز الإجمالية</div><div class="big-pct num">' + pct + '%</div><div class="muted" style="font-family:var(--f-ui)">أنجزت <span class="num">' + pr.done + '</span> من <span class="num">' + pr.total + '</span> تمرينًا</div></div>' +
       '<div style="text-align:center"><div class="sec-kicker">رقم العضوية</div><div class="num notranslate" translate="no" style="font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:2px">' + (member ? pad4(member) : '—') + '</div>' + ((Me.data && Me.data.code) || Store.mySecret ? '<div class="sec-kicker" style="margin-top:4px">رمز الدخول</div><div class="num notranslate" translate="no" dir="ltr" style="font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:3px;user-select:all">' + h((Me.data && Me.data.code) || Store.mySecret) + '</div>' : '') + '</div></div><div class="progress" style="margin-top:12px"><i style="width:' + pct + '%"></i></div>' +
-      '<div class="mini-stats"><div><span>📍 الحضور</span><b class="num">' + att + '%</b></div><div><span>🧭 التقييم القبلي</span><b class="num">' + scoreTxt(pre) + '</b></div><div><span>🏁 التقييم البعدي</span><b class="num">' + scoreTxt(post) + '</b></div><div><span>🏅 الأوسمة</span><b class="num">' + pr.axes.filter(x => x.pct >= BADGE_THRESHOLD).length + '/' + pr.axes.length + '</b></div></div></div>';
+      '<div class="mini-stats">' + (Attend.on() ? '<div><span>📍 الحضور</span><b class="num">' + att + '%</b></div>' : '') + '<div><span>🧭 التقييم القبلي</span><b class="num">' + scoreTxt(pre) + '</b></div><div><span>🏁 التقييم البعدي</span><b class="num">' + scoreTxt(post) + '</b></div><div><span>🏅 الأوسمة</span><b class="num">' + pr.axes.filter(x => x.pct >= BADGE_THRESHOLD).length + '/' + pr.axes.length + '</b></div></div></div>';
     mark('overview', '📊', 'نظرة عامة', 'الإنجاز ' + pct + '%');
     const urec = Object.assign({}, Store.users[me.uid] || {}, { name: me.name, role: me.role }); const cons = urec.consent || {};
     out += '<div class="card pad" style="margin-top:16px"><h3 style="margin-bottom:12px">✏️ بياناتي</h3><div class="grid2">' + RegFields.visible().map(f => RegFields.input(f, RegFields.val(urec, f.key), 'acc_')).join('') + '</div>' +
@@ -3661,18 +3673,20 @@ Views.account = {
     const fuc = followupCardsHtml(); if (fuc) out += '<section class="section"><div class="sec-head"><h2 class="sec-title">📈 متابعة ما بعد البرنامج</h2></div>' + fuc + '</section>';
     if (fuc) mark('followup', '📈', 'متابعة ما بعد البرنامج', '30 · 60 · 90 يومًا');
     if (Points.cfg().enabled) { const pt = Points.table(); const mine = pt.map[me.uid] || { pts: 0 }; const rank = pt.list.findIndex(x => x.uid === me.uid) + 1; const bd = Points.badges(me.uid);
-      out += '<section class="section"><div class="sec-head"><h2 class="sec-title">⭐ نقاطي</h2><span class="pill">المركز <span class="num">' + (rank || '—') + '</span> من <span class="num">' + pt.list.length + '</span></span></div><div class="card pad"><div class="row"><div class="big-pct num">' + mine.pts + '</div><div class="muted" style="font-family:var(--f-ui)">نقطة · <span class="num">' + (mine.ex || 0) + '</span> تمرين · <span class="num">' + (mine.likes || 0) + '</span> إعجاب · <span class="num">' + (mine.att || 0) + '</span> يوم حضور</div></div>' + (bd.length ? '<div class="sp-badges">' + bd.map(b => '<div class="sp-badge"><span>' + b[0] + '</span><b>' + h(b[1]) + '</b><em>' + h(b[2]) + '</em></div>').join('') + '</div>' : '<div class="muted" style="font-family:var(--f-ui);margin-top:8px">شارك مبكرًا واحصل على إعجابات لتفتح الشارات الخاصة.</div>') + '</div></section>'; }
+      out += '<section class="section"><div class="sec-head"><h2 class="sec-title">⭐ نقاطي</h2><span class="pill">المركز <span class="num">' + (rank || '—') + '</span> من <span class="num">' + pt.list.length + '</span></span></div><div class="card pad"><div class="row"><div class="big-pct num">' + mine.pts + '</div><div class="muted" style="font-family:var(--f-ui)">نقطة · <span class="num">' + (mine.ex || 0) + '</span> تمرين · <span class="num">' + (mine.likes || 0) + '</span> إعجاب' + (Attend.on() ? ' · <span class="num">' + (mine.att || 0) + '</span> يوم حضور' : '') + '</div></div>' + (bd.length ? '<div class="sp-badges">' + bd.map(b => '<div class="sp-badge"><span>' + b[0] + '</span><b>' + h(b[1]) + '</b><em>' + h(b[2]) + '</em></div>').join('') + '</div>' : '<div class="muted" style="font-family:var(--f-ui);margin-top:8px">شارك مبكرًا واحصل على إعجابات لتفتح الشارات الخاصة.</div>') + '</div></section>'; }
     if (Points.cfg().enabled) mark('points', '⭐', 'نقاطي', 'الترتيب والشارات');
     out += '<section class="section"><div class="card pad row plan-cta"><div class="grow"><h3>🚀 خطتي للنمو (PDF)</h3><p class="muted" style="font-family:var(--f-ui);font-size:14px">ملف أنيق يجمع خطة نمو مشروعك وخريطة قنواتك وأولويات الإطلاق وأتمتتك الأولى ونتائج محاكياتك ومخرجات مجموعتك في المختبر، مع جدول عمل 30/60/90 يومًا.</p></div><button class="btn btn-primary" data-act="plan-pdf">📘 إنشاء خطتي</button><button class="btn btn-ghost" data-go="tools">🧰 صندوق الأدوات</button></div></section>';
     mark('plan', '🚀', 'خطتي للنمو', 'ملف PDF لمشروعك');
     const lf = leadFormHtml('acc'); if (lf) { out += '<section class="section">' + lf + '</section>'; mark('lead', '🤝', 'برامج بنك قطر للتنمية', 'اهتمامك بالبرامج'); }
-    // شهادة المشاركة (بالحضور)
-    const cc = Content.cert();
-    out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🎓 شهادة المشاركة</h2><span class="pill">تُمنح عند حضور <span class="num">' + ac.threshold + '%</span> من مدة البرنامج</span></div>';
-    if (!Attend.eligible(me.uid)) out += '<div class="card pad center"><div style="font-size:44px;filter:grayscale(1);opacity:.5">🎓</div><h3>نسبة حضورك الحالية <span class="num">' + att + '%</span></h3><p class="muted" style="font-family:var(--f-ui)">يسجّل المدرّب الحضور في كل يوم تدريبي (<span class="num">' + ac.days + '</span> أيام × <span class="num">' + ac.hours + '</span> ساعات). تُفتح الشهادة تلقائيًا عند بلوغ <span class="num">' + ac.threshold + '%</span>.</p><div class="progress" style="max-width:420px;margin:10px auto 0"><i style="width:' + Math.min(100, att / Math.max(1, ac.threshold) * 100) + '%"></i></div></div>';
-    else out += '<div class="congrats-card cert-card">' + congratsInner(me.name, 'cert') + '</div><div class="row" style="margin-top:12px"><button class="btn btn-primary" data-act="congrats-pdf" data-kind="cert">📥 تحميل الشهادة PDF</button></div><div class="notice">ℹ️ ' + h(cc.notice) + '</div>';
-    out += '</section>';
-    mark('cert', '🎓', 'شهادة المشاركة', Attend.eligible(me.uid) ? 'جاهزة للتحميل' : 'الحضور ' + att + '%');
+    // شهادة المشاركة (بالحضور) — تُخفى إن عطّلها المدرب من لوحة الإدارة
+    if (Attend.certOn()) {
+      const cc = Content.cert();
+      out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🎓 شهادة المشاركة</h2><span class="pill">تُمنح عند حضور <span class="num">' + ac.threshold + '%</span> من مدة البرنامج</span></div>';
+      if (!Attend.eligible(me.uid)) out += '<div class="card pad center"><div style="font-size:44px;filter:grayscale(1);opacity:.5">🎓</div><h3>نسبة حضورك الحالية <span class="num">' + att + '%</span></h3><p class="muted" style="font-family:var(--f-ui)">يسجّل المدرّب الحضور في كل يوم تدريبي (<span class="num">' + ac.days + '</span> أيام × <span class="num">' + ac.hours + '</span> ساعات). تُفتح الشهادة تلقائيًا عند بلوغ <span class="num">' + ac.threshold + '%</span>.</p><div class="progress" style="max-width:420px;margin:10px auto 0"><i style="width:' + Math.min(100, att / Math.max(1, ac.threshold) * 100) + '%"></i></div></div>';
+      else out += '<div class="congrats-card cert-card">' + congratsInner(me.name, 'cert') + '</div><div class="row" style="margin-top:12px"><button class="btn btn-primary" data-act="congrats-pdf" data-kind="cert">📥 تحميل الشهادة PDF</button></div><div class="notice">ℹ️ ' + h(cc.notice) + '</div>';
+      out += '</section>';
+      mark('cert', '🎓', 'شهادة المشاركة', Attend.eligible(me.uid) ? 'جاهزة للتحميل' : 'الحضور ' + att + '%');
+    }
     out += '<section class="section"><div class="sec-head"><h2 class="sec-title">🎉 تهنئة إنجاز</h2></div>';
     if (!unlocked) out += '<div class="card pad center"><div style="font-size:44px;filter:grayscale(1);opacity:.5">🔒</div><h3>تُفتح التهنئة عند إنجاز <span class="num">80%</span> من التمارين</h3><p class="muted" style="font-family:var(--f-ui)">إنجازك الحالي <span class="num">' + pct + '%</span></p><div class="progress" style="max-width:420px;margin:10px auto 0"><i style="width:' + Math.min(100, pct / 0.8) + '%"></i></div></div>';
     else out += '<div class="congrats-card">' + congratsInner(me.name, 'congrats') + '</div><div class="row" style="margin-top:12px"><button class="btn btn-primary" data-act="congrats-pdf" data-kind="congrats">📥 تحميل / حفظ كـ PDF</button><button class="btn btn-ghost" data-act="congrats-mail">✉️ إرسال نسخة لبريدي</button></div><div class="notice">⏳ ' + h(c.notice) + '</div>';
@@ -3707,9 +3721,9 @@ function monitorBody() {
     const dist = o => { const k = Object.keys(o).sort((a, b) => o[b] - o[a]); return k.length ? bars(k.map(x => ({ l: x, v: o[x] })), Math.max(...k.map(x => o[x])), '#1F3A5F') : '<div class="muted">لا توجد بيانات</div>'; };
     const ev = Bell.events().slice(0, 12);
     return '<div class="mon-head"><div><span class="live-dot"></span> <b>لوحة متابعة مباشرة</b> · ' + h(d.cohort.name) + '</div><div class="row"><span class="pill">👁 قراءة فقط</span><button class="btn btn-primary btn-sm" data-act="report-pdf" data-lang="ar">📑 التقرير (عربي)</button><button class="btn btn-soft btn-sm" data-act="report-pdf" data-lang="en">📑 Report (EN)</button></div></div>' +
-      '<div class="mon-kpis">' + kpi('المسجّلون', d.uids.length) + kpi('متوسط الحضور', d.attAvg + '%') + kpi('مستحقو الشهادة', d.certs) + kpi('التقييم القبلي', pct(d.preAvg), d.pre.length + ' مشارك') + kpi('التقييم البعدي', pct(d.postAvg), d.post.length + ' مشارك') + kpi('متوسط التحسن', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain)) + kpi('الرضا', d.survey.overall ? d.survey.overall.toFixed(1) + '/5' : '—') + kpi('NPS', d.survey.nps == null ? '—' : d.survey.nps) + kpi('مهتمون ببرامج البنك', d.leads.length) + '</div>' +
+      '<div class="mon-kpis">' + kpi('المسجّلون', d.uids.length) + (d.attOn ? kpi('متوسط الحضور', d.attAvg + '%') : '') + (d.certOn ? kpi('مستحقو الشهادة', d.certs) : '') + kpi('التقييم القبلي', pct(d.preAvg), d.pre.length + ' مشارك') + kpi('التقييم البعدي', pct(d.postAvg), d.post.length + ' مشارك') + kpi('متوسط التحسن', d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain)) + kpi('الرضا', d.survey.overall ? d.survey.overall.toFixed(1) + '/5' : '—') + kpi('NPS', d.survey.nps == null ? '—' : d.survey.nps) + kpi('مهتمون ببرامج البنك', d.leads.length) + '</div>' +
       '<div class="mon-grid"><div class="card pad"><h3>المشاركة في المحاور</h3>' + bars(d.axes.map(x => ({ l: x.a.title, v: Math.round(x.rate * 100), t: Math.round(x.rate * 100) + '%' })), 100) + '</div>' +
-      '<div class="card pad"><h3>الحضور حسب اليوم</h3>' + bars(d.perDay.map((v, i) => ({ l: 'اليوم ' + (i + 1), v, t: v + '/' + d.uids.length })), Math.max(1, d.uids.length), '#0E7C7B') + '<h3 style="margin-top:14px">قطاعات المشاركين</h3>' + dist(d.sector) + '</div>' +
+      '<div class="card pad">' + (d.attOn ? '<h3>الحضور حسب اليوم</h3>' + bars(d.perDay.map((v, i) => ({ l: 'اليوم ' + (i + 1), v, t: v + '/' + d.uids.length })), Math.max(1, d.uids.length), '#0E7C7B') + '<h3 style="margin-top:14px">قطاعات المشاركين</h3>' : '<h3>قطاعات المشاركين</h3>') + dist(d.sector) + '</div>' +
       '<div class="card pad"><h3>التقييم القبلي مقابل البعدي لكل سؤال</h3>' + d.A.items.map((it, i) => '<div class="mon-q"><span class="num">' + (i + 1) + '</span>' + bars([{ l: 'قبلي', v: d.pq[i] || 0, t: pct(d.pq[i]), c: '#C98A9C' }, { l: 'بعدي', v: d.qq[i] || 0, t: pct(d.qq[i]), c: '#8A1538' }], 100) + '</div>').join('') + '</div>' +
       '<div class="card pad"><h3>الرضا لكل بند</h3>' + bars(d.survey.rates.map((r, i) => ({ l: r, v: d.survey.avgs[i] || 0, t: d.survey.avgs[i] ? d.survey.avgs[i].toFixed(1) : '—' })), 5, '#E0A526') + '<h3 style="margin-top:14px">الاهتمام ببرامج البنك</h3>' + dist(d.byProg) + '</div>' +
       '<div class="card pad"><h3>💡 توصيات آلية</h3>' + (d.recs.length ? '<ul class="mon-recs">' + d.recs.map(r => '<li>' + h(r.ar) + '</li>').join('') + '</ul>' : '<div class="muted">تظهر عند توفر بيانات كافية.</div>') + '</div>' +
@@ -4030,16 +4044,16 @@ const Points = {
         who.forEach(u => { if (!P[u]) return; P[u].ex++; P[u].pts += e.format === 'sim' ? 15 : 10; P[u].likes += lk; P[u].pts += lk * 2; });
         if ((p.ts || Infinity) < firstTs && e.mode !== 'group') { firstTs = p.ts; firstK = k; } });
       if (firstK && P[firstK]) { P[firstK].first++; P[firstK].pts += 5; } });
-    Object.keys(P).forEach(u => { const d = Attend.days().filter(x => Attend.hoursOf(u, x) > 0).length; P[u].att = d; P[u].pts += d * 20; ['pre', 'post'].forEach(ph => { const r = Assess.rec(ph, u); if (r && r.done) { P[u].as++; P[u].pts += 15; } }); });
+    Object.keys(P).forEach(u => { const d = Attend.on() ? Attend.days().filter(x => Attend.hoursOf(u, x) > 0).length : 0; P[u].att = d; P[u].pts += d * 20; ['pre', 'post'].forEach(ph => { const r = Assess.rec(ph, u); if (r && r.done) { P[u].as++; P[u].pts += 15; } }); });
     const list = Object.values(P).sort((a, b) => b.pts - a.pts); const mostLiked = list.slice().sort((a, b) => b.likes - a.likes)[0];
     const data = { map: P, list, mostLiked: mostLiked && mostLiked.likes ? mostLiked.uid : null };
     Points._cache = { stamp: Points.stamp(), data }; return data;
   },
-  stamp() { return [Store.users, Store.posts, Store.attendance, Store.assess].map(x => JSON.stringify(x || {}).length).join('|'); },
+  stamp() { return [Attend.on(), Store.users, Store.posts, Store.attendance, Store.assess].map(x => JSON.stringify(x || {}).length).join('|'); },
   groups() { const t = Points.table(); const G = {}; Groups.list().forEach(g => { G[g] = { g, pts: 0, n: 0 }; }); Object.keys(t.map).forEach(u => { const g = Groups.assignedOf(u) || (Store.users[u] && +Store.users[u].group); if (g && G[g]) { G[g].pts += t.map[u].pts; G[g].n++; } }); return Object.values(G).filter(x => x.n).sort((a, b) => b.pts - a.pts); },
   badges(uid) { const t = Points.table(); const x = t.map[uid]; if (!x) return []; const out = [];
     if (x.first) out.push(['⚡', 'أول مشارك', 'كنت أول من شارك في ' + x.first + ' تمرين']); if (t.mostLiked === uid) out.push(['💖', 'الأكثر إعجابًا', x.likes + ' إعجاب على مشاركاتك']);
-    if (x.att >= Attend.cfg().days) out.push(['📍', 'حضور كامل', 'حضرت كل أيام البرنامج']); if (Progress.forUser(uid).pct >= BADGE_THRESHOLD) out.push(['🏅', 'مشارك نشط', 'أنجزت 80% من التمارين']); if (x.as === 2) out.push(['🧠', 'قياس كامل', 'أكملت التقييمين القبلي والبعدي']);
+    if (Attend.on() && x.att >= Attend.cfg().days) out.push(['📍', 'حضور كامل', 'حضرت كل أيام البرنامج']); if (Progress.forUser(uid).pct >= BADGE_THRESHOLD) out.push(['🏅', 'مشارك نشط', 'أنجزت 80% من التمارين']); if (x.as === 2) out.push(['🧠', 'قياس كامل', 'أكملت التقييمين القبلي والبعدي']);
     const rank = t.list.findIndex(y => y.uid === uid); if (rank > -1 && rank < 3 && x.pts) out.push([['🥇', '🥈', '🥉'][rank], 'من الثلاثة الأوائل', 'المركز ' + (rank + 1) + ' في لوحة الصدارة']); return out; }
 };
 function leaderboardHtml(limit = 10) {
@@ -4047,7 +4061,7 @@ function leaderboardHtml(limit = 10) {
   const ind = t.list.filter(x => x.pts).slice(0, limit);
   return '<div class="lb-grid"><div class="card pad"><h3>🏆 المتصدرون</h3>' + (ind.length ? ind.map((x, i) => '<div class="lb-row ' + (x.uid === me ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + (c.names || x.uid === me ? h((Store.users[x.uid] || {}).name || '') : 'مشارك ' + (i + 1)) + '</span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">لا نقاط بعد — شارك في التمارين لتظهر هنا.</div>') + '</div>' +
     '<div class="card pad"><h3>👥 المجموعات</h3>' + (gs.length ? gs.map((x, i) => '<div class="lb-row ' + (Me.group() === x.g ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + h(Groups.label(x.g)) + ' <span class="muted num">(' + x.n + ')</span></span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">تظهر عند اختيار المتدربين مجموعاتهم.</div>') + '</div></div>' +
-    '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:8px">النقاط: 10 لكل تمرين · 15 لكل محاكاة · 2 لكل إعجاب تتلقاه · 5 لأول مشارك في تمرين · 20 لكل يوم حضور · 15 لكل تقييم (قبلي/بعدي)</div>';
+    '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:8px">النقاط: 10 لكل تمرين · 15 لكل محاكاة · 2 لكل إعجاب تتلقاه · 5 لأول مشارك في تمرين ' + (Attend.on() ? '· 20 لكل يوم حضور ' : '') + '· 15 لكل تقييم (قبلي/بعدي)</div>';
 }
 
 // ================= المتابعة بعد البرنامج (30 / 60 / 90 يومًا) =================
@@ -4400,12 +4414,15 @@ Views.admin = {
     out += tool('regform', '📝', '#5B3A8A', 'نموذج التسجيل والخصوصية', '<span class="num">' + RegFields.visible().length + '</span> حقول ظاهرة من <span class="num">' + RegFields.all().length + '</span>. تحكم في الحقول المطلوبة والاختيارية وأضف حقولًا جديدة، وعدّل إشعار الخصوصية.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="regEdit">حقول التسجيل</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="privEdit">إشعار الخصوصية</button><button class="btn btn-ghost btn-xs" data-act="users-csv">⬇️ المسجّلون CSV</button>');
     out += drop('regEdit', Views.admin.regEditor());
     out += drop('privEdit', Views.admin.privacyEditor());
-    const ac = Attend.cfg(); const holders = Attend.holders();
+    const ac = Attend.cfg(); const holders = Attend.holders(); const aOn = Attend.on(), cOn = Attend.certOn();
     B('attend');
-    out += tool('attend', '📍', '#0E7C7B', 'الحضور وشهادة المشاركة', '<div class="bigno num">' + holders.length + '</div>مستحق للشهادة (حضور ≥ <span class="num">' + ac.threshold + '%</span>)' + Attend.days().map(d => { const cd = ac.codes['d' + d] || {}; return '<div class="att-day"><b>اليوم <span class="num">' + d + '</span></b>' + (cd.code ? '<span class="att-code num notranslate" translate="no">' + h(cd.code) + '</span>' : '') + '<span class="pill ' + (cd.open ? 'open-pill' : '') + '">' + (cd.open ? 'مفتوح' : 'مغلق') + '</span></div>'; }).join(''), '<button class="btn btn-primary btn-xs" data-act="drop" data-k="attCtl">إدارة الحضور</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="attSheet">سجل الحضور</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="certEdit">محتوى الشهادة</button><button class="btn btn-ghost btn-xs" data-act="congrats-preview" data-kind="cert">معاينة</button>');
-    out += drop('attCtl', Views.admin.attCtl());
-    out += drop('attSheet', Views.admin.attSheet());
-    out += drop('certEdit', Views.admin.congratsEditor('cert'));
+    // مفاتيح تفعيل الميزتين: عند تعطيلهما يختفي كل ما يرتبط بهما عند المتدرب وفي التقارير ولوحة المشرف
+    const sw = (f, on, label, dis) => '<button class="feat-sw' + (on ? ' on' : '') + '" data-act="att-feature" data-f="' + f + '" role="switch" aria-checked="' + on + '"' + (dis ? ' disabled title="فعّل تسجيل الحضور أولًا — الشهادة تُمنح بنسبة الحضور"' : '') + '><i></i><span>' + label + '</span></button>';
+    const sws = '<div class="feat-sws">' + sw('enabled', aOn, 'تسجيل الحضور') + sw('cert', cOn, 'شهادة المشاركة', !aOn) + '</div>';
+    out += tool('attend', '📍', '#0E7C7B', 'الحضور وشهادة المشاركة', sws + (aOn ? (cOn ? '<div class="bigno num">' + holders.length + '</div>مستحق للشهادة (حضور ≥ <span class="num">' + ac.threshold + '%</span>)' : '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-bottom:6px">الشهادة معطّلة — لا تظهر للمتدربين ولا في التقارير.</div>') + Attend.days().map(d => { const cd = ac.codes['d' + d] || {}; return '<div class="att-day"><b>اليوم <span class="num">' + d + '</span></b>' + (cd.code ? '<span class="att-code num notranslate" translate="no">' + h(cd.code) + '</span>' : '') + '<span class="pill ' + (cd.open ? 'open-pill' : '') + '">' + (cd.open ? 'مفتوح' : 'مغلق') + '</span></div>'; }).join('') : '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px">معطّل — لا يظهر للمتدربين شريط تسجيل الحضور ولا نسبة الحضور ولا الشهادة، وتُحذف مؤشراتها من التقارير ولوحة المشرف (مثلًا إن كانت الجهة الراعية تتابع الحضور وتصدر الشهادات بنفسها). البيانات المسجّلة سابقًا تبقى محفوظة.</div>'),
+      aOn ? '<button class="btn btn-primary btn-xs" data-act="drop" data-k="attCtl">إدارة الحضور</button><button class="btn btn-soft btn-xs" data-act="drop" data-k="attSheet">سجل الحضور</button>' + (cOn ? '<button class="btn btn-ghost btn-xs" data-act="drop" data-k="certEdit">محتوى الشهادة</button><button class="btn btn-ghost btn-xs" data-act="congrats-preview" data-kind="cert">معاينة</button>' : '') : '');
+    if (aOn) { out += drop('attCtl', Views.admin.attCtl()); out += drop('attSheet', Views.admin.attSheet()); }
+    if (cOn) out += drop('certEdit', Views.admin.congratsEditor('cert'));
     const acfg = Assess.cfg(); const apre = Assess.avg('pre'), apost = Assess.avg('post');
     B('assess');
     out += tool('assess', '📋', '#2F5D8A', 'التقييم القبلي والبعدي', '<div class="row" style="gap:14px"><div><div class="bigno num">' + (apre == null ? '—' : Math.round(apre) + '%') + '</div>قبلي · <span class="num">' + Assess.list('pre').length + '</span></div><div><div class="bigno num">' + (apost == null ? '—' : Math.round(apost) + '%') + '</div>بعدي · <span class="num">' + Assess.list('post').length + '</span></div></div>' + (apre != null && apost != null ? '<div style="margin-top:4px">التحسن: <b class="num">' + (apost - apre >= 0 ? '+' : '') + Math.round(apost - apre) + '</b> نقطة</div>' : ''),
@@ -5358,7 +5375,7 @@ async function buildGuidePdf() {
     // الأهداف والمنهجية والفئة المستهدفة
     page('نظرة عامة على البرنامج', box('أهداف التعلم', PP.numbered(g.objectives.map(h), C)) + box('المنهجية', PP.numbered(g.methodology.map(h), '#1F3A5F')) +
       box('الفئة المستهدفة', '<ul style="margin:0">' + ['أصحاب المشاريع الصغيرة والمتوسطة ورواد الأعمال الراغبون في التوسع في البيع عبر الإنترنت', 'مؤسسو المشاريع القائمة على المنتجات أو الخدمات', 'رواد الأعمال المستعدون لإطلاق متاجرهم الرقمية', 'فرق التحول الرقمي والتسويق والعمليات'].map(x => '<li>' + x + '</li>').join('') + '</ul>') +
-      box('التقييم والشهادة', '<ul style="margin:0"><li>تقييم قبلي وبعدي من <span class="num">' + Content.assess().items.length + '</span> أسئلة اختيار من متعدد تطبيقية، بترتيب مختلف لكل متدرب.</li><li>شهادة مشاركة لمن يحضر <span class="num">' + Attend.cfg().threshold + '%</span> على الأقل من مدة البرنامج (تسجيل حضور برمز يومي).</li><li>تقييم البرنامج بعد التدريب بالنجوم ومؤشر صافي التوصية، وتقرير ختام آلي من لوحة الإدارة.</li></ul>'));
+      box('التقييم والشهادة', '<ul style="margin:0"><li>تقييم قبلي وبعدي من <span class="num">' + Content.assess().items.length + '</span> أسئلة اختيار من متعدد تطبيقية، بترتيب مختلف لكل متدرب.</li>' + (Attend.certOn() ? '<li>شهادة مشاركة لمن يحضر <span class="num">' + Attend.cfg().threshold + '%</span> على الأقل من مدة البرنامج (تسجيل حضور برمز يومي).</li>' : '') + '<li>تقييم البرنامج بعد التدريب بالنجوم ومؤشر صافي التوصية، وتقرير ختام آلي من لوحة الإدارة.</li></ul>'));
     // جدولا اليومين
     g.days.forEach((d, i) => { if (!d.length) return; page('جدول اليوم ' + (i + 1), tbl(['الوقت', 'الدقائق', 'الفقرة', 'ملاحظات التنفيذ'], d.map(x => ['<span class="num">' + h(x.t) + '</span>', '<span class="num">' + x.min + '</span>', h(x.act), h(x.note)]), ['60px', '56px', '', '34%']) + '<div style="margin-top:8px;font-family:IBM Plex Sans Arabic;font-size:12px;color:#7D879C">المجموع: <span class="num">' + d.reduce((a, b) => a + (+b.min || 0), 0) + '</span> دقيقة</div>'); });
     // المحاور
@@ -5383,10 +5400,10 @@ async function buildGuidePdf() {
 // ---------- المسجّلون CSV (كل حقول التسجيل + الموافقات + الحضور) ----------
 function exportUsersCsv() {
   const users = Store.users || {}; const fs = RegFields.all();
-  const rows = [['رقم العضوية'].concat(fs.map(f => f.label)).concat(['تاريخ التسجيل', 'موافقة الخصوصية', 'موافقة المتابعة', 'نسبة الحضور', 'التقييم القبلي', 'التقييم البعدي', 'نسبة الإنجاز'])];
+  const rows = [['رقم العضوية'].concat(fs.map(f => f.label)).concat(['تاريخ التسجيل', 'موافقة الخصوصية', 'موافقة المتابعة'].concat(Attend.on() ? ['نسبة الحضور'] : [], ['التقييم القبلي', 'التقييم البعدي', 'نسبة الإنجاز']))];
   const n = Content.assess().items.length;
   Object.keys(users).sort((a, b) => (users[a].member || 0) - (users[b].member || 0)).forEach(u => { const x = users[u]; const pre = Assess.rec('pre', u), post = Assess.rec('post', u);
-    rows.push([pad4(x.member || 0)].concat(fs.map(f => RegFields.val(x, f.key))).concat([x.ts ? fmtTime(x.ts) : '', x.consent && x.consent.privacy ? 'نعم' : '—', x.consent && x.consent.followup ? 'نعم' : 'لا', Attend.pct(u) + '%', pre && pre.done ? Assess.score(pre.answers) + '/' + n : '', post && post.done ? Assess.score(post.answers) + '/' + n : '', Math.round(Progress.forUser(u).pct * 100) + '%'])); });
+    rows.push([pad4(x.member || 0)].concat(fs.map(f => RegFields.val(x, f.key))).concat([x.ts ? fmtTime(x.ts) : '', x.consent && x.consent.privacy ? 'نعم' : '—', x.consent && x.consent.followup ? 'نعم' : 'لا'].concat(Attend.on() ? [Attend.pct(u) + '%'] : [], [pre && pre.done ? Assess.score(pre.answers) + '/' + n : '', post && post.done ? Assess.score(post.answers) + '/' + n : '', Math.round(Progress.forUser(u).pct * 100) + '%']))); });
   downloadBlob(csvBlob(rows), 'المسجلون.csv');
 }
 
@@ -5420,7 +5437,7 @@ function reportData(snap) {
     const budget = (() => { const e = Content.allExercises().map(x => x.e).find(e => e && e.sim === 'budget'); if (!e) return []; const ps = Store.posts[e.id] || {}; return Object.keys(ps).filter(k => ps[k] && ps[k].state).map(k => ({ g: +k.slice(1), r: BudgetSim.calc(ps[k].state) })).sort((a, b) => b.r.score - a.r.score); })();
     const fu = {}; ['30', '60', '90'].forEach(k => { fu[k] = Object.keys((Store.followups || {})['d' + k] || {}).length; });
     const d = { cohort: Cohort.cur(), uids, n: A.items.length, A, pre, post, paired, gain, preAvg: Assess.avg('pre'), postAvg: Assess.avg('post'), pq: Assess.perQuestion('pre'), qq: Assess.perQuestion('post'), axes, survey, attAvg, perDay, cfg,
-      certs: Attend.holders().length, achievers: Progress.achievers().length, labGroups: Object.keys(Store.labAnswers || {}).length, leads, byProg, budget, fu,
+      certs: Attend.holders().length, attOn: Attend.on(), certOn: Attend.certOn(), achievers: Progress.achievers().length, labGroups: Object.keys(Store.labAnswers || {}).length, leads, byProg, budget, fu,
       sector: distOf(uids, 'sector'), stage: distOf(uids, 'stage'), hasStore: distOf(uids, 'hasStore'), onlineSales: distOf(uids, 'onlineSales') };
     d.recs = recommendations(d); return d;
   });
@@ -5434,7 +5451,7 @@ function recommendations(d) {
   }
   if (d.survey.avgs.some(x => x != null)) { const lo = d.survey.avgs.map((v, i) => ({ v, i })).filter(x => x.v != null).sort((a, b) => a.v - b.v)[0]; if (lo && lo.v < 4.3) add('أقل بنود الرضا تقييمًا: «' + d.survey.rates[lo.i] + '» (' + lo.v.toFixed(1) + ' من 5)؛ يُوصى بمراجعته.', 'Lowest-rated satisfaction item: "' + (EN.rates[lo.i] || d.survey.rates[lo.i]) + '" (' + lo.v.toFixed(1) + '/5); review for the next cohort.'); }
   const lowAx = d.axes.filter(x => x.exs).sort((a, b) => a.rate - b.rate)[0]; if (lowAx && d.uids.length && lowAx.rate < 0.5) add('أقل المحاور مشاركة: «' + lowAx.a.title + '» (' + Math.round(lowAx.rate * 100) + '% من المسجلين)؛ يُقترح تخصيص وقت داخل الجلسة لتمارينه.', 'Lowest engagement: "' + (EN.axes[lowAx.a.id] || lowAx.a.title) + '" (' + Math.round(lowAx.rate * 100) + '% of participants); allocate in-session time to its exercises.');
-  const below = d.uids.filter(u => !Attend.eligible(u)).length; if (d.uids.length && below) add(below + ' مشاركًا لم يبلغوا نسبة الحضور المطلوبة للشهادة (' + d.cfg.threshold + '%)؛ يُقترح تذكير مسبق بالمواعيد وتسجيل الحضور في بداية كل جلسة.', below + ' participant(s) did not reach the ' + d.cfg.threshold + '% attendance required for certification; send reminders and take attendance at the start of each session.');
+  const below = d.certOn ? d.uids.filter(u => !Attend.eligible(u)).length : 0; if (d.uids.length && below) add(below + ' مشاركًا لم يبلغوا نسبة الحضور المطلوبة للشهادة (' + d.cfg.threshold + '%)؛ يُقترح تذكير مسبق بالمواعيد وتسجيل الحضور في بداية كل جلسة.', below + ' participant(s) did not reach the ' + d.cfg.threshold + '% attendance required for certification; send reminders and take attendance at the start of each session.');
   if (d.survey.nps != null) add(d.survey.nps >= 50 ? 'مؤشر صافي التوصية ممتاز (' + d.survey.nps + ')؛ يمكن الاستفادة من المشاركين كسفراء للدفعات القادمة.' : 'مؤشر صافي التوصية ' + d.survey.nps + '؛ يُوصى بمراجعة آراء المشاركين النصية لتحديد أولويات التحسين.', d.survey.nps >= 50 ? 'Excellent Net Promoter Score (' + d.survey.nps + '); participants can act as ambassadors for future cohorts.' : 'NPS of ' + d.survey.nps + '; review qualitative feedback to prioritise improvements.');
   if (d.leads.length) { const top = Object.keys(d.byProg).sort((a, b) => d.byProg[b] - d.byProg[a])[0]; add(d.leads.length + ' مشروعًا أبدى اهتمامًا ببرامج البنك، وأكثرها طلبًا: «' + top + '»؛ يُوصى بتواصل الفريق المختص خلال أسبوعين من انتهاء البرنامج.', d.leads.length + ' businesses expressed interest in QDB programmes (most requested: "' + (EN.programs[DEFAULT_LEADS.programs.indexOf(top)] || top) + '"); recommend follow-up by the relevant QDB team within two weeks.'); }
   const topSector = Object.keys(d.sector).sort((a, b) => d.sector[b] - d.sector[a])[0]; if (topSector) add('القطاع الأكثر تمثيلًا: «' + topSector + '»؛ يُقترح إضافة أمثلة ودراسات حالة من هذا القطاع في الدفعات القادمة.', 'Most represented sector: "' + enOpt(topSector) + '"; add sector-specific cases in future cohorts.');
@@ -5468,20 +5485,20 @@ async function buildReportPdf(lang = 'ar', snap, cohortName) {
       '<p style="margin-top:12px;color:#4A5470;font-size:15px">' + h(coh) + (d.cohort.start ? ' · <span class="num">' + h(d.cohort.start) + (d.cohort.end ? ' — ' + h(d.cohort.end) : '') + '</span>' : '') + '</p>' +
       '<p style="color:#4A5470;font-size:13.5px">' + L('إدارة تنمية ريادة الأعمال · برنامج تدريبي تفاعلي (يومان × 4 ساعات)', 'Entrepreneurship Development · Interactive training programme (2 days × 4 hours)') + '</p><div class="num" style="margin-top:16px;font-size:12px;color:#7D879C">' + L('تاريخ الإصدار', 'Issued') + ': ' + fmtDate(Date.now()) + '</div></div>');
     // 2) الملخص التنفيذي
-    const summ = E ? [d.uids.length + ' participants registered; average attendance ' + d.attAvg + '% and ' + d.certs + ' qualified for the participation certificate (≥ ' + d.cfg.threshold + '% attendance).',
+    const summ = E ? [d.uids.length + ' participants registered' + (d.attOn ? '; average attendance ' + d.attAvg + '%' + (d.certOn ? ' and ' + d.certs + ' qualified for the participation certificate (≥ ' + d.cfg.threshold + '% attendance)' : '') : '') + '.',
       d.preAvg != null || d.postAvg != null ? 'Knowledge assessment: pre-test average ' + pct(d.preAvg) + ' vs post-test ' + pct(d.postAvg) + (d.gain != null ? ' — an average gain of ' + Math.round(d.gain) + ' points for participants who completed both.' : '.') : 'Knowledge assessment results are not yet available.',
       d.survey.n ? 'Satisfaction: ' + (d.survey.overall ? d.survey.overall.toFixed(1) : '—') + '/5 across ' + d.survey.n + ' evaluations; Net Promoter Score ' + (d.survey.nps == null ? '—' : d.survey.nps) + '.' : 'Post-training evaluation responses are pending.',
       d.leads.length + ' businesses requested follow-up on QDB programmes; ' + d.labGroups + ' groups completed the capstone lab.']
-      : [d.uids.length + ' مشاركًا مسجّلًا، بمتوسط حضور ' + d.attAvg + '%، واستحق ' + d.certs + ' منهم شهادة المشاركة (حضور ≥ ' + d.cfg.threshold + '%).',
+      : [d.uids.length + ' مشاركًا مسجّلًا' + (d.attOn ? '، بمتوسط حضور ' + d.attAvg + '%' + (d.certOn ? '، واستحق ' + d.certs + ' منهم شهادة المشاركة (حضور ≥ ' + d.cfg.threshold + '%)' : '') : '') + '.',
       d.preAvg != null || d.postAvg != null ? 'التقييم المعرفي: متوسط القبلي ' + pct(d.preAvg) + ' مقابل البعدي ' + pct(d.postAvg) + (d.gain != null ? '، بتحسن متوسط ' + Math.round(d.gain) + ' نقطة مئوية لمن أجاب التقييمين.' : '.') : 'نتائج التقييم المعرفي غير متاحة بعد.',
       d.survey.n ? 'الرضا العام ' + (d.survey.overall ? d.survey.overall.toFixed(1) : '—') + ' من 5 من ' + d.survey.n + ' تقييمًا، ومؤشر صافي التوصية ' + (d.survey.nps == null ? '—' : d.survey.nps) + '.' : 'تقييمات ما بعد التدريب لم تكتمل بعد.',
       d.leads.length + ' مشروعًا طلب التواصل بخصوص برامج البنك، وأنجزت ' + d.labGroups + ' مجموعات المختبر الختامي.'];
-    page(L('الملخص التنفيذي', 'Executive summary'), '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">' + card(L('المسجّلون', 'Participants'), d.uids.length) + card(L('متوسط الحضور', 'Avg. attendance'), d.attAvg + '%') + card(L('مستحقو الشهادة', 'Certified'), d.certs, '≥ ' + d.cfg.threshold + '%') + card(L('التقييم القبلي', 'Pre-test avg.'), pct(d.preAvg), d.pre.length + ' ' + L('مشارك', 'resp.')) + card(L('التقييم البعدي', 'Post-test avg.'), pct(d.postAvg), d.post.length + ' ' + L('مشارك', 'resp.')) + card(L('متوسط التحسن', 'Avg. gain (pts)'), d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain)) + card(L('الرضا العام', 'Satisfaction'), d.survey.overall ? d.survey.overall.toFixed(1) + '/5' : '—') + card('NPS', d.survey.nps == null ? '—' : d.survey.nps) + card(L('مهتمون ببرامج البنك', 'QDB leads'), d.leads.length) + '</div>' +
+    page(L('الملخص التنفيذي', 'Executive summary'), '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">' + card(L('المسجّلون', 'Participants'), d.uids.length) + (d.attOn ? card(L('متوسط الحضور', 'Avg. attendance'), d.attAvg + '%') : '') + (d.certOn ? card(L('مستحقو الشهادة', 'Certified'), d.certs, '≥ ' + d.cfg.threshold + '%') : '') + card(L('التقييم القبلي', 'Pre-test avg.'), pct(d.preAvg), d.pre.length + ' ' + L('مشارك', 'resp.')) + card(L('التقييم البعدي', 'Post-test avg.'), pct(d.postAvg), d.post.length + ' ' + L('مشارك', 'resp.')) + card(L('متوسط التحسن', 'Avg. gain (pts)'), d.gain == null ? '—' : (d.gain >= 0 ? '+' : '') + Math.round(d.gain)) + card(L('الرضا العام', 'Satisfaction'), d.survey.overall ? d.survey.overall.toFixed(1) + '/5' : '—') + card('NPS', d.survey.nps == null ? '—' : d.survey.nps) + card(L('مهتمون ببرامج البنك', 'QDB leads'), d.leads.length) + '</div>' +
       box(L('أبرز النتائج', 'Key findings'), PP.numbered(summ.map(h), C)) + box(L('التوصيات', 'Recommendations'), d.recs.length ? PP.numbered(d.recs.map(r => h(E ? r.en : r.ar)), '#138A5E') : L('لا توجد بيانات كافية بعد لتوليد توصيات.', 'Not enough data yet to generate recommendations.')));
     // 3) ملف المشاركين والحضور
     page(L('ملف المشاركين', 'Participant profile'), box(E ? EN.fields.sector : 'قطاع المشروع', distBars(d.sector)) + box(E ? EN.fields.stage : 'مرحلة المشروع', distBars(d.stage)));
-    page(L('الجاهزية الرقمية والحضور', 'Digital readiness & attendance'), box(E ? EN.fields.hasStore : 'قناة البيع الإلكترونية', distBars(d.hasStore)) + box(E ? EN.fields.onlineSales : 'نسبة المبيعات الإلكترونية', distBars(d.onlineSales)) +
-      box(L('الحضور حسب اليوم', 'Attendance by day'), pdfBars(d.perDay.map((v, i) => ({ l: L('اليوم ', 'Day ') + (i + 1), v, t: v + ' / ' + d.uids.length })), { max: Math.max(1, d.uids.length), color: '#0E7C7B' })));
+    page(d.attOn ? L('الجاهزية الرقمية والحضور', 'Digital readiness & attendance') : L('الجاهزية الرقمية', 'Digital readiness'), box(E ? EN.fields.hasStore : 'قناة البيع الإلكترونية', distBars(d.hasStore)) + box(E ? EN.fields.onlineSales : 'نسبة المبيعات الإلكترونية', distBars(d.onlineSales)) +
+      (d.attOn ? box(L('الحضور حسب اليوم', 'Attendance by day'), pdfBars(d.perDay.map((v, i) => ({ l: L('اليوم ', 'Day ') + (i + 1), v, t: v + ' / ' + d.uids.length })), { max: Math.max(1, d.uids.length), color: '#0E7C7B' })) : ''));
     // 4) نتائج التقييم
     const qRows = d.A.items.map((it, i) => ({ i, l: (i + 1) + '. ' + (E ? (EN.assess[i] || 'Q' + (i + 1)) : clip(it.q, 70)) }));
     page(L('نتائج التعلم: التقييم القبلي والبعدي', 'Learning outcomes: pre vs post assessment'), box(L('المتوسط العام', 'Overall average'), pdfBars([{ l: L('قبلي', 'Pre-test'), v: d.preAvg == null ? 0 : Math.round(d.preAvg), t: pct(d.preAvg), c: '#C98A9C' }, { l: L('بعدي', 'Post-test'), v: d.postAvg == null ? 0 : Math.round(d.postAvg), t: pct(d.postAvg) }], { max: 100, lw: '22%' })) +
@@ -5506,9 +5523,9 @@ async function buildReportPdf(lang = 'ar', snap, cohortName) {
 }
 function exportReportCsv(snap, cohortName) {
   const d = reportData(snap); const r = v => v == null ? '—' : Math.round(v) + '%';
-  const rows = [['البند', 'القيمة'], ['البرنامج', Content.courseTitle()], ['الدفعة', cohortName || d.cohort.name], ['تاريخ التقرير', fmtDate(Date.now())], ['عدد المسجّلين', d.uids.length], ['متوسط نسبة الحضور', d.attAvg + '%'], ['المستحقون لشهادة المشاركة', d.certs], ['المنجزون لـ 80% من التمارين', d.achievers],
+  const rows = [['البند', 'القيمة'], ['البرنامج', Content.courseTitle()], ['الدفعة', cohortName || d.cohort.name], ['تاريخ التقرير', fmtDate(Date.now())], ['عدد المسجّلين', d.uids.length]].concat(d.attOn ? [['متوسط نسبة الحضور', d.attAvg + '%']] : [], d.certOn ? [['المستحقون لشهادة المشاركة', d.certs]] : [], [['المنجزون لـ 80% من التمارين', d.achievers],
     ['متوسط التقييم القبلي', r(d.preAvg)], ['متوسط التقييم البعدي', r(d.postAvg)], ['متوسط التحسن (نقطة مئوية)', d.gain == null ? '—' : Math.round(d.gain)], ['الرضا العام من 5', d.survey.overall ? d.survey.overall.toFixed(2) : '—'], ['مؤشر صافي التوصية', d.survey.nps == null ? '—' : d.survey.nps], ['المهتمون ببرامج البنك', d.leads.length], ['مجموعات المختبر', d.labGroups], [],
-    ['السؤال', 'صحيح قبلي', 'صحيح بعدي']];
+    ['السؤال', 'صحيح قبلي', 'صحيح بعدي']]);
   d.A.items.forEach((it, i) => rows.push([(i + 1) + '. ' + it.q, r(d.pq[i]), r(d.qq[i])]));
   rows.push([], ['بند الرضا', 'المتوسط من 5']); d.survey.rates.forEach((x, i) => rows.push([x, d.survey.avgs[i] ? d.survey.avgs[i].toFixed(2) : '—']));
   rows.push([], ['المحور', 'التمارين', 'المشاركات', 'المشاركون', 'نسبة المشاركين']); d.axes.forEach(x => rows.push([x.a.title, x.exs, x.posts, x.people, Math.round(x.rate * 100) + '%']));
@@ -5903,6 +5920,7 @@ document.addEventListener('click', async ev => {
     case 'save-card': saveMemberCard(Object.assign({}, Me.data, { member: Me.data.member || ((Store.users[Me.uid()] || {}).member) })); break;
     case 'my-filter': UIState.myFilter = t.getAttribute('data-k'); App.render(); break;
     case 'checkin': {
+      if (!Attend.on()) break;
       const d = t.getAttribute('data-d'); const inp = $('#checkin' + d); const v = inp ? inp.value.replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x)).trim() : '';
       const cd = (Attend.cfg().codes || {})['d' + d] || {};
       if (!cd.open) { UI.alert('تسجيل الحضور لهذا اليوم مغلق الآن.'); break; }
@@ -5957,6 +5975,11 @@ document.addEventListener('click', async ev => {
     case 'cg-save': { const kind = t.getAttribute('data-kind'); const box = t.closest('.tool-drop'); const o = { paragraphs: $$('[data-cg-para]', box).map(x => x.value.trim()).filter(Boolean) }; $$('[data-cg]', box).forEach(x => { o[x.getAttribute('data-cg')] = x.value.trim(); }); await DB.set('site/' + kind, o); UI.toast('✅ حُفظ المحتوى'); break; }
     case 'cg-reset': { const kind = t.getAttribute('data-kind'); if (await UI.confirm('استرجاع المحتوى الافتراضي؟', { ok: 'استرجاع' })) DB.remove('site/' + kind); break; }
     // ----- الحضور -----
+    case 'att-feature': {
+      const f = t.getAttribute('data-f'); const on = f === 'enabled' ? Attend.on() : Attend.certOn(); const upd = { [f]: !on };
+      if (f === 'enabled' && on) Attend.days().forEach(d => { if ((Attend.cfg().codes['d' + d] || {}).open) upd['codes/d' + d + '/open'] = false; }); // إغلاق أي تسجيل مفتوح
+      await DB.update('settings/attendance', upd); UI.toast(f === 'enabled' ? (on ? '⏸ عُطّل تسجيل الحضور (ومعه الشهادة)' : '✅ فُعّل تسجيل الحضور') : (on ? '⏸ عُطّلت شهادة المشاركة' : '✅ فُعّلت شهادة المشاركة')); break;
+    }
     case 'att-cfg-save': { const days = parseInt($('#attDays').value, 10), hours = parseFloat($('#attHours').value), th = parseInt($('#attTh').value, 10); if (!(days >= 1 && days <= 10) || !(hours > 0) || !(th >= 0 && th <= 100)) { UI.alert('تحقق من القيم المدخلة.'); break; } await DB.update('settings/attendance', { days, hours, threshold: th }); UI.toast('✅ حُفظت إعدادات الحضور'); break; }
     case 'att-code': { const d = t.getAttribute('data-d'); await DB.set('secure/attcodes/d' + d + '/code', String(Math.floor(1000 + Math.random() * 9000))); break; }
     case 'att-open': { const d = t.getAttribute('data-d'); const cd = Attend.cfg().codes['d' + d] || {}; await DB.update('settings/attendance/codes/d' + d, { open: !cd.open }); UI.toast(cd.open ? '🔒 أُغلق تسجيل الحضور' : '🟢 فُتح تسجيل الحضور لليوم ' + d); break; }

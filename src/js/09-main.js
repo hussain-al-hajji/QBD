@@ -348,6 +348,7 @@ document.addEventListener('click', async ev => {
     case 'save-card': saveMemberCard(Object.assign({}, Me.data, { member: Me.data.member || ((Store.users[Me.uid()] || {}).member) })); break;
     case 'my-filter': UIState.myFilter = t.getAttribute('data-k'); App.render(); break;
     case 'checkin': {
+      if (!Attend.on()) break;
       const d = t.getAttribute('data-d'); const inp = $('#checkin' + d); const v = inp ? inp.value.replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x)).trim() : '';
       const cd = (Attend.cfg().codes || {})['d' + d] || {};
       if (!cd.open) { UI.alert('تسجيل الحضور لهذا اليوم مغلق الآن.'); break; }
@@ -402,6 +403,11 @@ document.addEventListener('click', async ev => {
     case 'cg-save': { const kind = t.getAttribute('data-kind'); const box = t.closest('.tool-drop'); const o = { paragraphs: $$('[data-cg-para]', box).map(x => x.value.trim()).filter(Boolean) }; $$('[data-cg]', box).forEach(x => { o[x.getAttribute('data-cg')] = x.value.trim(); }); await DB.set('site/' + kind, o); UI.toast('✅ حُفظ المحتوى'); break; }
     case 'cg-reset': { const kind = t.getAttribute('data-kind'); if (await UI.confirm('استرجاع المحتوى الافتراضي؟', { ok: 'استرجاع' })) DB.remove('site/' + kind); break; }
     // ----- الحضور -----
+    case 'att-feature': {
+      const f = t.getAttribute('data-f'); const on = f === 'enabled' ? Attend.on() : Attend.certOn(); const upd = { [f]: !on };
+      if (f === 'enabled' && on) Attend.days().forEach(d => { if ((Attend.cfg().codes['d' + d] || {}).open) upd['codes/d' + d + '/open'] = false; }); // إغلاق أي تسجيل مفتوح
+      await DB.update('settings/attendance', upd); UI.toast(f === 'enabled' ? (on ? '⏸ عُطّل تسجيل الحضور (ومعه الشهادة)' : '✅ فُعّل تسجيل الحضور') : (on ? '⏸ عُطّلت شهادة المشاركة' : '✅ فُعّلت شهادة المشاركة')); break;
+    }
     case 'att-cfg-save': { const days = parseInt($('#attDays').value, 10), hours = parseFloat($('#attHours').value), th = parseInt($('#attTh').value, 10); if (!(days >= 1 && days <= 10) || !(hours > 0) || !(th >= 0 && th <= 100)) { UI.alert('تحقق من القيم المدخلة.'); break; } await DB.update('settings/attendance', { days, hours, threshold: th }); UI.toast('✅ حُفظت إعدادات الحضور'); break; }
     case 'att-code': { const d = t.getAttribute('data-d'); await DB.set('secure/attcodes/d' + d + '/code', String(Math.floor(1000 + Math.random() * 9000))); break; }
     case 'att-open': { const d = t.getAttribute('data-d'); const cd = Attend.cfg().codes['d' + d] || {}; await DB.update('settings/attendance/codes/d' + d, { open: !cd.open }); UI.toast(cd.open ? '🔒 أُغلق تسجيل الحضور' : '🟢 فُتح تسجيل الحضور لليوم ' + d); break; }

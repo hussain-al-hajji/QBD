@@ -1354,3 +1354,12 @@ html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-
 .al-email{margin-top:12px;font-family:var(--f-ui);font-size:13.5px}
 .al-email summary{cursor:pointer;color:var(--ink-3);margin-bottom:8px}
 .home-pane>.section:first-child,.home-pane>.card:first-child{margin-top:0!important}
+/* مفاتيح تفعيل الميزات في لوحة الإدارة */
+.feat-sws{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.feat-sw{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-family:var(--f-ui);font-size:13px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.feat-sw i{width:32px;height:18px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.feat-sw i::after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:inset-inline-start .2s}
+.feat-sw.on{color:var(--ink);border-color:#0E7C7B}
+.feat-sw.on i{background:#0E7C7B}
+.feat-sw.on i::after{inset-inline-start:16px}
+.feat-sw:disabled{opacity:.5;cursor:not-allowed}

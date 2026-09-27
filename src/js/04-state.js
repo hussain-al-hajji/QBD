@@ -186,12 +186,15 @@ const Assess = {
 // ---------- الحضور وشهادة المشاركة ----------
 const Attend = {
   cfg() { const c = Object.assign({ days: ATTEND_DAYS_DEFAULT, hours: ATTEND_HOURS_DEFAULT, threshold: CERT_THRESHOLD_DEFAULT, codes: {} }, Store.attCfg || {}); c.days = Math.max(1, Math.min(10, +c.days || ATTEND_DAYS_DEFAULT)); c.hours = Math.max(1, +c.hours || ATTEND_HOURS_DEFAULT); c.threshold = Math.max(0, Math.min(100, +c.threshold || 0)); c.codes = c.codes || {}; const sec = (Store.secure && Store.secure.attcodes) || {}; c.codes = Object.assign({}, c.codes); Object.keys(sec).forEach(k => { c.codes[k] = Object.assign({}, c.codes[k], { code: (sec[k] || {}).code }); }); return c; },
+  // تسجيل الحضور وشهادة المشاركة ميزتان اختياريتان (قد تتولاهما الجهة الراعية)؛ الشهادة تعتمد على الحضور
+  on() { return (Store.attCfg || {}).enabled !== false; },
+  certOn() { return Attend.on() && (Store.attCfg || {}).cert !== false; },
   days() { const out = []; for (let i = 1; i <= Attend.cfg().days; i++) out.push(i); return out; },
   hoursOf(uid, d) { const man = ((Store.attendance || {})[uid] || {})['d' + d]; if (man != null) return Math.max(0, Math.min(Attend.cfg().hours, +man || 0)); return ((Store.checkins || {})['d' + d] || {})[uid] ? Attend.cfg().hours : 0; }, // الساعات اليدوية من المدرب تتقدم على تسجيل الرمز
   pct(uid) { const c = Attend.cfg(); const tot = c.days * c.hours; const got = Attend.days().reduce((s, d) => s + Attend.hoursOf(uid, d), 0); return tot ? Math.round(got / tot * 100) : 0; },
   eligible(uid) { return Attend.pct(uid) >= Attend.cfg().threshold; },
-  openDays() { const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open); },
-  holders() { return Object.keys(Store.users || {}).filter(Attend.eligible).map(u => Object.assign({ uid: u }, Store.users[u])); }
+  openDays() { if (!Attend.on()) return []; const c = Attend.cfg(); return Attend.days().filter(d => c.codes['d' + d] && c.codes['d' + d].open); },
+  holders() { if (!Attend.certOn()) return []; return Object.keys(Store.users || {}).filter(Attend.eligible).map(u => Object.assign({ uid: u }, Store.users[u])); }
 };
 
 // ---------- حقول التسجيل (قابلة للتحكم من لوحة الإدارة) ----------

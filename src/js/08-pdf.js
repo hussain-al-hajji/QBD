@@ -305,7 +305,7 @@ async function buildGuidePdf() {
     // الأهداف والمنهجية والفئة المستهدفة
     page('نظرة عامة على البرنامج', box('أهداف التعلم', PP.numbered(g.objectives.map(h), C)) + box('المنهجية', PP.numbered(g.methodology.map(h), '#1F3A5F')) +
       box('الفئة المستهدفة', '<ul style="margin:0">' + ['أصحاب المشاريع الصغيرة والمتوسطة ورواد الأعمال الراغبون في التوسع في البيع عبر الإنترنت', 'مؤسسو المشاريع القائمة على المنتجات أو الخدمات', 'رواد الأعمال المستعدون لإطلاق متاجرهم الرقمية', 'فرق التحول الرقمي والتسويق والعمليات'].map(x => '<li>' + x + '</li>').join('') + '</ul>') +
-      box('التقييم والشهادة', '<ul style="margin:0"><li>تقييم قبلي وبعدي من <span class="num">' + Content.assess().items.length + '</span> أسئلة اختيار من متعدد تطبيقية، بترتيب مختلف لكل متدرب.</li><li>شهادة مشاركة لمن يحضر <span class="num">' + Attend.cfg().threshold + '%</span> على الأقل من مدة البرنامج (تسجيل حضور برمز يومي).</li><li>تقييم البرنامج بعد التدريب بالنجوم ومؤشر صافي التوصية، وتقرير ختام آلي من لوحة الإدارة.</li></ul>'));
+      box('التقييم والشهادة', '<ul style="margin:0"><li>تقييم قبلي وبعدي من <span class="num">' + Content.assess().items.length + '</span> أسئلة اختيار من متعدد تطبيقية، بترتيب مختلف لكل متدرب.</li>' + (Attend.certOn() ? '<li>شهادة مشاركة لمن يحضر <span class="num">' + Attend.cfg().threshold + '%</span> على الأقل من مدة البرنامج (تسجيل حضور برمز يومي).</li>' : '') + '<li>تقييم البرنامج بعد التدريب بالنجوم ومؤشر صافي التوصية، وتقرير ختام آلي من لوحة الإدارة.</li></ul>'));
     // جدولا اليومين
     g.days.forEach((d, i) => { if (!d.length) return; page('جدول اليوم ' + (i + 1), tbl(['الوقت', 'الدقائق', 'الفقرة', 'ملاحظات التنفيذ'], d.map(x => ['<span class="num">' + h(x.t) + '</span>', '<span class="num">' + x.min + '</span>', h(x.act), h(x.note)]), ['60px', '56px', '', '34%']) + '<div style="margin-top:8px;font-family:IBM Plex Sans Arabic;font-size:12px;color:#7D879C">المجموع: <span class="num">' + d.reduce((a, b) => a + (+b.min || 0), 0) + '</span> دقيقة</div>'); });
     // المحاور
@@ -330,9 +330,9 @@ async function buildGuidePdf() {
 // ---------- المسجّلون CSV (كل حقول التسجيل + الموافقات + الحضور) ----------
 function exportUsersCsv() {
   const users = Store.users || {}; const fs = RegFields.all();
-  const rows = [['رقم العضوية'].concat(fs.map(f => f.label)).concat(['تاريخ التسجيل', 'موافقة الخصوصية', 'موافقة المتابعة', 'نسبة الحضور', 'التقييم القبلي', 'التقييم البعدي', 'نسبة الإنجاز'])];
+  const rows = [['رقم العضوية'].concat(fs.map(f => f.label)).concat(['تاريخ التسجيل', 'موافقة الخصوصية', 'موافقة المتابعة'].concat(Attend.on() ? ['نسبة الحضور'] : [], ['التقييم القبلي', 'التقييم البعدي', 'نسبة الإنجاز']))];
   const n = Content.assess().items.length;
   Object.keys(users).sort((a, b) => (users[a].member || 0) - (users[b].member || 0)).forEach(u => { const x = users[u]; const pre = Assess.rec('pre', u), post = Assess.rec('post', u);
-    rows.push([pad4(x.member || 0)].concat(fs.map(f => RegFields.val(x, f.key))).concat([x.ts ? fmtTime(x.ts) : '', x.consent && x.consent.privacy ? 'نعم' : '—', x.consent && x.consent.followup ? 'نعم' : 'لا', Attend.pct(u) + '%', pre && pre.done ? Assess.score(pre.answers) + '/' + n : '', post && post.done ? Assess.score(post.answers) + '/' + n : '', Math.round(Progress.forUser(u).pct * 100) + '%'])); });
+    rows.push([pad4(x.member || 0)].concat(fs.map(f => RegFields.val(x, f.key))).concat([x.ts ? fmtTime(x.ts) : '', x.consent && x.consent.privacy ? 'نعم' : '—', x.consent && x.consent.followup ? 'نعم' : 'لا'].concat(Attend.on() ? [Attend.pct(u) + '%'] : [], [pre && pre.done ? Assess.score(pre.answers) + '/' + n : '', post && post.done ? Assess.score(post.answers) + '/' + n : '', Math.round(Progress.forUser(u).pct * 100) + '%']))); });
   downloadBlob(csvBlob(rows), 'المسجلون.csv');
 }
