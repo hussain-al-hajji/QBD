@@ -21,6 +21,7 @@ const SEED = {
   assign: { [uid]: 1 }, storyLikes: { st1: { likes: { [uid]: true } } },
   meta: { memberCounter: 1002, schema: 2 }, stats: { registered: 2 },
   secure: { monitor: { enabled: true, token: 'tok' } },
+  settings: { attendance: { enabled: true, cert: true } },
   // ضابط إيجابي: محتوى يكتبه المدرب ويمر عبر المنظِّف (sanitize) — يكشف ضعف المنظِّف إن وُجد
   site: { home: { heroDesc: '<b>وصف</b>' + X('sanitizer-img') + '<a href="java&#115;cript:window.__xss=[1]">x</a><svg><a xlink:href="javascript:1"><text>y</text></a></svg>' } }
 };

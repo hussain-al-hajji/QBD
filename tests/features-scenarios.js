@@ -27,11 +27,11 @@ const base = att => ({ admins: { adm1: true }, users: { u1: { name: 'سارة أ
     const d = await p.evaluate(() => { const r = reportData(); return { attOn: r.attOn, certOn: r.certOn, certs: r.certs }; }); o.report = d;
     o.realNet = net.real; o.errs = errs; R[label] = o; await ctx.close();
   };
-  await trainee('traineeDefault', {});
-  await trainee('traineeCertOff', { cert: false });
-  await trainee('traineeAllOff', { enabled: false });
+  await trainee('traineeAllOn', { enabled: true, cert: true });
+  await trainee('traineeCertOff', { enabled: true });
+  await trainee('traineeDefaultOff', {});
   { // المدرب يبدّل المفاتيح
-    const { ctx, p, net, errs } = await open(base({}), { googleUser: { uid: 'adm1', email: 't@x' } });
+    const { ctx, p, net, errs } = await open(base({ enabled: true, cert: true }), { googleUser: { uid: 'adm1', email: 't@x' } });
     await p.click('[data-act="admin-enter"]'); await p.waitForTimeout(300); await p.click('[data-google]'); await p.waitForTimeout(900);
     await p.evaluate(() => { UIState.adminGrp = [...document.querySelectorAll('[data-tool="attend"]')].length ? UIState.adminGrp : UIState.adminGrp; });
     const grp = await p.evaluate(() => { for (const g of ['g_users', 'g_sponsor', 'g_export', 'g_home']) { UIState.adminGrp = g; App.render(); if (document.querySelector('[data-tool="attend"]')) return g; } return null; });
