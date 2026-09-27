@@ -6,14 +6,14 @@ const RULES = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'database.ru
 const U = 'file://' + path.resolve(__dirname, '..', 'index.html');
 const DATA = { admins: { adm1: true }, site: { home: { heroTitle: 'عنوان' } }, users: { u1: { name: 'سارة', member: 1001, ts: 1 } }, meta: { memberCounter: 1001 }, settings: { attendance: { open: { 1: true } } } };
 const USERS = { 'trainer@qdb.test': { pass: 'Secret#123', uid: 'adm1' }, 'someone@qdb.test': { pass: 'pw123456', uid: 'u9' } };
-async function open(b, hash) {
+async function open(b, hash, extra) {
   const ctx = await b.newContext({ viewport: { width: 1280, height: 850 } }); const p = await ctx.newPage(); const net = { real: 0 }; const errs = [];
   p.on('pageerror', e => errs.push(e.message));
   await ctx.route(/firebaseio\.com|identitytoolkit|securetoken/, r => { net.real++; return r.abort(); });
   await ctx.route(/firebase-app-compat\.js/, r => r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
   await ctx.route(/firebase-(database|auth)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
-  await p.addInitScript(([d, r, u]) => { window.__MOCKCFG = { data: d, rules: r, authUsers: u, delayFirst: 200 }; window.__FB_TEST_CONFIG = { apiKey: 'test-key', authDomain: 'test.firebaseapp.com', projectId: 'test' }; }, [DATA, RULES, USERS]);
+  await p.addInitScript(([d, r, u, x]) => { window.__MOCKCFG = Object.assign({ data: d, rules: r, authUsers: u, delayFirst: 200 }, x || {}); window.__FB_TEST_CONFIG = { apiKey: 'test-key', authDomain: 'test.firebaseapp.com', projectId: 'test' }; }, [DATA, RULES, USERS, extra]);
   await p.goto(U + (hash || '')); await p.waitForTimeout(900);
   return { ctx, p, net, errs };
 }
@@ -55,6 +55,7 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
     const { ctx, p, net } = await open(b);
     await p.click('[data-act="admin-enter"]'); await p.waitForTimeout(300);
     R.login = { emailForm: !!(await p.$('#alEmail')), noPasscodePrompt: !(await p.$('.modal [data-in][type="password"]:not(#alPass)')) };
+    R.login.googleBtn = !!(await p.$('[data-google]')); await p.click('.al-email summary');
     await p.fill('#alEmail', 'trainer@qdb.test'); await p.fill('#alPass', 'wrong'); await p.click('.modal [data-ok]'); await p.waitForTimeout(300);
     R.login.wrongPassMsg = await p.$eval('#alErr', e => e.textContent);
     await p.fill('#alEmail', 'someone@qdb.test'); await p.fill('#alPass', 'pw123456'); await p.click('.modal [data-ok]'); await p.waitForTimeout(400);
@@ -66,6 +67,14 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
     await p.click('[data-act="admin-exit"]'); await p.waitForTimeout(400);
     R.afterLogout = { adminOk: await p.evaluate(() => Admin.ok()), write: await tryW(p, "() => DB.set('visibility/home_tools', null)") };
     R.login.realNet = net.real; await ctx.close();
+  }
+  { // 3) Google: حساب مدرب وحساب غير مدرب
+    let r = await open(b, '', { googleUser: { uid: 'adm1', email: 'trainer@gmail.com' } });
+    await r.p.click('[data-act="admin-enter"]'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);
+    R.google = { adminView: await r.p.evaluate(() => Router.cur.view === 'admin' && Admin.ok()), canHide: await tryW(r.p, "() => DB.set('visibility/home_x', false)") }; await r.ctx.close();
+    r = await open(b, '', { googleUser: { uid: 'g777', email: 'stranger@gmail.com' } });
+    await r.p.click('[data-act="admin-enter"]'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);
+    R.google.strangerMsg = (await r.p.$eval('#alErr', e => e.textContent)).replace(/\s+/g, ' ').slice(0, 140); R.google.strangerAdmin = await r.p.evaluate(() => Admin.ok()); await r.ctx.close();
   }
   console.log(JSON.stringify(R, null, 1)); await b.close();
 })();

@@ -1360,6 +1360,10 @@ html[data-theme="dark"] .rule-box{background:linear-gradient(135deg,var(--acg),t
 @keyframes csSpin{to{transform:rotate(360deg)}}
 .banner-offline{background:#FFF4E0;color:#8A5300;border-bottom:1px solid #F2D29B;text-align:center;font-family:var(--f-ui);font-size:13.5px;padding:8px 14px}
 html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-color:#5A4214}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1F1F1F;border:1px solid #DADCE0;font-weight:700;padding:11px 16px;border-radius:12px}
+.google-btn:hover{background:#F8F9FA;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.al-email{margin-top:12px;font-family:var(--f-ui);font-size:13.5px}
+.al-email summary{cursor:pointer;color:var(--ink-3);margin-bottom:8px}
 
 </style>
 </head>
@@ -6016,7 +6020,9 @@ function authInit() {
   firebase.auth().onAuthStateChanged(async u => {
     AUTH.user = u; let ok = false;
     if (u) { try { ok = (await DB.get('admins/' + u.uid)) === true; } catch (e) { ok = false; } }
-    AUTH.isAdmin = ok; AUTH.resolved = true; App.render();
+    AUTH.isAdmin = ok; AUTH.resolved = true;
+    if (SafeSS.get('ec_admin_redirect')) { SafeSS.del('ec_admin_redirect'); if (ok) { Router.go('admin'); return; } if (u) { UI.alert('الحساب ' + h(u.email || '') + ' غير مضاف إلى حسابات المدربين. أضف هذا الرقم في العقدة admins بقيمة true:<br><b class="num" dir="ltr" style="user-select:all">' + h(u.uid) + '</b>'); firebase.auth().signOut(); } }
+    App.render();
   });
 }
 function authErr(e) {
@@ -6025,25 +6031,37 @@ function authErr(e) {
   if (/too-many-requests/.test(c)) return 'محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة، أو استخدم «نسيت كلمة المرور».';
   if (/network-request-failed/.test(c)) return 'تعذر الاتصال بالإنترنت. تحقق من الشبكة ثم أعد المحاولة.';
   if (/operation-not-allowed/.test(c)) return 'تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase Authentication.';
+  if (/popup-blocked/.test(c)) return 'منع المتصفح النافذة المنبثقة. اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.';
+  if (/account-exists-with-different-credential/.test(c)) return 'هذا البريد مسجل بطريقة دخول أخرى. استخدم البريد وكلمة المرور.';
   if (/unauthorized-domain/.test(c)) return 'نطاق الموقع غير مضاف إلى Authorized domains في إعدادات Firebase Authentication.';
   return 'تعذر الدخول: ' + h((e && e.message) || e);
 }
 function adminLogin() {
   const m = UI.modal('<h3>🔐 دخول المدرب</h3><p class="muted" style="font-family:var(--f-ui);font-size:13px;margin-top:0">لوحة الإدارة متاحة لحسابات المدربين المسجلة في Firebase فقط.</p>' +
+    '<button class="btn btn-block google-btn" data-google><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.8c-.5-1.4-.8-3-.8-4.8s.3-3.3.8-4.8l-7.8-6C1 16.5 0 20.1 0 24s1 7.5 2.7 10.8l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.7l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg><span>الدخول بحساب Google</span></button>' +
+    '<details class="al-email"><summary>أو بالبريد الإلكتروني وكلمة المرور</summary>' +
     '<div class="field"><label>البريد الإلكتروني</label><input id="alEmail" type="email" dir="ltr" autocomplete="username"></div>' +
     '<div class="field"><label>كلمة المرور</label><input id="alPass" type="password" dir="ltr" autocomplete="current-password"></div>' +
-    '<div id="alErr" style="color:#C62F35;font-family:var(--f-ui);font-size:13px;min-height:20px"></div>' +
-    '<div class="actions"><button class="btn btn-primary" data-ok>دخول</button><button class="btn btn-ghost" data-x>إلغاء</button><button class="btn btn-ghost btn-sm" data-reset style="margin-inline-start:auto">نسيت كلمة المرور؟</button></div>');
+    '<div class="row"><button class="btn btn-primary btn-sm" data-ok>دخول</button><button class="btn btn-ghost btn-sm" data-reset>نسيت كلمة المرور؟</button></div></details>' +
+    '<div id="alErr" style="color:#C62F35;font-family:var(--f-ui);font-size:13px;min-height:20px;margin-top:10px"></div>' +
+    '<div class="actions"><button class="btn btn-ghost" data-x>إلغاء</button></div>');
   const $e = $('#alEmail', m.el), $p = $('#alPass', m.el), err = t => { $('#alErr', m.el).innerHTML = t; };
-  setTimeout(() => $e.focus(), 50);
+  const finish = async user => {
+    const ok = (await DB.get('admins/' + user.uid)) === true;
+    if (!ok) { await firebase.auth().signOut(); err('الحساب ' + h(user.email || '') + ' غير مضاف إلى حسابات المدربين (العقدة admins في قاعدة البيانات).<br>انسخ هذا الرقم وأضفه هناك بقيمة true:<br><span class="num" dir="ltr" style="user-select:all;font-weight:700">' + h(user.uid) + '</span>'); return false; }
+    AUTH.user = user; AUTH.isAdmin = true; m.close(); SafeSS.del('ec_preview'); Router.go('admin'); return true;
+  };
+  $('[data-google]', m.el).onclick = async () => {
+    const btn = $('[data-google]', m.el); btn.disabled = true; err('');
+    try { const provider = new firebase.auth.GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' }); const cred = await firebase.auth().signInWithPopup(provider); await finish(cred.user); }
+    catch (e) { if (/popup-blocked|operation-not-supported/.test((e && e.code) || '')) { try { SafeSS.set('ec_admin_redirect', '1'); await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider()); return; } catch (e2) { err(authErr(e2)); } } else if (!/popup-closed|cancelled-popup/.test((e && e.code) || '')) err(authErr(e)); }
+    finally { btn.disabled = false; }
+  };
   const go = async () => {
     const email = $e.value.trim(), pass = $p.value; if (!email || !pass) { err('اكتب البريد الإلكتروني وكلمة المرور.'); return; }
     const btn = $('[data-ok]', m.el); btn.disabled = true; btn.textContent = 'جارٍ التحقق…'; err('');
     try {
-      const cred = await firebase.auth().signInWithEmailAndPassword(email, pass);
-      const ok = (await DB.get('admins/' + cred.user.uid)) === true;
-      if (!ok) { await firebase.auth().signOut(); err('هذا الحساب غير مضاف إلى حسابات المدربين (العقدة admins في قاعدة البيانات).<br><span class="num" dir="ltr" style="user-select:all">UID: ' + h(cred.user.uid) + '</span>'); return; }
-      AUTH.user = cred.user; AUTH.isAdmin = true; m.close(); SafeSS.del('ec_preview'); Router.go('admin');
+      const cred = await firebase.auth().signInWithEmailAndPassword(email, pass); await finish(cred.user);
     } catch (e) { err(authErr(e)); } finally { btn.disabled = false; btn.textContent = 'دخول'; }
   };
   $('[data-ok]', m.el).onclick = go; $p.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }); $e.addEventListener('keydown', e => { if (e.key === 'Enter') $p.focus(); });

@@ -85,7 +85,7 @@
 - اختبار السيناريوهات على محاكاة لـ Firebase (دون أي اتصال بالقاعدة الحقيقية): `node tests/db-scenarios.js` (أو سيناريو محدد: `node tests/db-scenarios.js a,b,c,d,e`).
 
 ## دخول المدرب بحساب Firebase وقواعد الحماية
-- عند إضافة apiKey وauthDomain وprojectId في `firebaseConfig` (أعلى `src/js/00-core.js`) يصبح دخول لوحة الإدارة بالبريد وكلمة المرور (Firebase Authentication) بدل الرمز السري، ويُقبل فقط الحساب الموجود في العقدة `admins/<UID>: true`. قبل ذلك يبقى الرمز السري كما هو.
+- عند إضافة apiKey وauthDomain وprojectId في `firebaseConfig` (أعلى `src/js/00-core.js`) يصبح دخول لوحة الإدارة بحساب Google أو بالبريد وكلمة المرور (Firebase Authentication) بدل الرمز السري، ويُقبل فقط الحساب الموجود في العقدة `admins/<UID>: true`. قبل ذلك يبقى الرمز السري كما هو.
 - `database.rules.json`: القراءة مفتوحة؛ المحتوى والإعدادات والنسخ والأرشيف للمدرب فقط؛ المتدرب يكتب داخل سجله فقط (تسجيله، إجاباته، إعجاباته، حضوره، مختبر مجموعته، اهتمامه، متابعاته) ولا يستطيع مسح عقدة كاملة أو تعديل admins.
 - اختبار على محاكاة (دون اتصال حقيقي): `node tests/auth-scenarios.js`.
 

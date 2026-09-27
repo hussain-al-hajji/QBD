@@ -64,7 +64,11 @@
     onAuthStateChanged(cb) { authCbs.push(cb); setTimeout(() => cb(M.authUser), 10); return () => {}; },
     signInWithEmailAndPassword(email, pass) { const u = (cfg.authUsers || {})[email]; if (!u || u.pass !== pass) return Promise.reject(Object.assign(new Error('bad'), { code: 'auth/invalid-credential' })); M.authUser = { uid: u.uid, email }; authCbs.forEach(cb => cb(M.authUser)); return Promise.resolve({ user: M.authUser }); },
     signOut() { M.authUser = null; authCbs.forEach(cb => cb(null)); return Promise.resolve(); },
-    sendPasswordResetEmail() { return Promise.resolve(); }
+    sendPasswordResetEmail() { return Promise.resolve(); },
+    signInWithPopup() { const g = cfg.googleUser; if (!g) return Promise.reject(Object.assign(new Error('closed'), { code: 'auth/popup-closed-by-user' })); M.authUser = { uid: g.uid, email: g.email }; authCbs.forEach(cb => cb(M.authUser)); return Promise.resolve({ user: M.authUser }); },
+    signInWithRedirect() { return Promise.resolve(); }
   };
-  window.firebase = { initializeApp() { return {}; }, database() { return { ref: p => ref(p || '') }; }, auth() { return auth; } };
+  function GoogleAuthProvider() { this.setCustomParameters = () => {}; }
+  const authFn = () => auth; authFn.GoogleAuthProvider = GoogleAuthProvider;
+  window.firebase = { initializeApp() { return {}; }, database() { return { ref: p => ref(p || '') }; }, auth: authFn };
 })();
