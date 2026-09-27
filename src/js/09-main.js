@@ -26,6 +26,7 @@ const App = {
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
     $$('[data-filter]', root).forEach(applyFilter);
+    $$('textarea:not([maxlength])', root).forEach(t => { t.maxLength = 4000; }); $$('input[type=text]:not([maxlength]),input:not([type]):not([maxlength])', root).forEach(t => { t.maxLength = 250; });
     document.title = (Content.site().headerTitle || 'الدورة');
   },
   onData: debounce(() => {
@@ -308,10 +309,10 @@ document.addEventListener('click', async ev => {
     case 'show-model': UIState.modelShown[exId] = true; App.render(); break;
     case 'del-post': { if (await UI.confirm('حذف هذه المشاركة وحدها؟ لن تتأثر بقية المشاركات.', { danger: true, ok: 'حذف' })) DB.remove('posts/' + exId + '/' + t.getAttribute('data-k')); break; }
     // ----- المختبر -----
-    case 'lab-start': { const g = Me.group(); if (g) DB.set('lab/timers/g' + g, { start: DB.now(), pausedTotal: 0 }); break; }
-    case 'lab-pause': { const g = Me.group(); DB.update('lab/timers/g' + g, { pausedAt: DB.now() }); break; }
-    case 'lab-resume': { const g = Me.group(); const tm = Store.labTimers['g' + g] || {}; DB.update('lab/timers/g' + g, { pausedTotal: (tm.pausedTotal || 0) + (DB.now() - (tm.pausedAt || DB.now())), pausedAt: null }); break; }
-    case 'lab-reset': { if (await UI.confirm('إعادة الوقت إلى الصفر لمجموعتك؟ الإجابات المحفوظة لن تُحذف.', { ok: 'إعادة ضبط الوقت' })) DB.remove('lab/timers/g' + Me.group()); break; }
+    case 'lab-start': { const g = Me.group(); if (g) DB.set('lab/timers/g' + g, { start: DB.now(), pausedTotal: 0, by: Me.uid() }); break; }
+    case 'lab-pause': { const g = Me.group(); DB.update('lab/timers/g' + g, { pausedAt: DB.now(), by: Me.uid() }); break; }
+    case 'lab-resume': { const g = Me.group(); const tm = Store.labTimers['g' + g] || {}; DB.update('lab/timers/g' + g, { by: Me.uid(), pausedTotal: (tm.pausedTotal || 0) + (DB.now() - (tm.pausedAt || DB.now())), pausedAt: null }); break; }
+    case 'lab-reset': { if (await UI.confirm('إعادة الوقت إلى الصفر لمجموعتك؟ الإجابات المحفوظة لن تُحذف.', { ok: 'إعادة ضبط الوقت' })) DB.set('lab/timers/g' + Me.group(), { by: Me.uid(), resetAt: DB.now() }); break; }
     case 'lab-save': { const i = t.getAttribute('data-i'); const ta = $('#labAns' + i); const txt = ta ? ta.value.trim() : ''; if (!txt) { UI.alert('اكتبوا مخرج المرحلة أولًا.'); break; } await DB.update('lab/answers/g' + Me.group() + '/s' + i, { text: txt, name: Me.data.name, uid: Me.uid(), ts: DB.now() }); UIState.editing['lab' + i] = false; if (ta) ta.value = ''; UI.toast('✅ حُفظت المرحلة'); App.render(); break; }
     case 'del-lab': { if (await UI.confirm('حذف إجابة هذه المرحلة؟', { danger: true, ok: 'حذف' })) DB.remove('lab/answers/' + t.getAttribute('data-k') + '/s' + t.getAttribute('data-i')); break; }
     // ----- حسابي -----
@@ -624,12 +625,12 @@ async function ensureOwnership() {
 // نقل البيانات القديمة إلى النموذج الآمن (مرة واحدة من جلسة المدرب)
 async function migrateSchema() {
   try {
-    if (!Admin.ok() || !DB.real) return; const meta = await DB.get('meta/schema'); if (Number(meta) >= 2) return;
+    if (!Admin.ok() || !DB.real) return; const meta = await DB.get('meta/schema'); if (Number(meta) >= 3) return;
     const users = (await DB.get('users')) || {}; const settings = (await DB.get('settings')) || {}; const upd = {};
-    Object.keys(users).forEach(u => { const x = users[u] || {}; if (x.f || x.consent) { if (x.f) upd['private/' + u + '/f'] = x.f; if (x.consent) upd['private/' + u + '/consent'] = x.consent; upd['users/' + u + '/f'] = null; upd['users/' + u + '/consent'] = null; } if (x.email) { upd['private/' + u + '/f/email'] = x.email; upd['users/' + u + '/email'] = null; } if (x.org) { upd['private/' + u + '/f/org'] = x.org; upd['users/' + u + '/org'] = null; } });
+    Object.keys(users).forEach(u => { const x = users[u] || {}; if (x.group && !x.gkey) upd['users/' + u + '/gkey'] = 'g' + x.group; if (x.f || x.consent) { if (x.f) upd['private/' + u + '/f'] = x.f; if (x.consent) upd['private/' + u + '/consent'] = x.consent; upd['users/' + u + '/f'] = null; upd['users/' + u + '/consent'] = null; } if (x.email) { upd['private/' + u + '/f/email'] = x.email; upd['users/' + u + '/email'] = null; } if (x.org) { upd['private/' + u + '/f/org'] = x.org; upd['users/' + u + '/org'] = null; } });
     const codes = ((settings.attendance || {}).codes) || {}; Object.keys(codes).forEach(k => { if (codes[k] && codes[k].code != null) { upd['secure/attcodes/' + k + '/code'] = String(codes[k].code); upd['settings/attendance/codes/' + k + '/code'] = null; } });
     if (settings.monitor) { upd['secure/monitor'] = settings.monitor; upd['settings/monitor'] = null; }
-    upd['meta/schema'] = 2;
+    upd['meta/schema'] = 3;
     await DB.update('', upd); UI.toast('🔐 نُقلت البيانات الخاصة ورموز الحضور إلى النموذج المحمي');
   } catch (e) { console.warn('migrate', e); }
 }

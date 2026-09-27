@@ -26,13 +26,13 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
     const { ctx, p, net, errs } = await open(b);
     await p.click('[data-act="open-login"]'); await p.fill('#reg_name', 'خالد'); await p.fill('#reg_role', 'مؤسس'); await p.check('#regConsent'); await p.click('.modal [data-act="register"]'); await p.waitForTimeout(600);
     const me = await p.evaluate(() => Me.uid());
-    await p.evaluate(async () => { const uid = Me.uid(); const g = 2; Me.setGroup(g);
+    await p.evaluate(async () => { const uid = Me.uid(); const g = 2; Me.setGroup(g); await new Promise(r => setTimeout(r, 200));
       await DB.update('posts/a1e1/' + uid, { text: 'إجابتي', name: 'خالد', uid, ts: DB.now() });
       await DB.set('posts/a1e1/u1/likes/' + uid, true);
       await DB.set('storyLikes/st1/likes/' + uid, true);
       await DB.set('assess/pre/' + uid, { answers: [0, 1], done: true, ts: DB.now() });
       // الحضور صار عبر checkins برمز يتحقق منه الخادم (يُختبر في security-scenarios.js)
-      await DB.set('lab/timers/g' + g, { start: DB.now(), pausedTotal: 0 }); await DB.update('lab/answers/g' + g, { s1: { text: 'x' } });
+      await DB.set('lab/timers/g' + g, { start: DB.now(), pausedTotal: 0, by: uid }); await DB.set('lab/answers/g' + g + '/s1', { text: 'x', name: 'خالد', uid, ts: DB.now() });
       await DB.set('leads/' + uid, { programs: ['تمويل'] }); await DB.set('followups/d30/' + uid, { actions: 'x' });
     });
     await p.waitForTimeout(400);

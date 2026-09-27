@@ -26,6 +26,8 @@
   Snap.prototype.hasChild = function (k) { return this.child(k).exists(); };
   Snap.prototype.isNumber = function () { return typeof getAt(this._t, this._p) === 'number'; };
   Snap.prototype.isString = function () { return typeof getAt(this._t, this._p) === 'string'; };
+  Snap.prototype.isBoolean = function () { return typeof getAt(this._t, this._p) === 'boolean'; };
+  Snap.prototype.hasChildren = function (ks) { const v = getAt(this._t, this._p); if (!v || typeof v !== 'object') return false; return ks ? ks.every(k => v[k] != null) : Object.keys(v).length > 0; };
   function evalRule(expr, vars, ctx) {
     if (expr === true || expr === 'true') return true; if (expr == null || expr === false || expr === 'false') return false;
     const names = Object.keys(vars); try { return !!(new Function('auth', 'root', 'data', 'newData', ...names, 'return (' + expr + ');'))(ctx.auth, ctx.root, ctx.data, ctx.newData, ...names.map(n => vars[n])); } catch (e) { return false; }
@@ -42,7 +44,17 @@
     }
     return false;
   }
-  function allowed(op) { const oldT = M.server; const newT = applyOp(clone(M.server) || {}, op); if (op.kind === 'update') return Object.keys(op.value).every(k => walk((op.path ? op.path + '/' : '') + k, '.write', oldT, newT)); return walk(op.path, '.write', oldT, newT); }
+  // .validate: تُقيَّم على كل عقدة مكتوبة (وأسلافها وما تحتها) طالما البيانات الجديدة موجودة فيها
+  function validate(path, oldT, newT) {
+    if (!cfg.rules) return true; const s = segs(path); let node = cfg.rules.rules; const vars = {}; const auth = M.authUser ? { uid: M.authUser.uid } : null;
+    const ctx = p => ({ auth, root: new Snap(oldT, ''), data: new Snap(oldT, p), newData: new Snap(newT, p) });
+    const check = (n, p, v) => { if (!n || n['.validate'] === undefined) return true; if (getAt(newT, p) == null) return true; return evalRule(n['.validate'], v, ctx(p)); };
+    for (let i = 0; i < s.length; i++) { if (!check(node, s.slice(0, i).join('/'), vars)) return false; let next = node && node[s[i]]; if (next === undefined && node) { const w = Object.keys(node).find(k => k.charAt(0) === '$'); if (!w) return true; vars[w] = s[i]; next = node[w]; } node = next; if (!node) return true; }
+    const down = (n, p, v) => { if (!check(n, p, v)) return false; const val = getAt(newT, p); if (!val || typeof val !== 'object') return true; return Object.keys(val).every(k => { let c = n[k]; const vv = Object.assign({}, v); if (c === undefined) { const w = Object.keys(n).find(x => x.charAt(0) === '$'); if (!w) return true; vv[w] = k; c = n[w]; } return !c || down(c, p ? p + '/' + k : k, vv); }); };
+    return down(node, s.join('/'), vars);
+  }
+  function allowed(op) { const oldT = M.server; const newT = applyOp(clone(M.server) || {}, op); const paths = op.kind === 'update' ? Object.keys(op.value).map(k => (op.path ? op.path + '/' : '') + k) : [op.path]; return paths.every(p => walk(p, '.write', oldT, newT)) && paths.every(p => validate(p, oldT, newT)); }
+  M.explain = (kind, path, value) => { const op = { kind, path, value }; const oldT = M.server; const newT = applyOp(clone(M.server) || {}, op); const paths = kind === 'update' ? Object.keys(value).map(k => (path ? path + '/' : '') + k) : [path]; return paths.map(p => ({ p, write: walk(p, '.write', oldT, newT), validate: validate(p, oldT, newT) })); };
   const canRead = path => walk(path, '.read', M.server, null);
 
   function fire() { if (!M.loaded) return; const v = view(); M.listeners.forEach(l => { if (!canRead(l.path)) { if (!l.denied) { l.denied = true; M.deniedReads.push(l.path); if (l.err) l.err(Object.assign(new Error('permission_denied'), { code: 'PERMISSION_DENIED' })); } return; } l.denied = false; try { l.cb(snap(getAt(v, l.path), l.path)); } catch (e) { console.error(e); } }); }

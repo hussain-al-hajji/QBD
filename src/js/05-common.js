@@ -16,7 +16,7 @@ const Router = {
     const st = SafeHist.state(); if (st && st.view) return st;
     const hp = getHashParams(); const o = { view: hp.v || 'home' }; if (hp.id) o.id = hp.id; if (hp.from) o.from = hp.from; if (hp.axis) o.axis = hp.axis; return o;
   },
-  url(st) { const p = { u: Me.uid() || '', v: st.view !== 'home' ? st.view : '', id: st.id || '', from: st.from || '', axis: st.axis || '' }; return location.pathname + location.search + buildHash(p); },
+  url(st) { const p = { v: st.view !== 'home' ? st.view : '', id: st.id || '', from: st.from || '', axis: st.axis || '' }; return location.pathname + location.search + buildHash(p); },
   go(view, params = {}, o = {}) {
     const st = Object.assign({ view }, params);
     Router.cur = st;
@@ -172,11 +172,12 @@ function withLede(html) { // أول جملة من الفقرة بخط عريض
   return d.innerHTML;
 }
 function richHtml(v) { if (!v) return ''; return /<[a-z][\s\S]*>/i.test(v) ? sanitize(v) : h(v).replace(/\n/g, '<br>'); }
-function sanitize(html) { // تنظيف بسيط لمحتوى المحرر
-  const d = document.createElement('div'); d.innerHTML = html;
-  $$('script,style,iframe,object,embed', d).forEach(x => x.remove());
-  $$('*', d).forEach(el => { [...el.attributes].forEach(a => { if (/^on/i.test(a.name) || (a.name === 'href' && /^\s*javascript:/i.test(a.value))) el.removeAttribute(a.name); }); });
-  return d.innerHTML;
+function sanitize(html) { // تنظيف محتوى المحرر: التحليل داخل <template> (خامل لا يحمّل صورًا ولا ينفّذ شيئًا)
+  const t = document.createElement('template'); t.innerHTML = String(html || '');
+  t.content.querySelectorAll('script,style,iframe,object,embed,frame,frameset,form,input,button,textarea,select,base,link,meta,svg,math,template,noscript').forEach(x => x.remove());
+  t.content.querySelectorAll('*').forEach(el => { [...el.attributes].forEach(a => { const n = a.name.toLowerCase(); const v = String(a.value || '').replace(/[\u0000- ]/g, '').toLowerCase();
+    if (/^on/.test(n) || n === 'srcdoc' || n === 'style' && /expression|url\(/.test(v) || /(^|:)(href|src|action|formaction|xlink:href)$/.test(n) && /^(javascript|vbscript|data):/.test(v)) el.removeAttribute(a.name); }); });
+  return t.innerHTML;
 }
 
 // ---------- الفيديو المضمَّن ----------

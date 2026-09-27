@@ -256,7 +256,7 @@ const Me = {
     const tryParse = s => { try { const o = JSON.parse(s); return o && o.uid ? o : null; } catch (e) { return null; } };
     let d = tryParse(SafeLS.get('ec_me')) || tryParse(SafeSS.get('ec_me')) || tryParse(Cookie.get('ec_me'));
     const hp = getHashParams();
-    if (!d && hp.u) d = { uid: hp.u, name: '', role: '', ts: 0, _fromHash: true };
+    // لم يعد مُعرّف المتدرب يوضع في الرابط (كان يتسرب عند مشاركة الروابط)؛ الهوية من التخزين المحلي والجلسة فقط
     Me.data = d;
     Me.guest = !d && (SafeLS.get('ec_guest') === '1' || SafeSS.get('ec_guest') === '1');
     if (d && !d._fromHash) Me.save(d);
@@ -277,7 +277,7 @@ const Me = {
   uid() { return Me.data ? Me.data.uid : null; },
   isReg() { return !!(Me.data && Me.data.uid); },
   group() { return Me.data && Me.data.group ? +Me.data.group : null; },
-  setGroup(n) { if (!Me.data) return; Me.data.group = n; Me.save(Me.data); DB.set('users/' + Me.data.uid + '/group', n); }
+  setGroup(n) { if (!Me.data) return; Me.data.group = n; Me.save(Me.data); DB.update('users/' + Me.data.uid, { group: n, gkey: 'g' + n }); }
 };
 
 // ---------- الإنجاز والأوسمة ----------

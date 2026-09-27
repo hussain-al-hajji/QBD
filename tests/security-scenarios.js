@@ -38,10 +38,10 @@ async function register(p, name) { await p.click('[data-act="open-login"]'); awa
 (async () => {
   browser = await chromium.launch(); const R = {};
   // ---------- المتدرب أ: تسجيل ثم أنشطة ----------
-  const A = await visitor(); const meA = await register(A.p, 'متدرب أ');
+  const A = await visitor(); const meA = await register(A.p, 'متدرب أ'); if (!meA) { console.log('REG FAIL', await A.p.evaluate(() => ({ d: __mock.denied, m: [...document.querySelectorAll('.modal')].map(x => x.innerText.slice(-120)) }))); process.exit(1); }
   let t = await server(A.p);
   R.register = { uid: meA.uid, hasCode: !!meA.code, member: meA.member, publicHasNoPII: !at(t, 'users/' + meA.uid + '/f') && !at(t, 'users/' + meA.uid + '/consent'), privateStored: !!at(t, 'private/' + meA.uid + '/consent'), secretStored: at(t, 'secrets/' + meA.uid) === meA.code, deviceLinked: !!at(t, 'devices/' + meA.uid), denied: await A.p.evaluate(() => __mock.denied) };
-  await A.p.evaluate(async () => { const uid = Me.uid(); await DB.update('posts/a1e1/' + uid, { text: 'إجابة أ', name: 'أ', uid, ts: DB.now() }); await DB.set('posts/a1e1/uL/likes/' + uid, true); await DB.set('assess/pre/' + uid, { answers: [1], done: true, ts: DB.now() }); await DB.set('leads/' + uid, { programs: ['تمويل'], contact: '555' }); await DB.set('followups/d30/' + uid, { actions: 'x' }); Me.setGroup(2); await DB.set('lab/answers/g2/s1', { text: 'x' }); });
+  await A.p.evaluate(async () => { const uid = Me.uid(); await DB.update('posts/a1e1/' + uid, { text: 'إجابة أ', name: 'أ', uid, ts: DB.now() }); await DB.set('posts/a1e1/uL/likes/' + uid, true); await DB.set('assess/pre/' + uid, { answers: [1], done: true, ts: DB.now() }); await DB.set('leads/' + uid, { programs: ['تمويل'], contact: '555' }); await DB.set('followups/d30/' + uid, { actions: 'x' }); Me.setGroup(2); await new Promise(r => setTimeout(r, 200)); await DB.set('lab/answers/g2/s1', { text: 'x', name: 'أ', uid, ts: DB.now() }); await DB.set('lab/timers/g2', { start: DB.now(), pausedTotal: 0, by: uid }); await DB.update('posts/a2e1/g2', { text: 'إجابة مجموعة 2', by: uid, group: 2, ['members/' + uid]: true, ts: DB.now() }); });
   await A.p.fill('#checkin1', '0000').catch(() => {});
   const wrong = await A.p.evaluate(async () => { try { await DB.set('checkins/d1/' + Me.uid(), { code: '0000', ts: DB.now() }, { quiet: true }); return 'accepted'; } catch (e) { return 'rejected'; } });
   R.attendance = { wrongCode: wrong, hoursBefore: await A.p.evaluate(() => Attend.hoursOf(Me.uid(), 1)), codeVisibleToTrainee: await A.p.evaluate(() => JSON.stringify(Attend.cfg().codes)) };
@@ -60,11 +60,19 @@ async function register(p, name) { await p.click('[data-act="open-login"]'); awa
     claimOthersNoCode: await tryW(B.p, `() => DB.set('devices/${a}/' + firebase.auth().currentUser?.uid, 'legacy', { quiet: true })`),
     claimOthersWrongCode: await tryW(B.p, `() => DB.set('devices/${a}/' + __mock.authUser.uid, 'ZZZZZZ', { quiet: true })`),
     editSite: await tryW(B.p, `() => DB.set('site/home/heroTitle', 'x')`),
+    otherGroupAnswer: await tryW(B.p, `() => DB.update('posts/a2e1/g2', { text: 'تخريب', by: Me.uid(), group: 2 })`),
+    otherGroupAnswerSpoofBy: await tryW(B.p, `() => DB.update('posts/a2e1/g2', { text: 'تخريب', by: '${meA.uid}', group: 2 })`),
+    otherGroupLab: await tryW(B.p, `() => DB.set('lab/answers/g2/s1', { text: 'تخريب', uid: Me.uid() })`),
+    otherGroupTimer: await tryW(B.p, `() => DB.set('lab/timers/g2', { by: Me.uid(), resetAt: 1 })`),
+    hugeAnswer: await tryW(B.p, `() => DB.set('posts/a1e3/' + Me.uid(), { text: 'x'.repeat(200000), uid: Me.uid() })`),
+    hugeName: await tryW(B.p, `() => DB.set('users/' + Me.uid() + '/name', 'x'.repeat(5000))`),
+    junkFieldOnProfile: await tryW(B.p, `() => DB.set('users/' + Me.uid() + '/blob', 'x'.repeat(100))`),
     makeAdmin: await tryW(B.p, `() => DB.set('admins/' + __mock.authUser.uid, true)`)
   };
+  R.traineeB_ownGroupWorks = await tryW(B.p, `async () => { Me.setGroup(3); await new Promise(r => setTimeout(r, 200)); await DB.update('posts/a2e1/g3', { text: 'مجموعتي', by: Me.uid(), group: 3 }); await DB.set('lab/answers/g3/s1', { text: 'ok', uid: Me.uid(), name: 'ب' }); }`);
   R.traineeB_cannotRead = { othersPrivate: await tryR(B.p, 'private/' + a), allLeads: await tryR(B.p, 'leads'), othersLead: await tryR(B.p, 'leads/' + a), othersSecret: await tryR(B.p, 'secrets/' + a), secure: await tryR(B.p, 'secure'), backups: await tryR(B.p, 'backups'), monitorList: await tryR(B.p, 'monitorData') };
   R.traineeB_canRead = { ownPrivate: await tryR(B.p, 'private/' + meB.uid), publicUsers: await tryR(B.p, 'users'), posts: await tryR(B.p, 'posts') };
-  t = await server(B.p); R.traineeB_effect = { aNameIntact: at(t, 'users/' + a + '/name') === 'متدرب أ', aAnswerIntact: at(t, 'posts/a1e1/' + a + '/text') === 'إجابة أ', errs: B.errs };
+  t = await server(B.p); R.traineeB_effect = { aNameIntact: at(t, 'users/' + a + '/name') === 'متدرب أ', aAnswerIntact: at(t, 'posts/a1e1/' + a + '/text') === 'إجابة أ', groupAnswerIntact: at(t, 'posts/a2e1/g2/text') === 'إجابة مجموعة 2', errs: B.errs };
   // ---------- أ من جهاز ثانٍ برقم العضوية ورمز الدخول ----------
   const A2 = await visitor();
   await A2.p.click('[data-act="open-login"]'); await A2.p.click('.modal [data-act="member-login"]'); await A2.p.waitForTimeout(200);
@@ -84,7 +92,7 @@ async function register(p, name) { await p.click('[data-act="open-login"]'); awa
   const T = await visitor({ cfg: { googleUser: { uid: 'adm1', email: 't@gmail.com' } } });
   await T.p.click('[data-act="admin-enter"]'); await T.p.waitForTimeout(200); await T.p.click('[data-google]'); await T.p.waitForTimeout(2600);
   t = await server(T.p);
-  R.admin = { inAdmin: await T.p.evaluate(() => Router.cur.view === 'admin' && Admin.ok()), migrated: at(t, 'meta/schema') === 2, legacyPIIMoved: !at(t, 'users/uL/f') && at(t, 'private/uL/f/email') === 'legacy@x.com', codeMovedToSecure: at(t, 'secure/attcodes/d1/code') === '4321' && at(t, 'settings/attendance/codes/d1/code') == null, monitorMoved: at(t, 'secure/monitor/token') === 'oldtok' && !at(t, 'settings/monitor'), readsLeads: await tryR(T.p, 'leads'), readsPrivate: await tryR(T.p, 'private') };
+  R.admin = { inAdmin: await T.p.evaluate(() => Router.cur.view === 'admin' && Admin.ok()), migrated: at(t, 'meta/schema') === 3, legacyPIIMoved: !at(t, 'users/uL/f') && at(t, 'private/uL/f/email') === 'legacy@x.com', codeMovedToSecure: at(t, 'secure/attcodes/d1/code') === '4321' && at(t, 'settings/attendance/codes/d1/code') == null, monitorMoved: at(t, 'secure/monitor/token') === 'oldtok' && !at(t, 'settings/monitor'), readsLeads: await tryR(T.p, 'leads'), readsPrivate: await tryR(T.p, 'private') };
   await T.p.evaluate(() => Monitor.publish(true)); await T.p.waitForTimeout(400); t = await server(T.p);
   R.admin.monitorPublished = !!at(t, 'monitorData/oldtok/html');
   // المتدرب ب يسجّل حضوره بالرمز الصحيح (بعد نقل الرمز إلى secure) — والرمز لا يظهر في متصفحه

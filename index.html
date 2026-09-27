@@ -2484,7 +2484,7 @@ const Me = {
     const tryParse = s => { try { const o = JSON.parse(s); return o && o.uid ? o : null; } catch (e) { return null; } };
     let d = tryParse(SafeLS.get('ec_me')) || tryParse(SafeSS.get('ec_me')) || tryParse(Cookie.get('ec_me'));
     const hp = getHashParams();
-    if (!d && hp.u) d = { uid: hp.u, name: '', role: '', ts: 0, _fromHash: true };
+    // لم يعد مُعرّف المتدرب يوضع في الرابط (كان يتسرب عند مشاركة الروابط)؛ الهوية من التخزين المحلي والجلسة فقط
     Me.data = d;
     Me.guest = !d && (SafeLS.get('ec_guest') === '1' || SafeSS.get('ec_guest') === '1');
     if (d && !d._fromHash) Me.save(d);
@@ -2505,7 +2505,7 @@ const Me = {
   uid() { return Me.data ? Me.data.uid : null; },
   isReg() { return !!(Me.data && Me.data.uid); },
   group() { return Me.data && Me.data.group ? +Me.data.group : null; },
-  setGroup(n) { if (!Me.data) return; Me.data.group = n; Me.save(Me.data); DB.set('users/' + Me.data.uid + '/group', n); }
+  setGroup(n) { if (!Me.data) return; Me.data.group = n; Me.save(Me.data); DB.update('users/' + Me.data.uid, { group: n, gkey: 'g' + n }); }
 };
 
 // ---------- الإنجاز والأوسمة ----------
@@ -2633,7 +2633,7 @@ const Router = {
     const st = SafeHist.state(); if (st && st.view) return st;
     const hp = getHashParams(); const o = { view: hp.v || 'home' }; if (hp.id) o.id = hp.id; if (hp.from) o.from = hp.from; if (hp.axis) o.axis = hp.axis; return o;
   },
-  url(st) { const p = { u: Me.uid() || '', v: st.view !== 'home' ? st.view : '', id: st.id || '', from: st.from || '', axis: st.axis || '' }; return location.pathname + location.search + buildHash(p); },
+  url(st) { const p = { v: st.view !== 'home' ? st.view : '', id: st.id || '', from: st.from || '', axis: st.axis || '' }; return location.pathname + location.search + buildHash(p); },
   go(view, params = {}, o = {}) {
     const st = Object.assign({ view }, params);
     Router.cur = st;
@@ -2789,11 +2789,12 @@ function withLede(html) { // أول جملة من الفقرة بخط عريض
   return d.innerHTML;
 }
 function richHtml(v) { if (!v) return ''; return /<[a-z][\s\S]*>/i.test(v) ? sanitize(v) : h(v).replace(/\n/g, '<br>'); }
-function sanitize(html) { // تنظيف بسيط لمحتوى المحرر
-  const d = document.createElement('div'); d.innerHTML = html;
-  $$('script,style,iframe,object,embed', d).forEach(x => x.remove());
-  $$('*', d).forEach(el => { [...el.attributes].forEach(a => { if (/^on/i.test(a.name) || (a.name === 'href' && /^\s*javascript:/i.test(a.value))) el.removeAttribute(a.name); }); });
-  return d.innerHTML;
+function sanitize(html) { // تنظيف محتوى المحرر: التحليل داخل <template> (خامل لا يحمّل صورًا ولا ينفّذ شيئًا)
+  const t = document.createElement('template'); t.innerHTML = String(html || '');
+  t.content.querySelectorAll('script,style,iframe,object,embed,frame,frameset,form,input,button,textarea,select,base,link,meta,svg,math,template,noscript').forEach(x => x.remove());
+  t.content.querySelectorAll('*').forEach(el => { [...el.attributes].forEach(a => { const n = a.name.toLowerCase(); const v = String(a.value || '').replace(/[\u0000- ]/g, '').toLowerCase();
+    if (/^on/.test(n) || n === 'srcdoc' || n === 'style' && /expression|url\(/.test(v) || /(^|:)(href|src|action|formaction|xlink:href)$/.test(n) && /^(javascript|vbscript|data):/.test(v)) el.removeAttribute(a.name); }); });
+  return t.innerHTML;
 }
 
 // ---------- الفيديو المضمَّن ----------
@@ -5525,6 +5526,7 @@ const App = {
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
     $$('[data-filter]', root).forEach(applyFilter);
+    $$('textarea:not([maxlength])', root).forEach(t => { t.maxLength = 4000; }); $$('input[type=text]:not([maxlength]),input:not([type]):not([maxlength])', root).forEach(t => { t.maxLength = 250; });
     document.title = (Content.site().headerTitle || 'الدورة');
   },
   onData: debounce(() => {
@@ -5807,10 +5809,10 @@ document.addEventListener('click', async ev => {
     case 'show-model': UIState.modelShown[exId] = true; App.render(); break;
     case 'del-post': { if (await UI.confirm('حذف هذه المشاركة وحدها؟ لن تتأثر بقية المشاركات.', { danger: true, ok: 'حذف' })) DB.remove('posts/' + exId + '/' + t.getAttribute('data-k')); break; }
     // ----- المختبر -----
-    case 'lab-start': { const g = Me.group(); if (g) DB.set('lab/timers/g' + g, { start: DB.now(), pausedTotal: 0 }); break; }
-    case 'lab-pause': { const g = Me.group(); DB.update('lab/timers/g' + g, { pausedAt: DB.now() }); break; }
-    case 'lab-resume': { const g = Me.group(); const tm = Store.labTimers['g' + g] || {}; DB.update('lab/timers/g' + g, { pausedTotal: (tm.pausedTotal || 0) + (DB.now() - (tm.pausedAt || DB.now())), pausedAt: null }); break; }
-    case 'lab-reset': { if (await UI.confirm('إعادة الوقت إلى الصفر لمجموعتك؟ الإجابات المحفوظة لن تُحذف.', { ok: 'إعادة ضبط الوقت' })) DB.remove('lab/timers/g' + Me.group()); break; }
+    case 'lab-start': { const g = Me.group(); if (g) DB.set('lab/timers/g' + g, { start: DB.now(), pausedTotal: 0, by: Me.uid() }); break; }
+    case 'lab-pause': { const g = Me.group(); DB.update('lab/timers/g' + g, { pausedAt: DB.now(), by: Me.uid() }); break; }
+    case 'lab-resume': { const g = Me.group(); const tm = Store.labTimers['g' + g] || {}; DB.update('lab/timers/g' + g, { by: Me.uid(), pausedTotal: (tm.pausedTotal || 0) + (DB.now() - (tm.pausedAt || DB.now())), pausedAt: null }); break; }
+    case 'lab-reset': { if (await UI.confirm('إعادة الوقت إلى الصفر لمجموعتك؟ الإجابات المحفوظة لن تُحذف.', { ok: 'إعادة ضبط الوقت' })) DB.set('lab/timers/g' + Me.group(), { by: Me.uid(), resetAt: DB.now() }); break; }
     case 'lab-save': { const i = t.getAttribute('data-i'); const ta = $('#labAns' + i); const txt = ta ? ta.value.trim() : ''; if (!txt) { UI.alert('اكتبوا مخرج المرحلة أولًا.'); break; } await DB.update('lab/answers/g' + Me.group() + '/s' + i, { text: txt, name: Me.data.name, uid: Me.uid(), ts: DB.now() }); UIState.editing['lab' + i] = false; if (ta) ta.value = ''; UI.toast('✅ حُفظت المرحلة'); App.render(); break; }
     case 'del-lab': { if (await UI.confirm('حذف إجابة هذه المرحلة؟', { danger: true, ok: 'حذف' })) DB.remove('lab/answers/' + t.getAttribute('data-k') + '/s' + t.getAttribute('data-i')); break; }
     // ----- حسابي -----
@@ -6123,12 +6125,12 @@ async function ensureOwnership() {
 // نقل البيانات القديمة إلى النموذج الآمن (مرة واحدة من جلسة المدرب)
 async function migrateSchema() {
   try {
-    if (!Admin.ok() || !DB.real) return; const meta = await DB.get('meta/schema'); if (Number(meta) >= 2) return;
+    if (!Admin.ok() || !DB.real) return; const meta = await DB.get('meta/schema'); if (Number(meta) >= 3) return;
     const users = (await DB.get('users')) || {}; const settings = (await DB.get('settings')) || {}; const upd = {};
-    Object.keys(users).forEach(u => { const x = users[u] || {}; if (x.f || x.consent) { if (x.f) upd['private/' + u + '/f'] = x.f; if (x.consent) upd['private/' + u + '/consent'] = x.consent; upd['users/' + u + '/f'] = null; upd['users/' + u + '/consent'] = null; } if (x.email) { upd['private/' + u + '/f/email'] = x.email; upd['users/' + u + '/email'] = null; } if (x.org) { upd['private/' + u + '/f/org'] = x.org; upd['users/' + u + '/org'] = null; } });
+    Object.keys(users).forEach(u => { const x = users[u] || {}; if (x.group && !x.gkey) upd['users/' + u + '/gkey'] = 'g' + x.group; if (x.f || x.consent) { if (x.f) upd['private/' + u + '/f'] = x.f; if (x.consent) upd['private/' + u + '/consent'] = x.consent; upd['users/' + u + '/f'] = null; upd['users/' + u + '/consent'] = null; } if (x.email) { upd['private/' + u + '/f/email'] = x.email; upd['users/' + u + '/email'] = null; } if (x.org) { upd['private/' + u + '/f/org'] = x.org; upd['users/' + u + '/org'] = null; } });
     const codes = ((settings.attendance || {}).codes) || {}; Object.keys(codes).forEach(k => { if (codes[k] && codes[k].code != null) { upd['secure/attcodes/' + k + '/code'] = String(codes[k].code); upd['settings/attendance/codes/' + k + '/code'] = null; } });
     if (settings.monitor) { upd['secure/monitor'] = settings.monitor; upd['settings/monitor'] = null; }
-    upd['meta/schema'] = 2;
+    upd['meta/schema'] = 3;
     await DB.update('', upd); UI.toast('🔐 نُقلت البيانات الخاصة ورموز الحضور إلى النموذج المحمي');
   } catch (e) { console.warn('migrate', e); }
 }
