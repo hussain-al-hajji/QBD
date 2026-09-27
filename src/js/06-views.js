@@ -149,9 +149,7 @@ Views.axis = {
       '<div class="axis-hero" style="background:linear-gradient(135deg,' + col + ',' + shade(col, -0.4) + ')">' + '<div style="position:absolute;inset:0">' + decorShapes(a.id + 'h', .12) + '</div>' +
       '<div class="big-ico">' + iconSvg(a.icon || 'star', 36, '#fff', 1.8) + '</div><div style="position:relative"><div class="sub">' + h(a.classic || '') + '</div><h1>' + h(a.title) + '</h1>' + (a.duration ? '<div class="sub">⏱ ' + h(a.duration) + ' · <span class="num">' + n + '</span> شريحة · <span class="num">' + exs.length + '</span> تمرين</div>' : '') + '</div></div>';
     if (n) {
-      out += '<div class="deck" style="--ac:' + col + '" data-deck="' + h(a.id) + '"><div class="deck-bar"><div class="deck-dots">' + a.slides.map((_, i) => '<span class="deck-dot ' + (i <= idx ? 'on' : '') + '" data-slide="' + i + '"></span>').join('') + '</div><span class="deck-count num">' + (idx + 1) + ' / ' + n + '</span></div>' +
-        '<div class="deck-viewport"><div class="deck-track" style="transform:translateX(' + (idx * 100) + '%)">' + a.slides.map((s, i) => renderSlide(s, a, i, n, i === idx)).join('') + '</div></div>' +
-        '<div class="deck-nav"><button class="deck-arrow" data-deck-go="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="السابقة">→</button><span class="swipe-hint">اسحب يمينًا أو يسارًا للتنقل بين الشرائح</span><button class="deck-arrow" data-deck-go="1" ' + (idx >= n - 1 ? 'disabled' : '') + ' title="التالية">←</button></div></div>';
+      out += deckHtml(a, idx);
       if (Admin.ctl()) out += '<div class="trainer-note" id="tnote">' + trainerNoteHtml(a, idx) + '</div>';
     } else out += '<div class="empty" style="margin-top:18px">لا توجد شرائح في هذا المحور بعد.</div>';
     out += '<section class="section" style="--ac:' + col + ';--acg:' + tint(col, .1) + '"><div class="sec-head"><h2 class="sec-title">✍️ تمارين هذا المحور</h2><span class="pill"><span class="num">' + exs.length + '</span> تمرين</span></div>' +
@@ -163,7 +161,8 @@ Views.axis = {
   after(root) {
     const deck = $('[data-deck]', root); if (!deck) return;
     const id = deck.getAttribute('data-deck'); const vp = $('.deck-viewport', deck);
-    Deck.fitHeight(id); setTimeout(() => Deck.fitHeight(id), 400);
+    Deck.fit(id); setTimeout(() => Deck.fit(id), 400); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => Deck.fit(id));
+    $$('img', deck).forEach(img => { if (!img.complete) img.addEventListener('load', () => Deck.fit(id), { once: true }); });
     let sx = null, sy = null;
     vp.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
     vp.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) Deck.move(id, dx > 0 ? 1 : -1); }, { passive: true });
@@ -171,38 +170,133 @@ Views.axis = {
     vp.addEventListener('pointerup', e => { if (mx == null) return; const dx = e.clientX - mx; mx = null; if (Math.abs(dx) > 80) Deck.move(id, dx > 0 ? 1 : -1); });
   }
 };
+function deckHtml(a, idx, mode) {
+  const col = Content.color(a); const n = a.slides.length;
+  return '<div class="deck' + (mode === 'show' ? ' deck-show' : '') + '" style="--ac:' + col + '" data-deck="' + h(a.id) + '"><div class="deck-bar"><div class="deck-dots">' + a.slides.map((_, i) => '<span class="deck-dot ' + (i <= idx ? 'on' : '') + '" data-slide="' + i + '"></span>').join('') + '</div><span class="deck-count num">' + (idx + 1) + ' / ' + n + '</span>' +
+    (mode === 'show' ? '' : '<button class="deck-tool" data-act="deck-proj" title="عرض الشريحة على شاشة خارجية أو بروجكتر">📽️<span class="lbl">شاشة العرض</span></button>') +
+    '<button class="deck-tool deck-fs-btn" data-act="deck-fs" title="ملء الشاشة (F)"><span class="fs-on">⛶<span class="lbl">ملء الشاشة</span></span><span class="fs-off">✕<span class="lbl">خروج من ملء الشاشة</span></span></button></div>' +
+    '<div class="deck-viewport"><div class="deck-track" style="transform:translateX(' + (idx * 100) + '%)">' + a.slides.map((s, i) => renderSlide(s, a, i, n, i === idx)).join('') + '</div></div>' +
+    '<div class="deck-nav"><button class="deck-arrow" data-deck-go="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="السابقة">→</button><span class="swipe-hint">اسحب يمينًا أو يسارًا، أو استخدم الأسهم ومفتاح المسافة للتنقل</span><button class="deck-arrow" data-deck-go="1" ' + (idx >= n - 1 ? 'disabled' : '') + ' title="التالية">←</button></div></div>';
+}
 function trainerNoteHtml(a, i) { const sl = a.slides[i] || {}; return '<div class="tn-head">🎤 ملاحظات المدرب <span class="muted">(تظهر للأدمن فقط) · الشريحة <span class="num">' + (i + 1) + '</span></span></div><div class="tn-body">' + (sl.note ? h(sl.note) : '<span class="muted">لا توجد ملاحظة لهذه الشريحة — أضفها من تعديل المحور.</span>') + '</div>' + (a.outcome ? '<div class="tn-out">🎯 مخرج المحور: ' + h(a.outcome) + '</div>' : ''); }
+// ---------- مشغّل الشرائح: مقاس الشاشة، ملء الشاشة، وشاشة العرض الخارجية ----------
 const Deck = {
+  bc: (() => { try { return new BroadcastChannel('ec_deck'); } catch (e) { return null; } })(),
+  over: {},
   move(id, d) { const a = Content.axis(id); if (!a) return; const n = a.slides.length; Deck.to(id, Math.max(0, Math.min(n - 1, (UIState.deck[id] || 0) + d))); },
-  to(id, i) {
-    UIState.deck[id] = i; const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const n = $$('.slide', deck).length;
+  to(id, i, o = {}) {
+    UIState.deck[id] = i; SafeLS.set('ec_deck_' + id, String(i));
+    if (!o.remote && Deck.bc) try { Deck.bc.postMessage({ t: 'to', id, i }); } catch (e) {}
+    const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const n = $$('.slide', deck).length;
     $('.deck-track', deck).style.transform = 'translateX(' + (i * 100) + '%)';
     $$('.slide', deck).forEach((s, k) => s.classList.toggle('cur', k === i));
     $$('.deck-dot', deck).forEach((d, k) => d.classList.toggle('on', k <= i));
     $('.deck-count', deck).textContent = (i + 1) + ' / ' + n;
-    const [prev, next] = $$('[data-deck-go]', deck); prev.disabled = i === 0; next.disabled = i >= n - 1;
+    const [prev, next] = $$('[data-deck-go]', deck); if (prev) { prev.disabled = i === 0; next.disabled = i >= n - 1; }
     Deck.fitHeight(id);
     const tn = $('#tnote'); if (tn) { const a = Content.axis(id); if (a) tn.innerHTML = trainerNoteHtml(a, i); }
+    if (!o.remote && Deck.mode(deck) === 'page') { const r = deck.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight + 2) deck.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   },
-  fitHeight(id) { const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const s = $$('.slide', deck)[UIState.deck[id] || 0]; if (s) $('.deck-viewport', deck).style.height = s.offsetHeight + 'px'; }
+  // flow: الجوال (ارتفاع طبيعي) · page: اللابتوب (الشريحة بمقاس الشاشة) · fs: ملء الشاشة · show: نافذة العرض الخارجية
+  mode(deck) { if (deck && document.fullscreenElement === deck) return 'fs'; if (deck && deck.classList.contains('deck-show')) return 'show'; return innerWidth >= 900 && innerHeight >= 500 ? 'page' : 'flow'; },
+  avail(deck, m) {
+    const bar = $('.deck-bar', deck).offsetHeight, nav = $('.deck-nav', deck).offsetHeight;
+    if (m === 'fs' || m === 'show') return innerHeight - bar;
+    const tb = ($('.topbar') || {}).offsetHeight || 64; return innerHeight - tb - bar - nav - 18;
+  },
+  fitSlide(s, H, base) {
+    const inn = $('.slide-in', s); if (!inn) return true; s.style.height = H + 'px'; s.classList.remove('tight');
+    s.style.setProperty('--vh-max', Math.max(180, H - 150) + 'px'); s.style.setProperty('--vh-scene', Math.max(160, H - 190) + 'px');
+    const cs = getComputedStyle(s); const room = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 2;
+    const fits = z => { inn.style.zoom = z; return inn.getBoundingClientRect().height <= room; };
+    if (fits(base)) return true;
+    let lo = 0.62, hi = base; if (!fits(lo)) { s.classList.add('tight'); return false; }
+    for (let k = 0; k < 7; k++) { const mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; }
+    inn.style.zoom = lo.toFixed(3); return true;
+  },
+  fit(id) {
+    const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const m = Deck.mode(deck);
+    deck.classList.toggle('fixed', m !== 'flow'); deck.classList.toggle('is-fs', m === 'fs');
+    const slides = $$('.slide', deck);
+    if (m === 'flow') { slides.forEach(s => { s.style.height = ''; s.classList.remove('tight'); const inn = $('.slide-in', s); if (inn) inn.style.zoom = ''; }); Deck.fitHeight(id); return; }
+    const H = Math.max(300, Math.floor(Deck.avail(deck, m)));
+    const base = m === 'page' ? 1 : Math.min(1.7, Math.max(1, deck.clientWidth / 1180, H / 640));
+    Deck.over[id] = []; slides.forEach((s, k) => { if (!Deck.fitSlide(s, H, base)) Deck.over[id].push(k); });
+    Deck.fitHeight(id);
+  },
+  fitHeight(id) { const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const s = $$('.slide', deck)[UIState.deck[id] || 0]; if (s) $('.deck-viewport', deck).style.height = s.offsetHeight + 'px'; },
+  refresh(id, idx) { // إعادة رسم شريحة واحدة بعد تفاعل داخلها
+    const deck = $('[data-deck="' + id + '"]'); const a = Content.axis(id); if (!deck || !a) return; const slide = $$('.slide', deck)[idx]; if (!slide) return;
+    const H0 = parseFloat(slide.style.height) || 0; const tmp = document.createElement('div'); tmp.innerHTML = renderSlide(a.slides[idx], a, idx, a.slides.length, idx === (UIState.deck[id] || 0)); slide.replaceWith(tmp.firstChild);
+    if (Deck.mode(deck) === 'flow') Deck.fitHeight(id); else { const s = $$('.slide', deck)[idx]; const H = H0 || Math.floor(Deck.avail(deck, Deck.mode(deck))); Deck.fitSlide(s, H, Deck.mode(deck) === 'page' ? 1 : Math.min(1.7, Math.max(1, deck.clientWidth / 1180, H / 640))); Deck.fitHeight(id); }
+  },
+  async fullscreen(deck, screen) {
+    if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch (e) {} return; }
+    if (!deck || !deck.requestFullscreen) { UI.alert('متصفحك لا يدعم ملء الشاشة لهذا العنصر.'); return; }
+    try { await deck.requestFullscreen(screen ? { screen, navigationUI: 'hide' } : { navigationUI: 'hide' }); }
+    catch (e) { UI.alert('تعذر تفعيل ملء الشاشة. جرّب الضغط على الزر مرة أخرى.'); }
+  },
+  showUrl(id) { return location.pathname + location.search + '#v=show&id=' + encodeURIComponent(id); },
+  async projector(deck) {
+    const id = deck.getAttribute('data-deck'); let sd = null;
+    if ('getScreenDetails' in window) { try { sd = await window.getScreenDetails(); } catch (e) { sd = null; } }
+    const ext = sd ? sd.screens.filter(x => x !== sd.currentScreen) : [];
+    const nm = (x, k) => (x.label || (x.isInternal === false ? 'شاشة خارجية' : 'شاشة') + ' ' + (k + 1)) + ' · ' + x.width + '×' + x.height;
+    let body = '<p class="muted" style="font-family:var(--f-ui);font-size:13.5px;margin-top:0">وصّل اللابتوب بالبروجكتر واختر «توسيع العرض» (Extend) في إعدادات الشاشة، ثم اختر طريقة العرض:</p><div class="proj-opts">';
+    ext.forEach((x, k) => { body += '<button class="proj-opt" data-scr="' + k + '"><span class="pi">🖥️</span><span><b>ملء الشاشة على: ' + h(nm(x, k)) + '</b><small>تنتقل الشريحة وحدها إلى هذه الشاشة، ويعود كل شيء عند الخروج (Esc).</small></span></button>'; });
+    body += '<button class="proj-opt" data-win="1"><span class="pi">🪟</span><span><b>نافذة عرض منفصلة للبروجكتر</b><small>تعرض الشريحة وحدها على الشاشة الخارجية، ويبقى اللابتوب معك للتحكم وقراءة ملاحظات المدرب. التنقل متزامن بين النافذتين.</small></span></button>';
+    body += '<button class="proj-opt" data-here="1"><span class="pi">⛶</span><span><b>ملء هذه الشاشة</b><small>تعرض الشريحة على شاشة اللابتوب الحالية (أو المكررة على البروجكتر).</small></span></button></div>';
+    if (!('getScreenDetails' in window)) body += '<div class="notice" style="margin-top:12px">اختيار الشاشة تلقائيًا متاح في متصفحي Chrome وEdge. في المتصفحات الأخرى افتح «نافذة العرض المنفصلة»، واسحبها إلى شاشة البروجكتر، ثم اضغط «ملء الشاشة» داخلها.</div>';
+    else if (!sd) body += '<div class="notice" style="margin-top:12px">لإظهار الشاشات المتصلة، اسمح للمتصفح بـ«إدارة النوافذ» عند السؤال، ثم أعد فتح هذه النافذة.</div>';
+    else if (!ext.length) body += '<div class="notice" style="margin-top:12px">لم نجد شاشة خارجية متصلة. تأكد من التوصيل ومن اختيار «توسيع العرض» (Extend) لا «التكرار» (Duplicate).</div>';
+    const m = UI.modal('<h3>📽️ العرض على شاشة خارجية أو بروجكتر</h3>' + body + '<div class="actions"><button class="btn btn-ghost" data-x>إغلاق</button></div>', { wide: true });
+    $('[data-x]', m.el).onclick = () => m.close();
+    $$('[data-scr]', m.el).forEach(b => b.onclick = () => { m.close(); Deck.fullscreen(deck, ext[+b.getAttribute('data-scr')]); });
+    $('[data-here]', m.el).onclick = () => { m.close(); Deck.fullscreen(deck); };
+    $('[data-win]', m.el).onclick = () => {
+      m.close(); const x = ext[0]; const f = x ? 'left=' + x.availLeft + ',top=' + x.availTop + ',width=' + x.availWidth + ',height=' + x.availHeight : 'width=1280,height=720';
+      const w = window.open(Deck.showUrl(id), 'ec_show_' + id, 'popup,' + f);
+      if (!w) UI.alert('منع المتصفح فتح النافذة. اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.'); else UI.toast('🪟 فُتحت نافذة العرض — اضغط «ملء الشاشة» داخلها');
+    };
+  }
 };
-window.addEventListener('resize', debounce(() => { if (Router.cur.view === 'axis') Deck.fitHeight(Router.cur.id); }, 150));
+if (Deck.bc) Deck.bc.onmessage = ev => {
+  const m = ev.data || {};
+  if (m.t === 'to') { if (UIState.deck[m.id] !== m.i) Deck.to(m.id, m.i, { remote: true }); }
+  else if (m.t === 'sk') { SlideKit.set(m.k, m.v); const i = UIState.deck[m.id] || 0; Deck.refresh(m.id, i); }
+  else if (m.t === 'hello' && UIState.deck[m.id] != null && Router.cur.view === 'axis') try { Deck.bc.postMessage({ t: 'to', id: m.id, i: UIState.deck[m.id] }); } catch (e) {}
+};
+window.addEventListener('resize', debounce(() => { if (Router.cur.view === 'axis' || Router.cur.view === 'show') Deck.fit(Router.cur.id); }, 150));
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && App._pendingRender) { App._pendingRender = false; App.render(); return; } if (Router.cur.view === 'axis' || Router.cur.view === 'show') setTimeout(() => Deck.fit(Router.cur.id), 60); const hint = $('#showHint'); if (hint) hint.style.display = document.fullscreenElement ? 'none' : ''; });
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act="deck-fs"],[data-act="deck-proj"]'); if (!t) return;
+  const deck = t.closest('[data-deck]') || $('[data-deck]'); if (!deck) return;
+  if (t.getAttribute('data-act') === 'deck-fs') Deck.fullscreen(deck); else Deck.projector(deck);
+});
+Views.show = {
+  html() {
+    const a = Content.axis(Router.cur.id); if (!a || !a.slides.length) return '<div class="empty" style="margin:40px">لا توجد شرائح لعرضها.</div>';
+    const n = a.slides.length; const idx = Math.min(n - 1, Math.max(0, UIState.deck[a.id] != null ? UIState.deck[a.id] : +(SafeLS.get('ec_deck_' + a.id) || 0))); UIState.deck[a.id] = idx;
+    return '<div class="show-wrap">' + deckHtml(a, idx, 'show') + '<div class="show-hint" id="showHint"><span>📽️ اسحب هذه النافذة إلى شاشة البروجكتر ثم:</span><button class="btn btn-primary btn-sm" data-act="deck-fs">⛶ ملء الشاشة</button></div></div>';
+  },
+  after(root) { Views.axis.after(root); const deck = $('[data-deck]', root); if (deck && Deck.bc) try { Deck.bc.postMessage({ t: 'hello', id: deck.getAttribute('data-deck') }); } catch (e) {} document.title = '📽️ ' + ((Content.axis(Router.cur.id) || {}).title || 'العرض'); }
+};
 // التنقل بلوحة المفاتيح وبأجهزة المؤشر (Presenter / Clicker) التي ترسل PageDown/PageUp عادةً، وبعضها أسهمًا أو مسافة.
 // الأسهم الأفقية تتبع اتجاه القراءة العربي (← التالي، → السابق)، وB أو النقطة تُعتم الشاشة كما في العروض التقديمية.
 const DECK_KEYS = { PageDown: 1, ArrowDown: 1, ArrowLeft: 1, ' ': 1, Enter: 1, PageUp: -1, ArrowUp: -1, ArrowRight: -1, Backspace: -1 };
 document.addEventListener('keydown', e => {
-  if (Router.cur.view !== 'axis' || e.ctrlKey || e.metaKey || e.altKey || $('.modal-back')) return;
+  if ((Router.cur.view !== 'axis' && Router.cur.view !== 'show') || e.ctrlKey || e.metaKey || e.altKey || $('.modal-back')) return;
   const t = e.target || {}; if (/INPUT|TEXTAREA|SELECT/.test(t.tagName || '') || t.isContentEditable) return;
   const blk = $('#blackout');
   if (blk) { e.preventDefault(); blk.remove(); return; }
-  if (/^[bB.,ذز]$/.test(e.key)) { e.preventDefault(); document.body.insertAdjacentHTML('beforeend', '<div id="blackout"></div>'); return; }
+  if (/^[bB.,ذز]$/.test(e.key)) { e.preventDefault(); (document.fullscreenElement || document.body).insertAdjacentHTML('beforeend', '<div id="blackout"></div>'); return; }
+  if (/^[fFب]$/.test(e.key)) { e.preventDefault(); Deck.fullscreen($('[data-deck="' + Router.cur.id + '"]')); return; }
   let d = DECK_KEYS[e.key]; if (!d) return;
   if ((e.key === ' ' || e.key === 'Enter') && /BUTTON|A/.test(t.tagName || '')) return;
   if (e.shiftKey && e.key === ' ') d = -1;
   e.preventDefault();
   const deck = $('[data-deck="' + Router.cur.id + '"]'); if (!deck) return;
   Deck.move(Router.cur.id, d);
-  const r = deck.getBoundingClientRect(); if (r.top < 0 || r.top > innerHeight * 0.35) deck.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 document.addEventListener('click', e => { if (e.target.id === 'blackout') e.target.remove(); });
 

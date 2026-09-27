@@ -61,10 +61,12 @@ document.addEventListener('click', ev => {
   const t = ev.target.closest('[data-act^="sk-"]'); if (!t) return;
   const act = t.getAttribute('data-act'); const k = t.getAttribute('data-k');
   const slide = t.closest('.slide'); const deck = t.closest('[data-deck]');
-  const rerender = () => { if (!slide || !deck) return; const a = Content.axis(deck.getAttribute('data-deck')); const idx = $$('.slide', deck).indexOf(slide); if (!a || idx < 0) return; const tmp = document.createElement('div'); tmp.innerHTML = renderSlide(a.slides[idx], a, idx, a.slides.length, true); slide.replaceWith(tmp.firstChild); Deck.fitHeight(a.id); };
-  if (act === 'sk-flip') { const v = !SlideKit.ui(k); SlideKit.set(k, v); t.classList.toggle('on', v); t.setAttribute('aria-pressed', v ? 'true' : 'false'); }
-  else if (act === 'sk-pick') { const i = +t.getAttribute('data-i'); SlideKit.set(k + ':pick', i < 0 ? null : i); rerender(); }
-  else if (act === 'sk-vs') { const v = t.getAttribute('data-v') === '1'; SlideKit.set(k + ':vs', v); const box = t.closest('.sk-vs'); box.classList.toggle('after', v); $$('.sk-vs-sw button', box).forEach(b => b.classList.toggle('on', (b.getAttribute('data-v') === '1') === v)); }
+  const did = deck && deck.getAttribute('data-deck');
+  const rerender = () => { if (!slide || !deck) return; const idx = $$('.slide', deck).indexOf(slide); if (idx > -1) Deck.refresh(did, idx); };
+  const sync = (key, v) => { if (did && Deck.bc) try { Deck.bc.postMessage({ t: 'sk', id: did, k: key, v }); } catch (e) {} };
+  if (act === 'sk-flip') { const v = !SlideKit.ui(k); SlideKit.set(k, v); sync(k, v); t.classList.toggle('on', v); t.setAttribute('aria-pressed', v ? 'true' : 'false'); }
+  else if (act === 'sk-pick') { const i = +t.getAttribute('data-i'); SlideKit.set(k + ':pick', i < 0 ? null : i); sync(k + ':pick', i < 0 ? null : i); rerender(); }
+  else if (act === 'sk-vs') { const v = t.getAttribute('data-v') === '1'; SlideKit.set(k + ':vs', v); sync(k + ':vs', v); const box = t.closest('.sk-vs'); box.classList.toggle('after', v); $$('.sk-vs-sw button', box).forEach(b => b.classList.toggle('on', (b.getAttribute('data-v') === '1') === v)); }
 });
 document.addEventListener('change', ev => {
   const cb = ev.target.closest('[data-chk]'); if (!cb) return;

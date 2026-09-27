@@ -7,15 +7,17 @@ const App = {
   inIframe: (() => { try { return window.self !== window.top; } catch (e) { return true; } })(),
   render() {
     const root = document.getElementById('app'); if (!root) return;
+    // أثناء عرض الشريحة بملء الشاشة لا نعيد رسم الصفحة (إعادة الرسم تُخرج العنصر من ملء الشاشة)؛ نؤجلها حتى الخروج
+    if (document.fullscreenElement && document.fullscreenElement.matches && document.fullscreenElement.matches('.deck')) { App._pendingRender = true; return; }
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
-    const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor';
+    const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor' && v !== 'show';
     const view = needLogin ? Views.landing : (Views[v] || Views.home);
     App.onLanding = view === Views.landing;
     if (App.onLanding && !App._wasLanding) { Views.landing._played = false; Views.landing._seen = new Set(); Views.landing._counted = false; } App._wasLanding = App.onLanding;
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">الرئيسية</button></div>'; }
-    const html = v === 'present' && view === Views.present ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
+    const html = (v === 'present' && view === Views.present) || (v === 'show' && view === Views.show) ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
       (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
     // صفحة الهبوط: لا نعيد رسمها إن لم يتغير شيء حتى لا تتكرر الحركات مع كل تحديث للبيانات
     if (App.onLanding && html === App._lastLanding && root.firstChild) return;

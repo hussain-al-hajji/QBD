@@ -1254,3 +1254,78 @@ html[data-theme="dark"] .rule-box{background:linear-gradient(135deg,var(--acg),t
 .sk-fw-col b,.sk-fw-col p{overflow-wrap:anywhere}
 .pair .h>span:last-child,.pair .b>span:last-child{min-width:0;flex:1;overflow-wrap:anywhere}.slide-grid>div{min-width:0}
 .slide-links .btn{white-space:normal;max-width:100%;text-align:start;height:auto}
+
+/* ---------- الشريحة بمقاس الشاشة + ملء الشاشة + شاشة العرض ---------- */
+.deck{scroll-margin-top:74px}
+.deck-bar{gap:10px}
+.deck-tool{display:inline-flex;align-items:center;gap:6px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:5px 10px;font-family:var(--f-ui);font-size:12.5px;font-weight:700;color:var(--ink-2);cursor:pointer;transition:border-color .2s,background .2s}
+.deck-tool:hover{border-color:var(--ac);background:var(--acg,#F7E8EC)}
+.deck-tool>span{display:inline-flex;align-items:center;gap:6px}
+.deck-fs-btn .fs-off{display:none}
+.deck.is-fs .deck-fs-btn .fs-on{display:none}.deck.is-fs .deck-fs-btn .fs-off{display:inline-flex}
+.deck.fixed .slide{overflow:hidden}
+.deck.fixed .slide.tight{overflow-y:auto}
+.slide-in{position:relative;z-index:1}
+.deck:fullscreen{border-radius:0;border:0;box-shadow:none;margin:0;display:flex;flex-direction:column;width:100vw;height:100vh;background:var(--surface)}
+.deck:fullscreen .deck-viewport{flex:1}
+.deck:fullscreen .deck-bar{padding:8px 18px}
+.deck:fullscreen .deck-nav{padding:6px 18px;border-top:0;position:absolute;bottom:0;left:0;right:0;opacity:0;transition:opacity .3s;background:linear-gradient(0deg,var(--surface),transparent)}
+.deck:fullscreen:hover .deck-nav{opacity:1}
+.deck:fullscreen .swipe-hint,.deck:fullscreen [data-act="deck-proj"]{display:none}
+.deck:fullscreen .slide,.deck-show .slide{padding:3.2vh 4.2vw;display:flex;flex-direction:column;justify-content:center}
+.deck:fullscreen #blackout{position:absolute;inset:0;z-index:50}
+.show-wrap{position:fixed;inset:0;background:var(--surface)}
+.deck-show{margin:0;border-radius:0;border:0;box-shadow:none;height:100vh;display:flex;flex-direction:column}
+.deck-show .deck-viewport{flex:1}
+.deck-show .deck-nav{display:none}
+.show-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(28,35,64,.92);color:#fff;padding:10px 14px;border-radius:14px;font-family:var(--f-ui);font-size:13px;z-index:5;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.proj-opts{display:grid;gap:10px}
+.proj-opt{display:flex;gap:14px;align-items:flex-start;text-align:start;padding:14px 16px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink);font:inherit;transition:border-color .2s,transform .2s}
+.proj-opt:hover{border-color:var(--brand);transform:translateX(-3px)}
+.proj-opt .pi{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:var(--surface-2);border:1px solid var(--line)}
+.proj-opt b{display:block;font-size:15px}
+.proj-opt small{display:block;font-family:var(--f-ui);font-size:12.5px;color:var(--ink-3);line-height:1.7;margin-top:2px}
+@media (max-width:720px){.deck-tool .lbl{display:none}.deck-tool[data-act="deck-proj"]{display:none}}
+/* تخطيط أفقي مضغوط عندما تكون الشريحة بمقاس الشاشة */
+.deck.fixed .slide{padding:18px 30px 20px}
+.deck.fixed .slide-top{margin-bottom:8px}
+.deck.fixed .slide h2{margin-bottom:12px;font-size:clamp(21px,2.3vw,28px)}
+.deck.fixed .slide h2::after{margin-top:6px}
+.deck.fixed .rule-box{margin-top:12px;padding:11px 16px}
+.deck.fixed .points{gap:6px;margin-top:8px}
+.deck.fixed .points li{padding:8px 12px}
+.deck.fixed .slide-text{font-size:16px;line-height:1.85}
+.deck.fixed .slide-grid{gap:24px;align-items:center}
+.deck.fixed .slide-visual svg,.deck.fixed .sk-chart svg{max-height:var(--vh-max,56vh);width:auto;max-width:100%;margin-inline:auto}
+.deck.fixed .slide-visual>svg.scene,.deck.fixed .slide-visual>svg:not([role]){max-height:var(--vh-scene,44vh)}
+/* شرائح الأمثلة والأدوات والأخطاء: العناصر بعرض الشريحة في أعمدة، والرسم الزخرفي يختفي */
+.deck.fixed .slide-examples.vis-scene .slide-grid,.deck.fixed .slide-tools.vis-scene .slide-grid,.deck.fixed .slide-mistakes.vis-scene .slide-grid,.deck.fixed .slide-principle.vis-scene.many .slide-grid{grid-template-columns:1fr}
+.deck.fixed .slide-examples.vis-scene .slide-visual,.deck.fixed .slide-tools.vis-scene .slide-visual,.deck.fixed .slide-mistakes.vis-scene .slide-visual,.deck.fixed .slide-principle.vis-scene.many .slide-visual{display:none}
+.deck.fixed .vis-scene .pairs{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.deck.fixed .slide-principle.vis-scene.many .points{display:grid;grid-template-columns:1fr 1fr}
+.deck.fixed .vis-chart .pairs{grid-template-columns:1fr}
+.deck.fixed .pair .h{padding:7px 12px}.deck.fixed .pair .b{padding:7px 12px}
+/* الأنماط الإبداعية أفقيًا */
+.deck.fixed .sk-opts{grid-template-columns:1fr 1fr}
+.deck.fixed .sk-scn-case{padding:12px 16px;font-size:15.5px}
+.deck.fixed .sk-scn-q{margin:10px 0 8px}
+.deck.fixed .sk-flip{min-height:140px}
+.deck.fixed .sk-hook{gap:24px}
+.deck.fixed .slide-hook.vis-chart .sk-hook,.deck.fixed .slide-hook .sk-hook{grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)}
+.deck.fixed .sk-ring{width:min(210px,30vh)}
+.deck.fixed .slide-hook .sk-chart{margin-top:6px}
+.deck.fixed .slide-hook .sk-chart svg{max-height:30vh}
+.deck.fixed .sk-nums{gap:10px;margin:4px 0 8px}
+.deck.fixed .sk-num{padding:14px}
+.deck.fixed .sk-chk-head{margin-bottom:6px}.deck.fixed .sk-chk-ring{width:92px;height:92px}
+.deck.fixed .sk-chk{gap:6px}.deck.fixed .sk-chk-it{padding:9px 12px}
+.deck.fixed .sk-vs-row{padding:9px 16px}
+.deck.fixed .sk-fw{margin:8px 0 10px}.deck.fixed .sk-fw-col{padding:14px 12px 12px}.deck.fixed .sk-fw-l{width:50px;height:50px;font-size:22px;margin-bottom:8px}
+.deck.fixed .sk-chart{max-width:none;display:flex;justify-content:center}
+.deck.fixed .sk-split{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.85fr);gap:24px;align-items:center}
+.deck.fixed .sk-split .sk-chart{margin-top:0}
+.deck.fixed .sk-split .sk-nums{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.deck.fixed .slide-hook .sk-split .sk-hook{grid-template-columns:1fr 1.3fr}
+.deck.fixed .sk-split .sk-opts{grid-template-columns:1fr}
+.deck.fixed .slide-hook .sk-split .sk-chart svg{max-height:var(--vh-max,56vh)}
+.deck.fixed .slide{display:flex;flex-direction:column;justify-content:center}.deck.fixed .slide.tight{justify-content:flex-start}

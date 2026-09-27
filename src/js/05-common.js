@@ -195,19 +195,18 @@ function mediaHtml(s) {
 function renderSlide(s, a, i, n, cur) {
   const col = Content.color(a); const type = SLIDE_TYPES[s.type] ? s.type : 'principle';
   const head = '<div class="slide-top"><span class="slide-type"><span class="st-ico">' + (SLIDE_ICONS[type] || '•') + '</span>' + h(SLIDE_TYPES[type]) + '</span><span class="slide-prog"><i style="width:' + ((i + 1) / n * 100).toFixed(1) + '%"></i></span><span class="slide-no num">' + String(i + 1).padStart(2, '0') + '<small>/' + String(n).padStart(2, '0') + '</small></span></div>';
-  const wrap = (inner, cls) => '<div class="slide slide-' + type + (cur ? ' cur' : '') + (cls ? ' ' + cls : '') + '" style="--ac:' + col + ';--acg:' + tint(col, .1) + ';--acd:' + shade(col, -0.35) + '"><span class="slide-wm num" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span>' + head +
-    (s.image ? '<img class="slide-img" src=\"' + imgSrc(s.image) + '\" alt="">' : '') + '<h2>' + h(s.title) + '</h2>' + inner + '</div>';
+  const wrap = (inner, cls) => '<div class="slide slide-' + type + (cur ? ' cur' : '') + (cls ? ' ' + cls : '') + '" style="--ac:' + col + ';--acg:' + tint(col, .1) + ';--acd:' + shade(col, -0.35) + '"><span class="slide-wm num" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span><div class="slide-in">' + head +
+    (s.image ? '<img class="slide-img" src=\"' + imgSrc(s.image) + '\" alt="">' : '') + '<h2>' + h(s.title) + '</h2>' + inner + '</div></div>';
   if (SK_TYPES.indexOf(type) > -1) {
     const chart = s.chart ? '<div class="slide-visual sk-chart">' + Charts.render(s.chart, col) + '</div>' : '';
-    return wrap(SlideKit[type](s, a, i, col) + chart + mediaHtml(s));
+    return wrap((chart ? '<div class="sk-split"><div class="sk-main">' + SlideKit[type](s, a, i, col) + '</div>' + chart + '</div>' : SlideKit[type](s, a, i, col)) + mediaHtml(s), chart ? 'vis-chart' : '');
   }
   let text = '', visual = '';
   const chart = s.chart ? Charts.render(s.chart, col) : '';
   const rule = s.rule ? '<div class="rule-box"><span class="lbl">' + (type === 'opening' || type === 'summary' ? '📌 قاعدة تذكّرها' : '💡 الفكرة الذهبية') + '</span>' + richHtml(s.rule) + '</div>' : '';
   if (type === 'opening' || type === 'summary') {
     text = '<div class="slide-text">' + withLede(richHtml(s.text)) + '</div>' + rule;
-    const sc = Scenes.render(a.scene || 'idea', col, type === 'summary' ? { style: 'max-width:300px;margin:0 auto' } : {});
-    visual = sc + (chart ? '<div style="margin-top:14px">' + chart + '</div>' : '');
+    visual = chart || Scenes.render(a.scene || 'idea', col, type === 'summary' ? { style: 'max-width:300px;margin:0 auto' } : {});
   } else if (type === 'principle') {
     text = '<div class="slide-text">' + richHtml(s.intro) + '</div>' + (s.points && s.points.length ? '<ul class="points">' + s.points.map((p, k) => '<li style="--i:' + k + '"><span class="n num">' + (k + 1) + '</span><span>' + boldTerm(p) + '</span></li>').join('') + '</ul>' : '') + rule;
     visual = chart || Scenes.render('idea', col);
@@ -216,7 +215,8 @@ function renderSlide(s, a, i, n, cur) {
     text = '<div class="pairs ' + cls + '-list">' + (s.items || []).map((it, k) => { const j = String(it).indexOf('::'); const hd = j > -1 ? it.slice(0, j) : it, bd = j > -1 ? it.slice(j + 2) : ''; return '<div class="pair ' + cls + '" style="--i:' + k + '"><div class="h">' + (cls === 'mis' ? '<span class="pm">✕</span>' : cls === 'tool' ? '<span class="pm">🛠</span>' : '<span class="pm num">' + (k + 1) + '</span>') + '<span>' + h(hd.trim()) + '</span></div>' + (bd ? '<div class="b">' + (cls === 'mis' ? '<span class="pm ok">✓</span>' : '') + '<span>' + h(bd.trim()) + '</span></div>' : '') + '</div>'; }).join('') + '</div>' + rule;
     visual = chart || Scenes.render(type === 'mistakes' ? 'mistakes' : type === 'tools' ? 'tools' : (a.scene || 'idea'), col);
   }
-  return wrap('<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual">' + visual + '</div></div>');
+  const many = (s.items || []).length + (s.points || []).length;
+  return wrap('<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual">' + visual + '</div></div>', (chart ? 'vis-chart' : 'vis-scene') + (many > 4 ? ' many' : ''));
 }
 
 // ---------- محرر النص المنسّق (contenteditable) ----------
