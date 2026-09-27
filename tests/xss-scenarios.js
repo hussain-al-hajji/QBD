@@ -30,7 +30,7 @@ const SEED = {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 850 } }); const p = await ctx.newPage();
     await ctx.route(/firebaseio\.com|identitytoolkit|securetoken/, r => r.abort());
     await ctx.route(/firebase-app-compat\.js/, r => r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
-    await ctx.route(/firebase-(database|auth)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
+    await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
     await ctx.route(/fonts\.|cdnjs|translate\.google|^http:\/\/x\/|\/x$/, r => r.abort());
     await p.addInitScript(([d, x]) => { window.__MOCKCFG = Object.assign({ data: d, delayFirst: 50 }, x); }, [SEED, o.cfg || {}]);
     if (o.me) await p.addInitScript(me => { localStorage.setItem('ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); }, o.me);

@@ -17,6 +17,7 @@ async function open(b, o = {}) {
   p.on('pageerror', e => errs.push(e.message));
   await ctx.route(/firebaseio\.com|firebasedatabase\.app/, r => { net.real++; return r.abort(); });
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, r => o.blockLib ? r.abort() : r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-(auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-database-compat\.js/, r => o.blockLib ? r.abort() : r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/fonts\.googleapis|fonts\.gstatic|cdnjs|translate\.google/, r => r.abort());
   await p.addInitScript(c => { window.__MOCKCFG = c; }, Object.assign({ data: SEED, delayFirst: 0 }, o.cfg || {}));

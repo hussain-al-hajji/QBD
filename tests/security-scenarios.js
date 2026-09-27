@@ -21,7 +21,7 @@ async function visitor(o = {}) { // كل زائر في سياق مستقل = م�
   pages.push(p);
   await ctx.route(/firebaseio\.com|identitytoolkit|securetoken|googleapis\.com\/identity/, r => { net.real++; return r.abort(); });
   await ctx.route(/firebase-app-compat\.js/, r => r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
-  await ctx.route(/firebase-(database|auth)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
+  await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
   await p.addInitScript(([rules, server, x]) => {
     window.__MOCKCFG = Object.assign({ data: server, rules, delayFirst: 150, authUsers: { 'trainer@qdb.test': { pass: 'Secret#123', uid: 'adm1' } } }, x || {});
@@ -93,6 +93,14 @@ async function register(p, name) { await p.click('[data-act="open-login"]'); awa
   await T.p.click('[data-act="admin-enter"]'); await T.p.waitForTimeout(200); await T.p.click('[data-google]'); await T.p.waitForTimeout(2600);
   t = await server(T.p);
   R.admin = { inAdmin: await T.p.evaluate(() => Router.cur.view === 'admin' && Admin.ok()), migrated: at(t, 'meta/schema') === 3, legacyPIIMoved: !at(t, 'users/uL/f') && at(t, 'private/uL/f/email') === 'legacy@x.com', codeMovedToSecure: at(t, 'secure/attcodes/d1/code') === '4321' && at(t, 'settings/attendance/codes/d1/code') == null, monitorMoved: at(t, 'secure/monitor/token') === 'oldtok' && !at(t, 'settings/monitor'), readsLeads: await tryR(T.p, 'leads'), readsPrivate: await tryR(T.p, 'private') };
+  // استعادة رمز الدخول من لوحة المدرب: يرى الرموز، ويولّد رمزًا جديدًا يلغي الأجهزة المرتبطة
+  R.codeRecovery = { seesBcode: await T.p.evaluate(b => (Store.secrets || {})[b], meB.uid) === meB.code };
+  await T.p.evaluate(() => { UIState.adminGrp = 'g_users'; UIState.openDrop.add('users'); App.render(); });
+  await T.p.waitForTimeout(300); await T.p.click('[data-act="code-new"][data-uid="' + meB.uid + '"]'); await T.p.waitForSelector('.modal [data-ok]'); await T.p.click('.modal [data-ok]'); await T.p.waitForTimeout(500);
+  t = await server(T.p); R.codeRecovery.newCode = at(t, 'secrets/' + meB.uid) && at(t, 'secrets/' + meB.uid) !== meB.code; R.codeRecovery.devicesCleared = !at(t, 'devices/' + meB.uid);
+  R.codeRecovery.oldDeviceNowDenied = await tryW(B.p, `() => DB.set('users/' + Me.uid() + '/role', 'x')`);
+  meB.code = at(t, 'secrets/' + meB.uid); await B.p.evaluate(([c, tree]) => { Me.save(Object.assign({}, Me.data, { code: c })); sessionStorage.setItem('__mock_server_boot', JSON.stringify(tree)); }, [meB.code, master.tree]); await B.p.reload(); await B.p.waitForTimeout(1200);
+  R.codeRecovery.relinkedWithNewCode = await tryW(B.p, `() => DB.set('users/' + Me.uid() + '/role', 'y')`);
   await T.p.evaluate(() => Monitor.publish(true)); await T.p.waitForTimeout(400); t = await server(T.p);
   R.admin.monitorPublished = !!at(t, 'monitorData/oldtok/html');
   // المتدرب ب يسجّل حضوره بالرمز الصحيح (بعد نقل الرمز إلى secure) — والرمز لا يظهر في متصفحه

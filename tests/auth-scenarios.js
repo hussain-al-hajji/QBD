@@ -11,9 +11,9 @@ async function open(b, hash, extra) {
   p.on('pageerror', e => errs.push(e.message));
   await ctx.route(/firebaseio\.com|identitytoolkit|securetoken/, r => { net.real++; return r.abort(); });
   await ctx.route(/firebase-app-compat\.js/, r => r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
-  await ctx.route(/firebase-(database|auth)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
+  await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
-  await p.addInitScript(([d, r, u, x]) => { window.__MOCKCFG = Object.assign({ data: d, rules: r, authUsers: u, delayFirst: 200 }, x || {}); window.__FB_TEST_CONFIG = { apiKey: 'test-key', authDomain: 'test.firebaseapp.com', projectId: 'test' }; }, [DATA, RULES, USERS, extra]);
+  await p.addInitScript(([d, r, u, x]) => { window.__MOCKCFG = Object.assign({ data: d, rules: r, authUsers: u, delayFirst: 200 }, x || {}); window.__FB_TEST_CONFIG = { apiKey: 'test-key', authDomain: 'test.firebaseapp.com', projectId: 'test', appCheckSiteKey: 'site-key-test' }; }, [DATA, RULES, USERS, extra]);
   await p.goto(U + (hash || '')); await p.waitForTimeout(900);
   return { ctx, p, net, errs };
 }
@@ -26,7 +26,7 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
     const { ctx, p, net, errs } = await open(b);
     await p.click('[data-act="open-login"]'); await p.fill('#reg_name', 'خالد'); await p.fill('#reg_role', 'مؤسس'); await p.check('#regConsent'); await p.click('.modal [data-act="register"]'); await p.waitForTimeout(600);
     const me = await p.evaluate(() => Me.uid());
-    await p.evaluate(async () => { const uid = Me.uid(); const g = 2; Me.setGroup(g); await new Promise(r => setTimeout(r, 200));
+    await p.evaluate(async () => { const uid = Me.uid(); const g = 2; Me.setGroup(g); for (let i = 0; i < 40 && !((Store.users || {})[uid] || {}).gkey; i++) await new Promise(r => setTimeout(r, 50));
       await DB.update('posts/a1e1/' + uid, { text: 'إجابتي', name: 'خالد', uid, ts: DB.now() });
       await DB.set('posts/a1e1/u1/likes/' + uid, true);
       await DB.set('storyLikes/st1/likes/' + uid, true);
@@ -71,6 +71,7 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
   { // 3) Google: حساب مدرب وحساب غير مدرب
     let r = await open(b, '', { googleUser: { uid: 'adm1', email: 'trainer@gmail.com' } });
     await r.p.click('[data-act="admin-enter"]'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);
+    R.appCheckActivatedWith = await r.p.evaluate(() => window.__mock.appCheck);
     R.google = { adminView: await r.p.evaluate(() => Router.cur.view === 'admin' && Admin.ok()), canHide: await tryW(r.p, "() => DB.set('visibility/home_x', false)") }; await r.ctx.close();
     r = await open(b, '', { googleUser: { uid: 'g777', email: 'stranger@gmail.com' } });
     await r.p.click('[data-act="admin-enter"]'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);

@@ -10,7 +10,7 @@
   const setAt = (t, p, v) => { const s = segs(p); if (!s.length) return v == null ? {} : clone(v); let n = t; for (let i = 0; i < s.length - 1; i++) { if (n[s[i]] == null || typeof n[s[i]] !== 'object') n[s[i]] = {}; n = n[s[i]]; } if (v == null) delete n[s[s.length - 1]]; else n[s[s.length - 1]] = clone(v); prune(t); return t; };
   // حالة الخادم مشتركة بين الصفحات عبر localStorage (لمحاكاة زائرين على نفس القاعدة)
   const SKEY = '__mock_server';
-  let initial = clone(cfg.data) || {}; try { const s = localStorage.getItem(SKEY); if (s && cfg.shared) initial = JSON.parse(s); } catch (e) {}
+  let initial = clone(cfg.data) || {}; try { const s = localStorage.getItem(SKEY); if (s && cfg.shared) initial = JSON.parse(s); const b = sessionStorage.getItem('__mock_server_boot'); if (b) { initial = JSON.parse(b); sessionStorage.removeItem('__mock_server_boot'); } } catch (e) {}
   const M = window.__mock = { server: initial, pending: [], writes: [], attempts: [], denied: [], deniedReads: [], loaded: false, connected: cfg.connected, rejectWrites: cfg.rejectWrites, listeners: [], connListeners: [], authUser: null };
   const persistServer = () => { if (cfg.shared) try { localStorage.setItem(SKEY, JSON.stringify(M.server)); } catch (e) {} };
   function applyOp(t, op) { if (op.kind === 'set') return setAt(t, op.path, op.value); if (op.kind === 'update') { Object.keys(op.value).forEach(k => { t = setAt(t, (op.path ? op.path + '/' : '') + k, op.value[k]); }); } return t; }
@@ -104,5 +104,8 @@
   };
   function GoogleAuthProvider() { this.setCustomParameters = () => {}; }
   const authFn = () => auth; authFn.GoogleAuthProvider = GoogleAuthProvider;
-  window.firebase = { initializeApp() { return {}; }, database() { return { ref: p => ref(p || '') }; }, auth: authFn };
+  // App Check: يُسجَّل المفتاح المفعَّل للتحقق منه في الاختبار
+  function ReCaptchaV3Provider(k) { this.key = k; }
+  const appCheckFn = () => ({ activate(p) { M.appCheck = p && p.key ? p.key : p; } }); appCheckFn.ReCaptchaV3Provider = ReCaptchaV3Provider;
+  window.firebase = { initializeApp() { return {}; }, database() { return { ref: p => ref(p || '') }; }, auth: authFn, appCheck: appCheckFn };
 })();

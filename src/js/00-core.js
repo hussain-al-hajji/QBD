@@ -14,7 +14,9 @@ const firebaseConfig = {
   apiKey: "AIzaSyAv5I2l27oF_ikZWOEI9kQHaqEuvHQUabo",
   authDomain: "qbd-cdbc3.firebaseapp.com",
   projectId: "qbd-cdbc3",
-  appId: "1:333350563889:web:a9105017e189c6ac77a510"
+  appId: "1:333350563889:web:a9105017e189c6ac77a510",
+  // Firebase App Check (reCAPTCHA v3): الصق «Site key» بعد تسجيل الموقع في App Check — فارغ = غير مفعّل
+  appCheckSiteKey: ""
 };
 // للاختبار الآلي فقط (محاكاة Firebase): لا يُستخدم في التشغيل العادي
 try { if (window.__FB_TEST_CONFIG) Object.assign(firebaseConfig, window.__FB_TEST_CONFIG); } catch (e) {}
@@ -136,7 +138,13 @@ const DB = (function () {
       const fail = () => Promise.reject(new Error('تعذر تحميل مكتبة الاتصال بقاعدة البيانات'));
       return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, now() { return Date.now(); } };
     }
-    firebase.initializeApp(Object.fromEntries(Object.entries(firebaseConfig).filter(([, v]) => v)));
+    firebase.initializeApp(Object.fromEntries(Object.entries(firebaseConfig).filter(([k, v]) => v && k !== 'appCheckSiteKey')));
+    // App Check يُفعَّل قبل أي استخدام للقاعدة أو الدخول، حتى تُرفق كل الطلبات بشهادة أنها من موقعنا الحقيقي
+    if (firebaseConfig.appCheckSiteKey && typeof firebase.appCheck === 'function') {
+      try { if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+        const prov = firebase.appCheck.ReCaptchaV3Provider ? new firebase.appCheck.ReCaptchaV3Provider(firebaseConfig.appCheckSiteKey) : firebaseConfig.appCheckSiteKey;
+        firebase.appCheck().activate(prov, true); } catch (e) { console.warn('App Check', e); }
+    }
     const db = firebase.database();
     let offset = 0;
     db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });

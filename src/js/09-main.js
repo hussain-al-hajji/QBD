@@ -79,7 +79,8 @@ function watchDefs() {
       'followups': v => { Store.followups = v || {}; },
       'backupIndex': v => { Store.backupIndex = v || {}; },
       'cohortIndex': v => { Store.cohortIndex = v || {}; },
-      'secure': v => { Store.secure = v || {}; }
+      'secure': v => { Store.secure = v || {}; },
+      'secrets': v => { Store.secrets = v || {}; }
     });
   } else if (me) {
     d['private/' + me] = v => { Store.priv = v ? { [me]: v } : {}; mergeUsers(); };
@@ -92,7 +93,7 @@ function watchDefs() {
 function syncWatchers() {
   const { defs, pub } = watchDefs(); Watch.publicPaths = pub;
   Object.keys(Watch.active).forEach(p => { if (!defs[p]) { try { Watch.active[p](); } catch (e) {} delete Watch.active[p]; } });
-  if (!Admin.ok()) { Store.backupIndex = {}; Store.cohortIndex = {}; Store.secure = {}; if (!Me.uid()) { Store.priv = {}; Store.leads = {}; Store.followups = {}; Store.mySecret = ''; mergeUsers(); } }
+  if (!Admin.ok()) { Store.backupIndex = {}; Store.cohortIndex = {}; Store.secure = {}; Store.secrets = {}; if (!Me.uid()) { Store.priv = {}; Store.leads = {}; Store.followups = {}; Store.mySecret = ''; mergeUsers(); } }
   Object.keys(defs).forEach(path => {
     if (Watch.active[path]) return;
     Watch.active[path] = DB.watch(path, v => {
@@ -382,6 +383,12 @@ document.addEventListener('click', async ev => {
     case 'export-all-pdf': exportAllPersons('pdf'); break;
     case 'export-all-csv': exportAllPersons('csv'); break;
     case 'export-all': exportAll(); break;
+    case 'code-copy': { const u = t.getAttribute('data-uid'); const x = (Store.users || {})[u] || {}; const code = (Store.secrets || {})[u]; if (!code) { UI.alert('لا يوجد رمز لهذا المتدرب بعد. اضغط «🔄 رمز جديد» لتوليده.'); break; }
+      const msg = 'مرحبًا ' + (x.name || '') + '،\nبيانات دخولك إلى منصة «' + Content.courseTitle() + '» من أي جهاز:\nرقم العضوية: ' + pad4(x.member || 0) + '\nرمز الدخول الشخصي: ' + code + '\n(اختر «مسجّل مسبقًا؟ الدخول برقم العضوية»)';
+      try { await navigator.clipboard.writeText(msg); UI.toast('📋 نُسخت رسالة الدخول — أرسلها للمتدرب'); } catch (e) { UI.prompt('انسخ الرسالة:', { value: msg, title: 'رسالة الدخول' }); } break; }
+    case 'code-new': { const u = t.getAttribute('data-uid'); const x = (Store.users || {})[u] || {};
+      if (!(await UI.confirm('توليد رمز دخول جديد لـ«' + h(x.name || '') + '»؟ سيتوقف الرمز القديم، وتُلغى الأجهزة المرتبطة حاليًا بحسابه، فيدخل من جديد برقم العضوية والرمز الجديد.', { ok: 'توليد رمز جديد' }))) break;
+      const code = genCode(); await DB.update('', { ['secrets/' + u]: code, ['devices/' + u]: null }); UI.toast('🔑 الرمز الجديد: ' + code, 7000); break; }
     case 'backup': downloadBlob(new Blob([JSON.stringify(await backupData(), null, 2)], { type: 'application/json' }), 'نسخة احتياطية للمحتوى ' + fmtDate(Date.now()).replace(/\//g, '-') + '.json'); break;
     case 'home-save': { const o = {}; $$('[data-home]', root).forEach(i => { o[i.getAttribute('data-home')] = i.value.trim(); }); o.heroDesc = RTE.val(root, 'heroDesc'); o.heroImage = ImgPick.val('heroImage'); await DB.set('site/home', o); UI.toast('✅ حُفظت الواجهة ونُشرت حيًا'); break; }
     case 'home-reset': { if (await UI.confirm('استرجاع كل عناصر الواجهة لنصوصها ورسمها الأصلي؟', { ok: 'استرجاع' })) { await DB.remove('site/home'); UI.toast('تم الاسترجاع'); } break; }
