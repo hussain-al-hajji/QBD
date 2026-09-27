@@ -12,7 +12,9 @@ const firebaseConfig = {
 };
 // ?demo=1 في الرابط يفرض وضع المحاكاة المحلي (للمعاينة دون لمس قاعدة البيانات الحقيقية)
 const FORCE_DEMO = (function () { try { return /[?&]demo=1/.test(location.search); } catch (e) { return false; } })();
-const DEMO_MODE = FORCE_DEMO || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('PASTE') !== -1 || typeof firebase === 'undefined';
+// وضع المحاكاة المحلي فقط عند طلبه صراحةً (?demo=1) أو عند غياب رابط القاعدة. إذا كان الرابط موجودًا
+// فلا انتقال للتخزين المحلي أبدًا — حتى لو تعذر تحميل مكتبة Firebase أو تأخر الاتصال (يُعرض تنبيه وإعادة محاولة).
+const DEMO_MODE = FORCE_DEMO || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('PASTE') !== -1;
 
 const ADMIN_PASS = '3719';
 const BADGE_THRESHOLD = 0.8;          // 80% لفتح الوسام وتهنئة الإنجاز
@@ -100,24 +102,50 @@ function downloadBlob(blob, name) { const a = document.createElement('a'); a.hre
 // ---------------------------------------------------------------------
 const DB = (function () {
   const norm = p => String(p || '').replace(/^\/+|\/+$/g, '');
+  // ---- حالة الاتصال والكتابات المعلقة (تعرضها الواجهة وتنبّه عند الإغلاق) ----
+  const status = { ready: false, connected: false, pending: 0, wasOffline: false, lib: true, listeners: [] };
+  const emit = () => status.listeners.forEach(fn => { try { fn(status); } catch (e) { console.error(e); } });
+  // منع أي كتابة على جذر القاعدة، وأي تحديث متعدد المسارات يستبدل عقدة كاملة من المستوى الأعلى دون إذن صريح
+  function guard(op, path, obj, o) {
+    const p = norm(path);
+    if (!p && op !== 'update') throw new Error('DB: ممنوع ' + op + ' على جذر القاعدة');
+    if (op === 'update') Object.keys(obj || {}).forEach(k => {
+      const full = norm((p ? p + '/' : '') + k); if (!full) throw new Error('DB: مفتاح فارغ في التحديث');
+      if (!p && full.indexOf('/') === -1 && !(o && o.allowTopLevel)) throw new Error('DB: استبدال العقدة «' + full + '» كاملة غير مسموح هنا');
+    });
+    if (!status.ready && !(o && o.beforeReady)) { const e = new Error('لم تكتمل قراءة البيانات من الخادم بعد — انتظر لحظات ثم أعد المحاولة'); if (DB.onReject) DB.onReject(e, path); return Promise.reject(e); }
+    return null;
+  }
+  function track(promise, desc) {
+    status.pending++; emit();
+    return promise.then(v => { status.pending--; if (!status.pending && status.wasOffline && status.connected) { status.wasOffline = false; if (DB.onSynced) DB.onSynced(); } emit(); return v; },
+      e => { status.pending--; emit(); if (DB.onReject) DB.onReject(e, desc); throw e; });
+  }
   if (!DEMO_MODE) {
-    try {
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.database();
-      let offset = 0;
-      db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });
-      return {
-        real: true,
-        watch(path, cb) { const ref = db.ref(norm(path)); const fn = s => cb(s.val()); ref.on('value', fn, () => {}); return () => ref.off('value', fn); },
-        get(path) { return db.ref(norm(path)).once('value').then(s => s.val()); },
-        set(path, v) { return db.ref(norm(path)).set(clean(v)); },
-        update(path, obj) { return db.ref(norm(path) || undefined).update(clean(obj)); },
-        remove(path) { return db.ref(norm(path)).remove(); },
-        push(path, v) { const r = db.ref(norm(path)).push(); return r.set(clean(v)).then(() => r.key); },
-        transaction(path, fn) { return db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()); },
-        now() { return Date.now() + offset; }
-      };
-    } catch (e) { console.warn('Firebase init failed, using local mode', e); }
+    if (typeof firebase === 'undefined') {
+      // تعذر تحميل مكتبة الاتصال: لا تخزين محلي ولا كتابة — القراءة تنتظر، والكتابة تُرفض برسالة واضحة
+      status.lib = false;
+      const fail = () => Promise.reject(new Error('تعذر تحميل مكتبة الاتصال بقاعدة البيانات'));
+      return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, now() { return Date.now(); } };
+    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let offset = 0;
+    db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });
+    db.ref('.info/connected').on('value', s => { const c = !!s.val(); if (!c && status.ready) status.wasOffline = true; status.connected = c; emit(); if (c && status.wasOffline && !status.pending) { status.wasOffline = false; if (DB.onSynced) DB.onSynced(); } });
+    return {
+      real: true, status,
+      onStatus(fn) { status.listeners.push(fn); },
+      markReady() { status.ready = true; emit(); },
+      watch(path, cb, onErr) { const ref = db.ref(norm(path)); const fn = s => cb(s.val()); ref.on('value', fn, e => { console.warn('watch', path, e); if (onErr) onErr(e); }); return () => ref.off('value', fn); },
+      get(path) { return db.ref(norm(path)).once('value').then(s => s.val()); },
+      set(path, v, o) { const g = guard('set', path, null, o); if (g) return g; return track(db.ref(norm(path)).set(clean(v)), path); },
+      update(path, obj, o) { const g = guard('update', path, obj, o); if (g) return g; return track(norm(path) ? db.ref(norm(path)).update(clean(obj)) : db.ref().update(clean(obj)), path || Object.keys(obj).join(',')); },
+      remove(path, o) { const g = guard('remove', path, null, o); if (g) return g; return track(db.ref(norm(path)).remove(), path); },
+      push(path, v) { const g = guard('push', path); if (g) return g; const r = db.ref(norm(path)).push(); return track(r.set(clean(v)), path).then(() => r.key); },
+      transaction(path, fn, o) { const g = guard('transaction', path, null, o); if (g) return g; return track(db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()), path); },
+      now() { return Date.now() + offset; }
+    };
   }
   // ---- وضع المحاكاة المحلي (localStorage) — يطلق المراقبات بشكل متزامن فور التسجيل ----
   const KEY = 'qdb_ecom_demo_db';
@@ -138,16 +166,20 @@ const DB = (function () {
   function notify(changed) { watchers.slice().forEach(w => { if (w.alive && related(w.path, changed)) { try { w.cb(clone(getAt(w.path))); } catch (e) { console.error(e); } } }); }
   const clone = v => v == null ? null : JSON.parse(JSON.stringify(v));
   window.addEventListener('storage', e => { if (e.key === KEY) { try { tree = JSON.parse(e.newValue || '{}') || {}; } catch (er) {} notify(''); } });
+  status.connected = true;
+  const lguard = (op, path, obj, o) => { const p = norm(path); if (!p && op !== 'update') throw new Error('DB: ممنوع ' + op + ' على جذر القاعدة'); if (op === 'update') Object.keys(obj || {}).forEach(k => { const full = norm((p ? p + '/' : '') + k); if (!full) throw new Error('DB: مفتاح فارغ'); if (!p && full.indexOf('/') === -1 && !(o && o.allowTopLevel)) throw new Error('DB: استبدال العقدة «' + full + '» كاملة غير مسموح هنا'); }); };
   return {
-    real: false,
+    real: false, status,
+    onStatus(fn) { status.listeners.push(fn); },
+    markReady() { status.ready = true; },
     watch(path, cb) { const w = { path, cb, alive: true }; watchers.push(w); try { cb(clone(getAt(path))); } catch (e) { console.error(e); } return () => { w.alive = false; const i = watchers.indexOf(w); if (i > -1) watchers.splice(i, 1); }; },
     get(path) {
       // قراءة لمرة واحدة: علم بولياني منفصل بدل استدعاء دالة الإلغاء داخل تعريفها (تفادي TDZ)
       return new Promise(res => { let called = false; let un = null; un = this.watch(path, v => { if (called) return; called = true; res(v); if (un) un(); }); if (called && un) un(); });
     },
-    set(path, v) { setAt(path, v); persist(); notify(path); return Promise.resolve(); },
-    update(path, obj) { const base = norm(path); Object.keys(obj || {}).forEach(k => setAt(base ? base + '/' + k : k, obj[k])); persist(); Object.keys(obj || {}).forEach(k => notify(base ? base + '/' + k : k)); return Promise.resolve(); },
-    remove(path) { setAt(path, null); persist(); notify(path); return Promise.resolve(); },
+    set(path, v, o) { lguard('set', path, null, o); setAt(path, v); persist(); notify(path); return Promise.resolve(); },
+    update(path, obj, o) { lguard('update', path, obj, o); const base = norm(path); Object.keys(obj || {}).forEach(k => setAt(base ? base + '/' + k : k, obj[k])); persist(); Object.keys(obj || {}).forEach(k => notify(base ? base + '/' + k : k)); return Promise.resolve(); },
+    remove(path, o) { lguard('remove', path, null, o); setAt(path, null); persist(); notify(path); return Promise.resolve(); },
     push(path, v) { const k = genId('k'); return this.set(norm(path) + '/' + k, v).then(() => k); },
     transaction(path, fn) { const nv = fn(clone(getAt(path))); if (nv !== undefined) { setAt(path, nv); persist(); notify(path); } return Promise.resolve(clone(getAt(path))); },
     now() { return Date.now(); }

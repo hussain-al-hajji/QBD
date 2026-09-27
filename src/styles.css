@@ -1329,3 +1329,13 @@ html[data-theme="dark"] .rule-box{background:linear-gradient(135deg,var(--acg),t
 .deck.fixed .sk-split .sk-opts{grid-template-columns:1fr}
 .deck.fixed .slide-hook .sk-split .sk-chart svg{max-height:var(--vh-max,56vh)}
 .deck.fixed .slide{display:flex;flex-direction:column;justify-content:center}.deck.fixed .slide.tight{justify-content:flex-start}
+/* شاشة الاتصال وشريط الانقطاع */
+.connect-screen{min-height:100vh;display:grid;place-items:center;padding:20px;background:var(--bg)}
+.cs-box{max-width:460px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:30px 26px;box-shadow:var(--sh-2)}
+.cs-box h2{font-size:19px;margin:14px 0 6px}
+.cs-box p{color:var(--ink-2);font-family:var(--f-ui);font-size:14.5px;line-height:1.9;margin:0 0 14px}
+.cs-spin{width:46px;height:46px;margin:0 auto;border-radius:50%;border:4px solid var(--line);border-top-color:var(--brand);animation:csSpin 1s linear infinite}
+.cs-spin.stop{animation:none;border-color:#E5484D}
+@keyframes csSpin{to{transform:rotate(360deg)}}
+.banner-offline{background:#FFF4E0;color:#8A5300;border-bottom:1px solid #F2D29B;text-align:center;font-family:var(--f-ui);font-size:13.5px;padding:8px 14px}
+html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-color:#5A4214}

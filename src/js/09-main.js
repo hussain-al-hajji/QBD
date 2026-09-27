@@ -11,6 +11,7 @@ const App = {
     if (document.fullscreenElement && document.fullscreenElement.matches && document.fullscreenElement.matches('.deck')) { App._pendingRender = true; return; }
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
+    if (!App.dataReady) { root.innerHTML = connectScreen(); return; }
     const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor' && v !== 'show';
     const view = needLogin ? Views.landing : (Views[v] || Views.home);
     App.onLanding = view === Views.landing;
@@ -36,7 +37,9 @@ function applyFilter(inp) { const q = inp.value.trim().toLowerCase(); const scop
 
 // ---------- المراقبات الحية ----------
 function watchAll() {
-  const W = (path, fn) => DB.watch(path, v => { fn(v); App.onData(); });
+  // لا تُعرض الواجهة ولا تُقبل الكتابة قبل وصول أول قراءة مؤكدة من الخادم لكل العقد المراقبة
+  const seen = new Set(); let total = 0;
+  const W = (path, fn) => { total++; return DB.watch(path, v => { fn(v); if (!seen.has(path)) { seen.add(path); if (seen.size === total && !App.dataReady) { App.dataReady = true; DB.markReady(); App.render(); } } App.onData(); }, e => { App.watchError = e; App.render(); }); };
   W('content', v => { v = v || {}; Store.contentAxes = v.axes || {}; Store.contentEx = v.ex || {}; Store.contentLab = v.lab || null; Store.contentAssess = v.assess || null; Store.contentStories = v.stories || {}; });
   W('added', v => { v = v || {}; Store.addedAxes = v.axes || {}; Store.addedEx = v.ex || {}; Store.addedStories = v.stories || {}; });
   W('storyLikes', v => { Store.storyLikes = v || {}; });
@@ -146,18 +149,31 @@ async function copyEx(id) {
   const ax = Content.axisOfEx(id); if (ax) ne.axis = ax; else ne.kind = 'activity';
   await DB.set('added/ex/n' + genId(), ne); UI.toast('🧬 تم نسخ التمرين');
 }
-function backupData() {
-  return { app: 'qdb-ecom', version: 1, exportedAt: new Date().toISOString(), data: { content: { axes: Store.contentAxes, ex: Store.contentEx, lab: Store.contentLab, assess: Store.contentAssess, stories: Store.contentStories }, added: { axes: Store.addedAxes, ex: Store.addedEx, stories: Store.addedStories }, visibility: Store.visibility, enabled: Store.enabled, order: { axes: Store.order, ex: Store.exOrder, stories: Store.storyOrder }, media: MediaCache.data, site: Store.site, settings: { groups: { count: Groups.count() }, groupNames: Store.groupNames, assess: Store.assessCfg, attendance: Store.attCfg } } };
+async function backupData() { // يُقرأ من الخادم مباشرة (لا من حالة الواجهة) حتى لا تُصدَّر نسخة ناقصة
+  const g = k => DB.get(k);
+  return { app: 'qdb-ecom', version: 2, exportedAt: new Date().toISOString(), data: { content: await g('content'), added: await g('added'), visibility: await g('visibility'), enabled: await g('enabled'), order: await g('order'), media: await g('media'), site: await g('site'), settings: await g('settings') } };
 }
 async function importBackup(file) {
   try {
     const obj = JSON.parse(await file.text());
     if (!obj || obj.app !== 'qdb-ecom' || !obj.data) { UI.alert('الملف ليس نسخة احتياطية صالحة لهذا الموقع.'); return; }
-    const ok = await UI.confirm('سيستبدل الاستيراد كل تعديلات وإضافات المحتوى الحالية بما في الملف (' + h(obj.exportedAt || '') + '). مشاركات المتدربين لن تتأثر. متابعة؟', { danger: true, ok: 'استبدال المحتوى' });
-    if (!ok) return; const d = obj.data;
-    await DB.update('', { media: d.media || null, content: d.content || null, added: d.added || null, visibility: d.visibility || null, enabled: d.enabled || null, order: d.order || null, site: d.site || null, settings: d.settings || null });
+    const d = obj.data; const keys = ['media', 'content', 'added', 'visibility', 'enabled', 'order'].filter(k => d[k] != null);
+    const merge = ['site', 'settings'].filter(k => d[k] && typeof d[k] === 'object');
+    const ok = await UI.confirm('استيراد نسخة المحتوى (' + h(obj.exportedAt || '') + '):<br>• تُستبدل: ' + (keys.map(h).join('، ') || '—') + '<br>• تُحدَّث عناصرها الموجودة في الملف فقط: ' + (merge.map(h).join('، ') || '—') + '<br>ما لا يحتويه الملف يبقى كما هو، ومشاركات المتدربين لا تتأثر. سيُنزَّل ملف بالمحتوى الحالي أولًا.', { danger: true, ok: 'تنزيل الحالي ثم الاستيراد' });
+    if (!ok) return;
+    downloadBlob(new Blob([JSON.stringify(await backupData(), null, 1)], { type: 'application/json' }), 'المحتوى قبل الاستيراد ' + dayKey(DB.now()) + '.json');
+    const upd = {}; keys.forEach(k => { upd[k] = d[k]; }); merge.forEach(k => Object.keys(d[k]).forEach(c => { upd[k + '/' + c] = d[k][c]; }));
+    await DB.update('', upd, { allowTopLevel: true });
     UI.toast('✅ تم استيراد المحتوى');
-  } catch (e) { UI.alert('تعذر قراءة الملف: ' + h(e.message || e)); }
+  } catch (e) { UI.alert('تعذر الاستيراد: ' + h(e.message || e)); }
+}
+// نسخة كاملة من كل عقد القاعدة (ملف خارجي) — للاحتفاظ بها خارج Firebase
+const ALL_NODES = ['content', 'added', 'visibility', 'enabled', 'order', 'site', 'settings', 'media', 'users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes', 'reveal', 'broadcast', 'stats', 'meta', 'cohorts', 'cohortIndex', 'backups', 'backupIndex'];
+async function exportAll() {
+  const pm = progressModal('💾 نسخة كاملة'); const out = {};
+  try { for (let i = 0; i < ALL_NODES.length; i++) { pm.set(i + 1, ALL_NODES.length, ALL_NODES[i]); out[ALL_NODES[i]] = await DB.get(ALL_NODES[i]); }
+    downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom', kind: 'full', exportedAt: new Date().toISOString(), data: out })], { type: 'application/json' }), 'نسخة كاملة لقاعدة البيانات ' + dayKey(DB.now()) + '.json'); pm.close(); UI.toast('✅ نُزّلت النسخة الكاملة');
+  } catch (e) { pm.close(); UI.alert('تعذر التنزيل: ' + h(e.message || e)); }
 }
 async function globalReset() {
   const ok = await UI.confirm('<b>تحذير:</b> سيُمسح نهائيًا كل ما أدخله المتدربون (المشاركات، المختبر، المؤقتات، التقييم القبلي والبعدي، الحضور، قائمة المسجّلين، التعيينات)، ما عدا الاستطلاع الختامي، وسيُطلب من كل متصفح تسجيل اسم جديد. لا يمكن التراجع.', { danger: true, ok: 'نعم، امسح كل المدخلات', title: 'إعادة ضبط شاملة' });
@@ -166,7 +182,7 @@ async function globalReset() {
   Object.keys(posts).forEach(k => { if (k !== SURVEY_ID) upd['posts/' + k] = null; }); // استثناء صريح للاستطلاع الختامي
   await autoBackup(true); // نسخة احتياطية تلقائية قبل المسح
   upd.lab = null; upd.users = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd.leads = null; upd.followups = null; upd['meta/resetStamp'] = DB.now();
-  await DB.update('', upd); UI.toast('تمت إعادة الضبط الشاملة');
+  await DB.update('', upd, { allowTopLevel: true }); UI.toast('تمت إعادة الضبط الشاملة');
 }
 
 function collectRegRows() {
@@ -311,7 +327,8 @@ document.addEventListener('click', async ev => {
     case 'person-csv': { const u = t.getAttribute('data-uid'); downloadBlob(personCsvBlob(u), 'مشاركات - ' + safeName((Store.users[u] || {}).name) + '.csv'); break; }
     case 'export-all-pdf': exportAllPersons('pdf'); break;
     case 'export-all-csv': exportAllPersons('csv'); break;
-    case 'backup': await MediaCache.loadAll(); downloadBlob(new Blob([JSON.stringify(backupData(), null, 2)], { type: 'application/json' }), 'نسخة احتياطية للمحتوى ' + fmtDate(Date.now()).replace(/\//g, '-') + '.json'); break;
+    case 'export-all': exportAll(); break;
+    case 'backup': downloadBlob(new Blob([JSON.stringify(await backupData(), null, 2)], { type: 'application/json' }), 'نسخة احتياطية للمحتوى ' + fmtDate(Date.now()).replace(/\//g, '-') + '.json'); break;
     case 'home-save': { const o = {}; $$('[data-home]', root).forEach(i => { o[i.getAttribute('data-home')] = i.value.trim(); }); o.heroDesc = RTE.val(root, 'heroDesc'); o.heroImage = ImgPick.val('heroImage'); await DB.set('site/home', o); UI.toast('✅ حُفظت الواجهة ونُشرت حيًا'); break; }
     case 'home-reset': { if (await UI.confirm('استرجاع كل عناصر الواجهة لنصوصها ورسمها الأصلي؟', { ok: 'استرجاع' })) { await DB.remove('site/home'); UI.toast('تم الاسترجاع'); } break; }
     case 'reg-set': { const n = parseInt($('#regCountIn').value, 10); if (!(n >= 0)) break; await DB.set('stats/registered', n); UI.toast('✅ تم تحديث الرقم'); break; }
@@ -487,9 +504,12 @@ async function autoBackup(force) {
   } catch (e) { console.warn('backup', e); return false; }
 }
 async function restoreBackup(day) {
-  if (!(await UI.confirm('استعادة مدخلات المتدربين كما كانت في نسخة ' + h(day) + '؟ ستُستبدل البيانات الحالية (التسجيل، المشاركات، التقييمات، الحضور، المختبر). المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'استعادة' }))) return;
   const b = await DB.get('backups/' + day); if (!b || !b.data) { UI.alert('النسخة غير موجودة.'); return; }
-  const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd); UI.toast('✅ تمت الاستعادة');
+  const cur = await snapshotData(); const cnt = d => ({ u: Object.keys(d.users || {}).length, p: Object.keys(d.posts || {}).reduce((n, k) => n + Object.keys(d.posts[k] || {}).length, 0) });
+  const nb = cnt(b.data), nc = cnt(cur);
+  if (!(await UI.confirm('استعادة مدخلات المتدربين من نسخة <b class="num">' + h(day) + '</b>:<br>• في النسخة: <b class="num">' + nb.u + '</b> مسجّل و<b class="num">' + nb.p + '</b> مشاركة<br>• الحالي الآن: <b class="num">' + nc.u + '</b> مسجّل و<b class="num">' + nc.p + '</b> مشاركة<br><br>سيُنزَّل ملف بالبيانات الحالية تلقائيًا قبل الاستعادة لتتمكن من الرجوع. المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'تنزيل الحالي ثم الاستعادة' }))) return;
+  downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom', kind: 'trainee-data', exportedAt: new Date().toISOString(), data: cur }, null, 1)], { type: 'application/json' }), 'مدخلات المتدربين قبل الاستعادة ' + dayKey(DB.now()) + '.json');
+  const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd, { allowTopLevel: true }); UI.toast('✅ تمت الاستعادة');
 }
 
 // ---------- إغلاق الدفعة الحالية وأرشفتها ثم تجهيز المنصة لدفعة جديدة ----------
@@ -504,8 +524,16 @@ async function closeCohort() {
     pm.set(2, 3, 'جارٍ الحفظ في الأرشيف…'); await DB.set('cohorts/' + id, { meta, data }); await DB.set('cohortIndex/' + id, Object.assign({}, meta, { summary }));
     pm.set(3, 3, 'جارٍ تجهيز الدفعة الجديدة…'); const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = null; }); upd['meta/resetStamp'] = DB.now(); upd['stats/registered'] = 0; upd['settings/attendance/codes'] = null; upd.reveal = null;
     upd['settings/cohort'] = { name: 'الدفعة ' + num, start: '', end: '' };
-    await DB.update('', upd); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
+    await DB.update('', upd, { allowTopLevel: true }); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
   } catch (e) { pm.close(); UI.alert('تعذرت الأرشفة: ' + h(e.message || e)); }
+}
+
+// ---------- شاشة الاتصال (لا وضع محلي بديل: ننتظر الخادم ونعرض الحالة) ----------
+function connectScreen() {
+  const noLib = DB.status && !DB.status.lib;
+  const err = App.watchError;
+  const msg = noLib ? 'تعذّر تحميل مكتبة الاتصال بقاعدة البيانات (قد تكون الشبكة ضعيفة أو محجوبة).' : err ? 'رفضت قاعدة البيانات القراءة: ' + h(err.message || err) : App.slow ? 'الاتصال بطيء… ما زلنا نحاول الوصول إلى الخادم. لن يُحفظ أي شيء قبل اكتمال التحميل.' : 'جارٍ الاتصال بقاعدة البيانات…';
+  return '<div class="connect-screen"><div class="cs-box"><div class="cs-spin' + (noLib || err ? ' stop' : '') + '"></div><h2>' + h(Content.site ? (Content.site().headerTitle || '') : '') + '</h2><p>' + msg + '</p>' + (noLib || err || App.slow ? '<button class="btn btn-primary" onclick="location.reload()">↻ إعادة المحاولة</button>' : '') + '</div></div>';
 }
 
 // ---------- الإقلاع ----------
@@ -516,7 +544,14 @@ function boot() {
   watchAll();
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();
-  setTimeout(() => autoBackup(false), 15000); setInterval(() => autoBackup(false), 3600000);
+  // النسخ اليومي التلقائي من جلسة المدرب فقط، وبعد قراءة مؤكدة من الخادم (لا يكتب الزوار شيئًا تلقائيًا)
+  const bk = () => { if (App.dataReady && Admin.ok()) autoBackup(false); };
+  setTimeout(bk, 15000); setInterval(bk, 3600000);
+  setTimeout(() => { if (!App.dataReady) { App.slow = true; App.render(); } }, 8000);
+  DB.onStatus(debounce(() => { if (App.dataReady) App.render(); }, 120));
+  DB.onReject = (e, where) => { console.warn('write rejected', where, e); UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };
+  DB.onSynced = () => UI.toast('✅ عاد الاتصال وحُفظت كل التعديلات المعلّقة', 4000);
+  window.addEventListener('beforeunload', e => { if (DB.status && DB.status.pending > 0) { e.preventDefault(); e.returnValue = ''; return ''; } });
   App.render();
   setInterval(labTick, 1000);
 }

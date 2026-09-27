@@ -1349,6 +1349,16 @@ html[data-theme="dark"] .rule-box{background:linear-gradient(135deg,var(--acg),t
 .deck.fixed .sk-split .sk-opts{grid-template-columns:1fr}
 .deck.fixed .slide-hook .sk-split .sk-chart svg{max-height:var(--vh-max,56vh)}
 .deck.fixed .slide{display:flex;flex-direction:column;justify-content:center}.deck.fixed .slide.tight{justify-content:flex-start}
+/* شاشة الاتصال وشريط الانقطاع */
+.connect-screen{min-height:100vh;display:grid;place-items:center;padding:20px;background:var(--bg)}
+.cs-box{max-width:460px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:30px 26px;box-shadow:var(--sh-2)}
+.cs-box h2{font-size:19px;margin:14px 0 6px}
+.cs-box p{color:var(--ink-2);font-family:var(--f-ui);font-size:14.5px;line-height:1.9;margin:0 0 14px}
+.cs-spin{width:46px;height:46px;margin:0 auto;border-radius:50%;border:4px solid var(--line);border-top-color:var(--brand);animation:csSpin 1s linear infinite}
+.cs-spin.stop{animation:none;border-color:#E5484D}
+@keyframes csSpin{to{transform:rotate(360deg)}}
+.banner-offline{background:#FFF4E0;color:#8A5300;border-bottom:1px solid #F2D29B;text-align:center;font-family:var(--f-ui);font-size:13.5px;padding:8px 14px}
+html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-color:#5A4214}
 
 </style>
 </head>
@@ -1373,7 +1383,9 @@ const firebaseConfig = {
 };
 // ?demo=1 في الرابط يفرض وضع المحاكاة المحلي (للمعاينة دون لمس قاعدة البيانات الحقيقية)
 const FORCE_DEMO = (function () { try { return /[?&]demo=1/.test(location.search); } catch (e) { return false; } })();
-const DEMO_MODE = FORCE_DEMO || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('PASTE') !== -1 || typeof firebase === 'undefined';
+// وضع المحاكاة المحلي فقط عند طلبه صراحةً (?demo=1) أو عند غياب رابط القاعدة. إذا كان الرابط موجودًا
+// فلا انتقال للتخزين المحلي أبدًا — حتى لو تعذر تحميل مكتبة Firebase أو تأخر الاتصال (يُعرض تنبيه وإعادة محاولة).
+const DEMO_MODE = FORCE_DEMO || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('PASTE') !== -1;
 
 const ADMIN_PASS = '3719';
 const BADGE_THRESHOLD = 0.8;          // 80% لفتح الوسام وتهنئة الإنجاز
@@ -1461,24 +1473,50 @@ function downloadBlob(blob, name) { const a = document.createElement('a'); a.hre
 // ---------------------------------------------------------------------
 const DB = (function () {
   const norm = p => String(p || '').replace(/^\/+|\/+$/g, '');
+  // ---- حالة الاتصال والكتابات المعلقة (تعرضها الواجهة وتنبّه عند الإغلاق) ----
+  const status = { ready: false, connected: false, pending: 0, wasOffline: false, lib: true, listeners: [] };
+  const emit = () => status.listeners.forEach(fn => { try { fn(status); } catch (e) { console.error(e); } });
+  // منع أي كتابة على جذر القاعدة، وأي تحديث متعدد المسارات يستبدل عقدة كاملة من المستوى الأعلى دون إذن صريح
+  function guard(op, path, obj, o) {
+    const p = norm(path);
+    if (!p && op !== 'update') throw new Error('DB: ممنوع ' + op + ' على جذر القاعدة');
+    if (op === 'update') Object.keys(obj || {}).forEach(k => {
+      const full = norm((p ? p + '/' : '') + k); if (!full) throw new Error('DB: مفتاح فارغ في التحديث');
+      if (!p && full.indexOf('/') === -1 && !(o && o.allowTopLevel)) throw new Error('DB: استبدال العقدة «' + full + '» كاملة غير مسموح هنا');
+    });
+    if (!status.ready && !(o && o.beforeReady)) { const e = new Error('لم تكتمل قراءة البيانات من الخادم بعد — انتظر لحظات ثم أعد المحاولة'); if (DB.onReject) DB.onReject(e, path); return Promise.reject(e); }
+    return null;
+  }
+  function track(promise, desc) {
+    status.pending++; emit();
+    return promise.then(v => { status.pending--; if (!status.pending && status.wasOffline && status.connected) { status.wasOffline = false; if (DB.onSynced) DB.onSynced(); } emit(); return v; },
+      e => { status.pending--; emit(); if (DB.onReject) DB.onReject(e, desc); throw e; });
+  }
   if (!DEMO_MODE) {
-    try {
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.database();
-      let offset = 0;
-      db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });
-      return {
-        real: true,
-        watch(path, cb) { const ref = db.ref(norm(path)); const fn = s => cb(s.val()); ref.on('value', fn, () => {}); return () => ref.off('value', fn); },
-        get(path) { return db.ref(norm(path)).once('value').then(s => s.val()); },
-        set(path, v) { return db.ref(norm(path)).set(clean(v)); },
-        update(path, obj) { return db.ref(norm(path) || undefined).update(clean(obj)); },
-        remove(path) { return db.ref(norm(path)).remove(); },
-        push(path, v) { const r = db.ref(norm(path)).push(); return r.set(clean(v)).then(() => r.key); },
-        transaction(path, fn) { return db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()); },
-        now() { return Date.now() + offset; }
-      };
-    } catch (e) { console.warn('Firebase init failed, using local mode', e); }
+    if (typeof firebase === 'undefined') {
+      // تعذر تحميل مكتبة الاتصال: لا تخزين محلي ولا كتابة — القراءة تنتظر، والكتابة تُرفض برسالة واضحة
+      status.lib = false;
+      const fail = () => Promise.reject(new Error('تعذر تحميل مكتبة الاتصال بقاعدة البيانات'));
+      return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, now() { return Date.now(); } };
+    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let offset = 0;
+    db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });
+    db.ref('.info/connected').on('value', s => { const c = !!s.val(); if (!c && status.ready) status.wasOffline = true; status.connected = c; emit(); if (c && status.wasOffline && !status.pending) { status.wasOffline = false; if (DB.onSynced) DB.onSynced(); } });
+    return {
+      real: true, status,
+      onStatus(fn) { status.listeners.push(fn); },
+      markReady() { status.ready = true; emit(); },
+      watch(path, cb, onErr) { const ref = db.ref(norm(path)); const fn = s => cb(s.val()); ref.on('value', fn, e => { console.warn('watch', path, e); if (onErr) onErr(e); }); return () => ref.off('value', fn); },
+      get(path) { return db.ref(norm(path)).once('value').then(s => s.val()); },
+      set(path, v, o) { const g = guard('set', path, null, o); if (g) return g; return track(db.ref(norm(path)).set(clean(v)), path); },
+      update(path, obj, o) { const g = guard('update', path, obj, o); if (g) return g; return track(norm(path) ? db.ref(norm(path)).update(clean(obj)) : db.ref().update(clean(obj)), path || Object.keys(obj).join(',')); },
+      remove(path, o) { const g = guard('remove', path, null, o); if (g) return g; return track(db.ref(norm(path)).remove(), path); },
+      push(path, v) { const g = guard('push', path); if (g) return g; const r = db.ref(norm(path)).push(); return track(r.set(clean(v)), path).then(() => r.key); },
+      transaction(path, fn, o) { const g = guard('transaction', path, null, o); if (g) return g; return track(db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()), path); },
+      now() { return Date.now() + offset; }
+    };
   }
   // ---- وضع المحاكاة المحلي (localStorage) — يطلق المراقبات بشكل متزامن فور التسجيل ----
   const KEY = 'qdb_ecom_demo_db';
@@ -1499,16 +1537,20 @@ const DB = (function () {
   function notify(changed) { watchers.slice().forEach(w => { if (w.alive && related(w.path, changed)) { try { w.cb(clone(getAt(w.path))); } catch (e) { console.error(e); } } }); }
   const clone = v => v == null ? null : JSON.parse(JSON.stringify(v));
   window.addEventListener('storage', e => { if (e.key === KEY) { try { tree = JSON.parse(e.newValue || '{}') || {}; } catch (er) {} notify(''); } });
+  status.connected = true;
+  const lguard = (op, path, obj, o) => { const p = norm(path); if (!p && op !== 'update') throw new Error('DB: ممنوع ' + op + ' على جذر القاعدة'); if (op === 'update') Object.keys(obj || {}).forEach(k => { const full = norm((p ? p + '/' : '') + k); if (!full) throw new Error('DB: مفتاح فارغ'); if (!p && full.indexOf('/') === -1 && !(o && o.allowTopLevel)) throw new Error('DB: استبدال العقدة «' + full + '» كاملة غير مسموح هنا'); }); };
   return {
-    real: false,
+    real: false, status,
+    onStatus(fn) { status.listeners.push(fn); },
+    markReady() { status.ready = true; },
     watch(path, cb) { const w = { path, cb, alive: true }; watchers.push(w); try { cb(clone(getAt(path))); } catch (e) { console.error(e); } return () => { w.alive = false; const i = watchers.indexOf(w); if (i > -1) watchers.splice(i, 1); }; },
     get(path) {
       // قراءة لمرة واحدة: علم بولياني منفصل بدل استدعاء دالة الإلغاء داخل تعريفها (تفادي TDZ)
       return new Promise(res => { let called = false; let un = null; un = this.watch(path, v => { if (called) return; called = true; res(v); if (un) un(); }); if (called && un) un(); });
     },
-    set(path, v) { setAt(path, v); persist(); notify(path); return Promise.resolve(); },
-    update(path, obj) { const base = norm(path); Object.keys(obj || {}).forEach(k => setAt(base ? base + '/' + k : k, obj[k])); persist(); Object.keys(obj || {}).forEach(k => notify(base ? base + '/' + k : k)); return Promise.resolve(); },
-    remove(path) { setAt(path, null); persist(); notify(path); return Promise.resolve(); },
+    set(path, v, o) { lguard('set', path, null, o); setAt(path, v); persist(); notify(path); return Promise.resolve(); },
+    update(path, obj, o) { lguard('update', path, obj, o); const base = norm(path); Object.keys(obj || {}).forEach(k => setAt(base ? base + '/' + k : k, obj[k])); persist(); Object.keys(obj || {}).forEach(k => notify(base ? base + '/' + k : k)); return Promise.resolve(); },
+    remove(path, o) { lguard('remove', path, null, o); setAt(path, null); persist(); notify(path); return Promise.resolve(); },
     push(path, v) { const k = genId('k'); return this.set(norm(path) + '/' + k, v).then(() => k); },
     transaction(path, fn) { const nv = fn(clone(getAt(path))); if (nv !== undefined) { setAt(path, nv); persist(); notify(path); } return Promise.resolve(clone(getAt(path))); },
     now() { return Date.now(); }
@@ -2609,6 +2651,7 @@ const Layout = {
   },
   banners() {
     let out = '';
+    const st = DB.status; if (st && DB.real && st.ready && (!st.connected || st.pending > 0)) out += '<div class="banner banner-offline">' + (!st.connected ? '📡 <b>انقطع الاتصال بالخادم.</b> ' : '⏳ ') + (st.pending ? '<span class="num">' + st.pending + '</span> تعديل بانتظار الحفظ — لا تغلق الصفحة حتى يعود الاتصال.' : 'ستُحفظ أي تعديلات تلقائيًا عند عودة الاتصال.') + '</div>';
     if (App.inIframe) out += '<div class="banner banner-iframe">الصفحة معروضة داخل إطار مضمَّن؛ لتجربة أفضل افتحها مستقلة. <a class="btn btn-sm btn-primary" href="' + h(location.href) + '" target="_blank" rel="noopener">فتح في تبويب مستقل</a></div>';
     // تسجيل الحضور: شريط يظهر للمسجلين عندما يفتح المدرب تسجيل حضور يوم ما
     if (Me.isReg() && ADMIN_VIEWS.indexOf(Router.cur.view) === -1) Attend.openDays().forEach(d => {
@@ -4321,7 +4364,7 @@ Views.admin = {
     out += tool('person', '🗂️', '#1F3A5F', 'مشاركات فردية', 'ملف PDF وCSV لمشاركات كل متدرب على حدة، أو للجميع في ملف ZIP.', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="persons">' + (UIState.openDrop.has('persons') ? 'إخفاء' : 'فتح') + ' القائمة</button>');
     out += drop('persons', '<div class="row" style="margin-bottom:10px"><input data-keep="persons-search" data-filter=".person" placeholder="🔍 بحث بالاسم…" style="flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;padding:8px 10px"><button class="btn btn-primary btn-xs" data-act="export-all-pdf">📦 تصدير الكل PDF</button><button class="btn btn-soft btn-xs" data-act="export-all-csv">📦 تصدير الكل CSV</button></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><button class="btn btn-soft btn-xs" data-act="person-pdf" data-uid="' + h(u) + '">PDF</button><button class="btn btn-ghost btn-xs" data-act="person-csv" data-uid="' + h(u) + '">CSV</button></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
     B('backup');
-    out += tool('backup', '💾', '#E8960C', 'النسخة الاحتياطية للمحتوى', 'كل تعديلات وإضافات المحتوى (بلا مشاركات المتدربين) في ملف JSON.', '<button class="btn btn-soft btn-xs" data-act="backup">⬇️ تنزيل</button><label class="btn btn-ghost btn-xs">⬆️ استيراد<input type="file" accept="application/json,.json" hidden data-act-change="import-backup"></label>');
+    out += tool('backup', '💾', '#E8960C', 'النسخة الاحتياطية للمحتوى', 'كل تعديلات وإضافات المحتوى (بلا مشاركات المتدربين) في ملف JSON.', '<button class="btn btn-soft btn-xs" data-act="backup">⬇️ تنزيل</button><button class="btn btn-primary btn-xs" data-act="export-all" title="كل عقد القاعدة: المحتوى والمدخلات والنسخ والأرشيف">💾 نسخة كاملة</button><label class="btn btn-ghost btn-xs">⬆️ استيراد<input type="file" accept="application/json,.json" hidden data-act-change="import-backup"></label>');
     const bks = Object.keys(Store.backupIndex || {}).sort().reverse();
     B('autobk');
     out += tool('autobk', '🛟', '#138A5E', 'نسخ يومي تلقائي للمدخلات', 'نسخة يومية تلقائية من التسجيل والمشاركات والتقييمات والحضور (آخر <span class="num">' + BACKUP_KEEP + '</span> يومًا). آخر نسخة: <b class="num">' + (bks[0] || '—') + '</b>', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="bkList">النسخ المتاحة</button><button class="btn btn-ghost btn-xs" data-act="bk-now">نسخة الآن</button>');
@@ -5429,6 +5472,7 @@ const App = {
     if (document.fullscreenElement && document.fullscreenElement.matches && document.fullscreenElement.matches('.deck')) { App._pendingRender = true; return; }
     let v = Router.cur.view;
     if (ADMIN_VIEWS.indexOf(v) > -1 && !Admin.ok()) { Router.cur = { view: 'home' }; v = 'home'; }
+    if (!App.dataReady) { root.innerHTML = connectScreen(); return; }
     const needLogin = !Me.isReg() && !Me.guest && !Admin.ok() && ADMIN_VIEWS.indexOf(v) === -1 && v !== 'monitor' && v !== 'show';
     const view = needLogin ? Views.landing : (Views[v] || Views.home);
     App.onLanding = view === Views.landing;
@@ -5454,7 +5498,9 @@ function applyFilter(inp) { const q = inp.value.trim().toLowerCase(); const scop
 
 // ---------- المراقبات الحية ----------
 function watchAll() {
-  const W = (path, fn) => DB.watch(path, v => { fn(v); App.onData(); });
+  // لا تُعرض الواجهة ولا تُقبل الكتابة قبل وصول أول قراءة مؤكدة من الخادم لكل العقد المراقبة
+  const seen = new Set(); let total = 0;
+  const W = (path, fn) => { total++; return DB.watch(path, v => { fn(v); if (!seen.has(path)) { seen.add(path); if (seen.size === total && !App.dataReady) { App.dataReady = true; DB.markReady(); App.render(); } } App.onData(); }, e => { App.watchError = e; App.render(); }); };
   W('content', v => { v = v || {}; Store.contentAxes = v.axes || {}; Store.contentEx = v.ex || {}; Store.contentLab = v.lab || null; Store.contentAssess = v.assess || null; Store.contentStories = v.stories || {}; });
   W('added', v => { v = v || {}; Store.addedAxes = v.axes || {}; Store.addedEx = v.ex || {}; Store.addedStories = v.stories || {}; });
   W('storyLikes', v => { Store.storyLikes = v || {}; });
@@ -5564,18 +5610,31 @@ async function copyEx(id) {
   const ax = Content.axisOfEx(id); if (ax) ne.axis = ax; else ne.kind = 'activity';
   await DB.set('added/ex/n' + genId(), ne); UI.toast('🧬 تم نسخ التمرين');
 }
-function backupData() {
-  return { app: 'qdb-ecom', version: 1, exportedAt: new Date().toISOString(), data: { content: { axes: Store.contentAxes, ex: Store.contentEx, lab: Store.contentLab, assess: Store.contentAssess, stories: Store.contentStories }, added: { axes: Store.addedAxes, ex: Store.addedEx, stories: Store.addedStories }, visibility: Store.visibility, enabled: Store.enabled, order: { axes: Store.order, ex: Store.exOrder, stories: Store.storyOrder }, media: MediaCache.data, site: Store.site, settings: { groups: { count: Groups.count() }, groupNames: Store.groupNames, assess: Store.assessCfg, attendance: Store.attCfg } } };
+async function backupData() { // يُقرأ من الخادم مباشرة (لا من حالة الواجهة) حتى لا تُصدَّر نسخة ناقصة
+  const g = k => DB.get(k);
+  return { app: 'qdb-ecom', version: 2, exportedAt: new Date().toISOString(), data: { content: await g('content'), added: await g('added'), visibility: await g('visibility'), enabled: await g('enabled'), order: await g('order'), media: await g('media'), site: await g('site'), settings: await g('settings') } };
 }
 async function importBackup(file) {
   try {
     const obj = JSON.parse(await file.text());
     if (!obj || obj.app !== 'qdb-ecom' || !obj.data) { UI.alert('الملف ليس نسخة احتياطية صالحة لهذا الموقع.'); return; }
-    const ok = await UI.confirm('سيستبدل الاستيراد كل تعديلات وإضافات المحتوى الحالية بما في الملف (' + h(obj.exportedAt || '') + '). مشاركات المتدربين لن تتأثر. متابعة؟', { danger: true, ok: 'استبدال المحتوى' });
-    if (!ok) return; const d = obj.data;
-    await DB.update('', { media: d.media || null, content: d.content || null, added: d.added || null, visibility: d.visibility || null, enabled: d.enabled || null, order: d.order || null, site: d.site || null, settings: d.settings || null });
+    const d = obj.data; const keys = ['media', 'content', 'added', 'visibility', 'enabled', 'order'].filter(k => d[k] != null);
+    const merge = ['site', 'settings'].filter(k => d[k] && typeof d[k] === 'object');
+    const ok = await UI.confirm('استيراد نسخة المحتوى (' + h(obj.exportedAt || '') + '):<br>• تُستبدل: ' + (keys.map(h).join('، ') || '—') + '<br>• تُحدَّث عناصرها الموجودة في الملف فقط: ' + (merge.map(h).join('، ') || '—') + '<br>ما لا يحتويه الملف يبقى كما هو، ومشاركات المتدربين لا تتأثر. سيُنزَّل ملف بالمحتوى الحالي أولًا.', { danger: true, ok: 'تنزيل الحالي ثم الاستيراد' });
+    if (!ok) return;
+    downloadBlob(new Blob([JSON.stringify(await backupData(), null, 1)], { type: 'application/json' }), 'المحتوى قبل الاستيراد ' + dayKey(DB.now()) + '.json');
+    const upd = {}; keys.forEach(k => { upd[k] = d[k]; }); merge.forEach(k => Object.keys(d[k]).forEach(c => { upd[k + '/' + c] = d[k][c]; }));
+    await DB.update('', upd, { allowTopLevel: true });
     UI.toast('✅ تم استيراد المحتوى');
-  } catch (e) { UI.alert('تعذر قراءة الملف: ' + h(e.message || e)); }
+  } catch (e) { UI.alert('تعذر الاستيراد: ' + h(e.message || e)); }
+}
+// نسخة كاملة من كل عقد القاعدة (ملف خارجي) — للاحتفاظ بها خارج Firebase
+const ALL_NODES = ['content', 'added', 'visibility', 'enabled', 'order', 'site', 'settings', 'media', 'users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes', 'reveal', 'broadcast', 'stats', 'meta', 'cohorts', 'cohortIndex', 'backups', 'backupIndex'];
+async function exportAll() {
+  const pm = progressModal('💾 نسخة كاملة'); const out = {};
+  try { for (let i = 0; i < ALL_NODES.length; i++) { pm.set(i + 1, ALL_NODES.length, ALL_NODES[i]); out[ALL_NODES[i]] = await DB.get(ALL_NODES[i]); }
+    downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom', kind: 'full', exportedAt: new Date().toISOString(), data: out })], { type: 'application/json' }), 'نسخة كاملة لقاعدة البيانات ' + dayKey(DB.now()) + '.json'); pm.close(); UI.toast('✅ نُزّلت النسخة الكاملة');
+  } catch (e) { pm.close(); UI.alert('تعذر التنزيل: ' + h(e.message || e)); }
 }
 async function globalReset() {
   const ok = await UI.confirm('<b>تحذير:</b> سيُمسح نهائيًا كل ما أدخله المتدربون (المشاركات، المختبر، المؤقتات، التقييم القبلي والبعدي، الحضور، قائمة المسجّلين، التعيينات)، ما عدا الاستطلاع الختامي، وسيُطلب من كل متصفح تسجيل اسم جديد. لا يمكن التراجع.', { danger: true, ok: 'نعم، امسح كل المدخلات', title: 'إعادة ضبط شاملة' });
@@ -5584,7 +5643,7 @@ async function globalReset() {
   Object.keys(posts).forEach(k => { if (k !== SURVEY_ID) upd['posts/' + k] = null; }); // استثناء صريح للاستطلاع الختامي
   await autoBackup(true); // نسخة احتياطية تلقائية قبل المسح
   upd.lab = null; upd.users = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd.leads = null; upd.followups = null; upd['meta/resetStamp'] = DB.now();
-  await DB.update('', upd); UI.toast('تمت إعادة الضبط الشاملة');
+  await DB.update('', upd, { allowTopLevel: true }); UI.toast('تمت إعادة الضبط الشاملة');
 }
 
 function collectRegRows() {
@@ -5729,7 +5788,8 @@ document.addEventListener('click', async ev => {
     case 'person-csv': { const u = t.getAttribute('data-uid'); downloadBlob(personCsvBlob(u), 'مشاركات - ' + safeName((Store.users[u] || {}).name) + '.csv'); break; }
     case 'export-all-pdf': exportAllPersons('pdf'); break;
     case 'export-all-csv': exportAllPersons('csv'); break;
-    case 'backup': await MediaCache.loadAll(); downloadBlob(new Blob([JSON.stringify(backupData(), null, 2)], { type: 'application/json' }), 'نسخة احتياطية للمحتوى ' + fmtDate(Date.now()).replace(/\//g, '-') + '.json'); break;
+    case 'export-all': exportAll(); break;
+    case 'backup': downloadBlob(new Blob([JSON.stringify(await backupData(), null, 2)], { type: 'application/json' }), 'نسخة احتياطية للمحتوى ' + fmtDate(Date.now()).replace(/\//g, '-') + '.json'); break;
     case 'home-save': { const o = {}; $$('[data-home]', root).forEach(i => { o[i.getAttribute('data-home')] = i.value.trim(); }); o.heroDesc = RTE.val(root, 'heroDesc'); o.heroImage = ImgPick.val('heroImage'); await DB.set('site/home', o); UI.toast('✅ حُفظت الواجهة ونُشرت حيًا'); break; }
     case 'home-reset': { if (await UI.confirm('استرجاع كل عناصر الواجهة لنصوصها ورسمها الأصلي؟', { ok: 'استرجاع' })) { await DB.remove('site/home'); UI.toast('تم الاسترجاع'); } break; }
     case 'reg-set': { const n = parseInt($('#regCountIn').value, 10); if (!(n >= 0)) break; await DB.set('stats/registered', n); UI.toast('✅ تم تحديث الرقم'); break; }
@@ -5905,9 +5965,12 @@ async function autoBackup(force) {
   } catch (e) { console.warn('backup', e); return false; }
 }
 async function restoreBackup(day) {
-  if (!(await UI.confirm('استعادة مدخلات المتدربين كما كانت في نسخة ' + h(day) + '؟ ستُستبدل البيانات الحالية (التسجيل، المشاركات، التقييمات، الحضور، المختبر). المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'استعادة' }))) return;
   const b = await DB.get('backups/' + day); if (!b || !b.data) { UI.alert('النسخة غير موجودة.'); return; }
-  const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd); UI.toast('✅ تمت الاستعادة');
+  const cur = await snapshotData(); const cnt = d => ({ u: Object.keys(d.users || {}).length, p: Object.keys(d.posts || {}).reduce((n, k) => n + Object.keys(d.posts[k] || {}).length, 0) });
+  const nb = cnt(b.data), nc = cnt(cur);
+  if (!(await UI.confirm('استعادة مدخلات المتدربين من نسخة <b class="num">' + h(day) + '</b>:<br>• في النسخة: <b class="num">' + nb.u + '</b> مسجّل و<b class="num">' + nb.p + '</b> مشاركة<br>• الحالي الآن: <b class="num">' + nc.u + '</b> مسجّل و<b class="num">' + nc.p + '</b> مشاركة<br><br>سيُنزَّل ملف بالبيانات الحالية تلقائيًا قبل الاستعادة لتتمكن من الرجوع. المحتوى وتعديلاته لا تتأثر.', { danger: true, ok: 'تنزيل الحالي ثم الاستعادة' }))) return;
+  downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom', kind: 'trainee-data', exportedAt: new Date().toISOString(), data: cur }, null, 1)], { type: 'application/json' }), 'مدخلات المتدربين قبل الاستعادة ' + dayKey(DB.now()) + '.json');
+  const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = b.data[k] || null; }); await DB.update('', upd, { allowTopLevel: true }); UI.toast('✅ تمت الاستعادة');
 }
 
 // ---------- إغلاق الدفعة الحالية وأرشفتها ثم تجهيز المنصة لدفعة جديدة ----------
@@ -5922,8 +5985,16 @@ async function closeCohort() {
     pm.set(2, 3, 'جارٍ الحفظ في الأرشيف…'); await DB.set('cohorts/' + id, { meta, data }); await DB.set('cohortIndex/' + id, Object.assign({}, meta, { summary }));
     pm.set(3, 3, 'جارٍ تجهيز الدفعة الجديدة…'); const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = null; }); upd['meta/resetStamp'] = DB.now(); upd['stats/registered'] = 0; upd['settings/attendance/codes'] = null; upd.reveal = null;
     upd['settings/cohort'] = { name: 'الدفعة ' + num, start: '', end: '' };
-    await DB.update('', upd); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
+    await DB.update('', upd, { allowTopLevel: true }); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
   } catch (e) { pm.close(); UI.alert('تعذرت الأرشفة: ' + h(e.message || e)); }
+}
+
+// ---------- شاشة الاتصال (لا وضع محلي بديل: ننتظر الخادم ونعرض الحالة) ----------
+function connectScreen() {
+  const noLib = DB.status && !DB.status.lib;
+  const err = App.watchError;
+  const msg = noLib ? 'تعذّر تحميل مكتبة الاتصال بقاعدة البيانات (قد تكون الشبكة ضعيفة أو محجوبة).' : err ? 'رفضت قاعدة البيانات القراءة: ' + h(err.message || err) : App.slow ? 'الاتصال بطيء… ما زلنا نحاول الوصول إلى الخادم. لن يُحفظ أي شيء قبل اكتمال التحميل.' : 'جارٍ الاتصال بقاعدة البيانات…';
+  return '<div class="connect-screen"><div class="cs-box"><div class="cs-spin' + (noLib || err ? ' stop' : '') + '"></div><h2>' + h(Content.site ? (Content.site().headerTitle || '') : '') + '</h2><p>' + msg + '</p>' + (noLib || err || App.slow ? '<button class="btn btn-primary" onclick="location.reload()">↻ إعادة المحاولة</button>' : '') + '</div></div>';
 }
 
 // ---------- الإقلاع ----------
@@ -5934,7 +6005,14 @@ function boot() {
   watchAll();
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();
-  setTimeout(() => autoBackup(false), 15000); setInterval(() => autoBackup(false), 3600000);
+  // النسخ اليومي التلقائي من جلسة المدرب فقط، وبعد قراءة مؤكدة من الخادم (لا يكتب الزوار شيئًا تلقائيًا)
+  const bk = () => { if (App.dataReady && Admin.ok()) autoBackup(false); };
+  setTimeout(bk, 15000); setInterval(bk, 3600000);
+  setTimeout(() => { if (!App.dataReady) { App.slow = true; App.render(); } }, 8000);
+  DB.onStatus(debounce(() => { if (App.dataReady) App.render(); }, 120));
+  DB.onReject = (e, where) => { console.warn('write rejected', where, e); UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };
+  DB.onSynced = () => UI.toast('✅ عاد الاتصال وحُفظت كل التعديلات المعلّقة', 4000);
+  window.addEventListener('beforeunload', e => { if (DB.status && DB.status.pending > 0) { e.preventDefault(); e.returnValue = ''; return ''; } });
   App.render();
   setInterval(labTick, 1000);
 }

@@ -1,1 +1,9 @@
-{ "rules": { ".read": true, ".write": true } }
+{
+  "rules": {
+    ".read": true,
+    ".write": false,
+    "$node": {
+      ".write": true
+    }
+  }
+}

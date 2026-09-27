@@ -56,6 +56,7 @@ const Layout = {
   },
   banners() {
     let out = '';
+    const st = DB.status; if (st && DB.real && st.ready && (!st.connected || st.pending > 0)) out += '<div class="banner banner-offline">' + (!st.connected ? '📡 <b>انقطع الاتصال بالخادم.</b> ' : '⏳ ') + (st.pending ? '<span class="num">' + st.pending + '</span> تعديل بانتظار الحفظ — لا تغلق الصفحة حتى يعود الاتصال.' : 'ستُحفظ أي تعديلات تلقائيًا عند عودة الاتصال.') + '</div>';
     if (App.inIframe) out += '<div class="banner banner-iframe">الصفحة معروضة داخل إطار مضمَّن؛ لتجربة أفضل افتحها مستقلة. <a class="btn btn-sm btn-primary" href="' + h(location.href) + '" target="_blank" rel="noopener">فتح في تبويب مستقل</a></div>';
     // تسجيل الحضور: شريط يظهر للمسجلين عندما يفتح المدرب تسجيل حضور يوم ما
     if (Me.isReg() && ADMIN_VIEWS.indexOf(Router.cur.view) === -1) Attend.openDays().forEach(d => {
