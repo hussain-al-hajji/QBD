@@ -317,7 +317,47 @@ const Charts = (function () {
       body.map((r, i) => '<tr>' + r.map((x, j) => '<td style="padding:9px 12px;text-align:right;background:' + (i % 2 ? '#fff' : c.light) + ';' + (j === 0 ? 'font-weight:700;' : '') + (j === r.length - 1 && r.length === 2 ? 'color:' + c.dark + ';font-weight:600;' : '') + '">' + esc(x) + '</td>').join('') + '</tr>').join('') +
       '</tbody></table></div>';
   }
-  const KINDS = { flow, vflow, funnel, cards, compare, hub, cycle, steps, bars, matrix, balance, timeline, gap, equation, tree, table };
+  // ---------- donut (توزيع نسب مع مفتاح) ----------
+  function donut(items, c) {
+    const its = items.map(parseItem); const vals = its.map(i => Math.max(0, parseFloat(String(i.desc).replace(/[^\d.]/g, '')) || 0)); const tot = vals.reduce((a, b) => a + b, 0) || 1;
+    const cx = 150, cy = 130, R = 104, r = 62; let a0 = -Math.PI / 2, body = '';
+    const pal = k => k === 0 ? c.color : shadeC(c.color, k % 2 ? 0.35 + k * 0.06 : -0.25 + k * 0.05);
+    its.forEach((it, k) => {
+      const a1 = a0 + vals[k] / tot * Math.PI * 2; const big = a1 - a0 > Math.PI ? 1 : 0;
+      const p = (ang, rr) => (cx + rr * Math.cos(ang)).toFixed(1) + ' ' + (cy + rr * Math.sin(ang)).toFixed(1);
+      body += '<path d="M' + p(a0, R) + ' A' + R + ' ' + R + ' 0 ' + big + ' 1 ' + p(a1, R) + ' L' + p(a1, r) + ' A' + r + ' ' + r + ' 0 ' + big + ' 0 ' + p(a0, r) + 'Z" fill="' + pal(k) + '" stroke="#fff" stroke-width="3"/>';
+      a0 = a1;
+    });
+    const main = its[0]; body += fo(cx - 58, cy - 34, 116, 68, '<b style="font-size:26px;direction:ltr;unicode-bidi:isolate">' + Math.round(vals[0] / tot * 100) + '%</b><div style="font-size:12px;font-weight:500">' + esc(main ? main.label : '') + '</div>', { align: 'center', fs: 14, pad: '0' });
+    const lx = 300, lh = 36; const y0 = cy - (its.length * lh) / 2;
+    its.forEach((it, k) => { const y = y0 + k * lh; body += rect(W - 20 - 14, y + 10, 14, 14, pal(k), null, 4) + fo(lx, y, W - 40 - lx, lh, esc(it.label) + ' <b style="direction:ltr;unicode-bidi:isolate">' + Math.round(vals[k] / tot * 100) + '%</b>', { fs: 14, weight: 600 }); });
+    return svgWrap(Math.max(262, its.length * lh + 20), body, c);
+  }
+  // ---------- pyramid (مستويات من القمة إلى القاعدة) ----------
+  function pyramid(items, c) {
+    const its = items.map(parseItem); const n = its.length; const lh = 62, gap = 6, topW = 150, baseW = 560; let body = '';
+    its.forEach((it, k) => {
+      const w1 = topW + (baseW - topW) * (k / n), w2 = topW + (baseW - topW) * ((k + 1) / n); const y = 6 + k * (lh + gap);
+      const col = it.hi ? c.color : shadeC(c.color, -0.2 + k * (0.75 / n));
+      body += '<path d="M' + ((W - w1) / 2).toFixed(1) + ' ' + y + 'H' + ((W + w1) / 2).toFixed(1) + 'L' + ((W + w2) / 2).toFixed(1) + ' ' + (y + lh) + 'H' + ((W - w2) / 2).toFixed(1) + 'Z" fill="' + col + '"/>';
+      const ink = k / n < 0.5 || it.hi ? '#fff' : '#1C2340';
+      body += fo((W - w2) / 2 + 22, y, w2 - 44, lh, '<b>' + esc(it.label) + '</b>' + (it.desc ? '<div style="font-weight:400;font-size:12.5px;opacity:.9">' + esc(it.desc) + '</div>' : ''), { align: 'center', fs: 14.5, color: ink, pad: '2px 4px' });
+    });
+    return svgWrap(12 + n * (lh + gap), body, c);
+  }
+  // ---------- venn (نقطة التقاء) ----------
+  function venn(items, c) {
+    const center = (items.find(x => String(x).trim().startsWith('=')) || '').replace(/^\s*=\s*/, ''); const its = items.filter(x => !String(x).trim().startsWith('=')).map(parseItem).slice(0, 3);
+    const three = its.length === 3; const R = three ? 108 : 118; const pts = three ? [[220, 120], [380, 120], [300, 250]] : [[225, 140], [375, 140]];
+    const fills = [c.color, shadeC(c.color, 0.45), '#1C2340']; let body = '';
+    pts.forEach((p, k) => { body += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + R + '" fill="' + fills[k] + '" fill-opacity="' + (k === 2 ? .16 : .2) + '" stroke="' + fills[k] + '" stroke-width="2.5"/>'; });
+    const lp = three ? [[118, 64], [342, 64], [230, 282]] : [[105, 108], [355, 108]];
+    its.forEach((it, k) => { body += fo(lp[k][0], lp[k][1], 140, 64, '<b>' + esc(it.label) + '</b>' + (it.desc ? '<div style="font-weight:400;font-size:12px">' + esc(it.desc) + '</div>' : ''), { align: 'center', fs: 14.5, color: k === 2 ? '#1C2340' : c.dark, pad: '0' }); });
+    const cy = three ? 165 : 140;
+    if (center) body += rect(300 - 62, cy - 22, 124, 44, c.color, null, 22) + fo(300 - 62, cy - 22, 124, 44, esc(center), { align: 'center', fs: 13.5, weight: 800, color: '#fff', pad: '0 6px' });
+    return svgWrap(three ? 370 : 270, body, c);
+  }
+  const KINDS = { flow, vflow, funnel, cards, compare, hub, cycle, steps, bars, matrix, balance, timeline, gap, equation, tree, table, donut, pyramid, venn };
   function render(chart, color) {
     if (!chart || !KINDS[chart.kind]) return '';
     try { return KINDS[chart.kind](chart.items || [], ctx(color)); } catch (e) { console.error('chart', chart, e); return ''; }

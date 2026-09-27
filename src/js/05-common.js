@@ -192,28 +192,31 @@ function mediaHtml(s) {
 }
 
 // ---------- عرض شريحة ----------
-function renderSlide(s, a, i, n) {
+function renderSlide(s, a, i, n, cur) {
   const col = Content.color(a); const type = SLIDE_TYPES[s.type] ? s.type : 'principle';
+  const head = '<div class="slide-top"><span class="slide-type"><span class="st-ico">' + (SLIDE_ICONS[type] || '•') + '</span>' + h(SLIDE_TYPES[type]) + '</span><span class="slide-prog"><i style="width:' + ((i + 1) / n * 100).toFixed(1) + '%"></i></span><span class="slide-no num">' + String(i + 1).padStart(2, '0') + '<small>/' + String(n).padStart(2, '0') + '</small></span></div>';
+  const wrap = (inner, cls) => '<div class="slide slide-' + type + (cur ? ' cur' : '') + (cls ? ' ' + cls : '') + '" style="--ac:' + col + ';--acg:' + tint(col, .1) + ';--acd:' + shade(col, -0.35) + '"><span class="slide-wm num" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span>' + head +
+    (s.image ? '<img class="slide-img" src=\"' + imgSrc(s.image) + '\" alt="">' : '') + '<h2>' + h(s.title) + '</h2>' + inner + '</div>';
+  if (SK_TYPES.indexOf(type) > -1) {
+    const chart = s.chart ? '<div class="slide-visual sk-chart">' + Charts.render(s.chart, col) + '</div>' : '';
+    return wrap(SlideKit[type](s, a, i, col) + chart + mediaHtml(s));
+  }
   let text = '', visual = '';
   const chart = s.chart ? Charts.render(s.chart, col) : '';
-  const rule = s.rule ? '<div class="rule-box"><span class="lbl">' + (type === 'opening' || type === 'summary' ? '📌 قاعدة تذكّرها' : '💡 الرسالة') + '</span>' + richHtml(s.rule) + '</div>' : '';
+  const rule = s.rule ? '<div class="rule-box"><span class="lbl">' + (type === 'opening' || type === 'summary' ? '📌 قاعدة تذكّرها' : '💡 الفكرة الذهبية') + '</span>' + richHtml(s.rule) + '</div>' : '';
   if (type === 'opening' || type === 'summary') {
     text = '<div class="slide-text">' + withLede(richHtml(s.text)) + '</div>' + rule;
     const sc = Scenes.render(a.scene || 'idea', col, type === 'summary' ? { style: 'max-width:300px;margin:0 auto' } : {});
     visual = sc + (chart ? '<div style="margin-top:14px">' + chart + '</div>' : '');
   } else if (type === 'principle') {
-    text = '<div class="slide-text">' + richHtml(s.intro) + '</div>' + (s.points && s.points.length ? '<ul class="points">' + s.points.map((p, k) => '<li><span class="n num">' + (k + 1) + '</span><span>' + boldTerm(p) + '</span></li>').join('') + '</ul>' : '') + rule;
+    text = '<div class="slide-text">' + richHtml(s.intro) + '</div>' + (s.points && s.points.length ? '<ul class="points">' + s.points.map((p, k) => '<li style="--i:' + k + '"><span class="n num">' + (k + 1) + '</span><span>' + boldTerm(p) + '</span></li>').join('') + '</ul>' : '') + rule;
     visual = chart || Scenes.render('idea', col);
   } else {
-    const cls = type === 'mistakes' ? 'mis' : type === 'tools' ? 'tool' : '';
-    text = '<div class="pairs">' + (s.items || []).map(it => { const k = String(it).indexOf('::'); const hd = k > -1 ? it.slice(0, k) : it, bd = k > -1 ? it.slice(k + 2) : ''; return '<div class="pair ' + cls + '"><div class="h">' + h(hd.trim()) + '</div>' + (bd ? '<div class="b">' + h(bd.trim()) + '</div>' : '') + '</div>'; }).join('') + '</div>' + rule;
+    const cls = type === 'mistakes' ? 'mis' : type === 'tools' ? 'tool' : 'ex';
+    text = '<div class="pairs ' + cls + '-list">' + (s.items || []).map((it, k) => { const j = String(it).indexOf('::'); const hd = j > -1 ? it.slice(0, j) : it, bd = j > -1 ? it.slice(j + 2) : ''; return '<div class="pair ' + cls + '" style="--i:' + k + '"><div class="h">' + (cls === 'mis' ? '<span class="pm">✕</span>' : cls === 'tool' ? '<span class="pm">🛠</span>' : '<span class="pm num">' + (k + 1) + '</span>') + '<span>' + h(hd.trim()) + '</span></div>' + (bd ? '<div class="b">' + (cls === 'mis' ? '<span class="pm ok">✓</span>' : '') + '<span>' + h(bd.trim()) + '</span></div>' : '') + '</div>'; }).join('') + '</div>' + rule;
     visual = chart || Scenes.render(type === 'mistakes' ? 'mistakes' : type === 'tools' ? 'tools' : (a.scene || 'idea'), col);
   }
-  return '<div class="slide" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' +
-    '<span class="slide-type">' + h(SLIDE_TYPES[type]) + ' · <span class="num">' + (i + 1) + '/' + n + '</span></span>' +
-    (s.image ? '<img class="slide-img" src=\"' + imgSrc(s.image) + '\" alt="">' : '') +
-    '<h2>' + h(s.title) + '</h2>' +
-    '<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual">' + visual + '</div></div></div>';
+  return wrap('<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual">' + visual + '</div></div>');
 }
 
 // ---------- محرر النص المنسّق (contenteditable) ----------

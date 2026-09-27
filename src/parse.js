@@ -70,6 +70,7 @@ function parseFile(txt, data) {
       if (curType === 'axis') cur.highlights.push(val);
       else if (curType === 'slide') {
         if (cur.type === 'examples' || cur.type === 'mistakes' || cur.type === 'tools') cur.items.push(val.replace(/\s*::\s*/, '::'));
+        else if (['hook', 'myth', 'scenario', 'numbers', 'framework', 'checklist', 'versus', 'journey'].indexOf(cur.type) > -1) cur.items.push(val.replace(/\s*::\s*/g, ' :: '));
         else cur.points.push(val);
       } else if (curType === 'ex') {
         if (lastKey === 'steps') cur.steps.push(val);

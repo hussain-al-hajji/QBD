@@ -303,6 +303,15 @@ function slideEditorHtml(s, i, n) {
     '<div class="field"><label>عنوان الشريحة</label><input data-sf="title" value="' + h(s.title || '') + '"></div>';
   if (t === 'opening' || t === 'summary') f += '<div class="field"><label>النص الرئيسي</label>' + RTE.html(k + 'text', s.text) + '</div><div class="field"><label>قاعدة تذكّرها</label>' + RTE.html(k + 'rule', s.rule) + '</div>';
   else if (t === 'principle') f += '<div class="field"><label>مقدمة المبدأ العلمي</label>' + RTE.html(k + 'intro', s.intro) + '</div><div class="field"><label>النقاط (سطر لكل نقطة)</label><textarea data-sf="points" rows="5">' + h(arr(s.points).join('\n')) + '</textarea><span class="help">المصطلح قبل «:» أو «—» يُبرز تلقائيًا.</span></div><div class="field"><label>جملة الربط / الرسالة</label>' + RTE.html(k + 'rule', s.rule) + '</div>';
+  else if (SK_TYPES.indexOf(t) > -1) {
+    const help = { hook: 'غير مستخدم في هذا النمط', myth: 'الخرافة :: الحقيقة', scenario: 'الخيار :: التعليق عليه — ضع * قبل الخيار الأفضل', numbers: 'الرقم :: ما يعنيه :: المصدر (اختياري)', framework: 'الحرف أو الرمز :: الكلمة :: الشرح', checklist: 'البند :: توضيح (اختياري)', versus: 'العنصر :: قبل :: بعد التحسين', journey: 'أيقونة :: المرحلة :: الشرح' }[t];
+    const lbl = { hook: 'النص', scenario: 'وصف الموقف' }[t];
+    if (t === 'hook' || t === 'framework') f += '<div class="grid2"><div class="field"><label>' + (t === 'hook' ? 'الرقم الكبير (مثال: 70%)' : 'اسم الإطار (مثال: S.C.O.P.E)') + '</label><input data-sf="big" value="' + h(s.big || '') + '"></div>' + (t === 'hook' ? '<div class="field"><label>ما يعنيه الرقم</label><input data-sf="label" value="' + h(s.label || '') + '"></div>' : '<div></div>') + '</div>';
+    f += lbl ? '<div class="field"><label>' + lbl + '</label>' + RTE.html(k + 'text', s.text) + '</div>' : '<div class="field"><label>مقدمة (اختيارية)</label>' + RTE.html(k + 'intro', s.intro) + '</div>';
+    if (t !== 'hook') f += '<div class="field"><label>العناصر (سطر لكل عنصر بصيغة: ' + help + ')</label><textarea data-sf="items" rows="6">' + h(arr(s.items).join('\n')) + '</textarea></div>';
+    if (t === 'hook' || t === 'numbers') f += '<div class="field"><label>المصدر (اختياري)</label><input data-sf="src" value="' + h(s.src || '') + '"></div>';
+    f += '<div class="field"><label>' + (t === 'hook' ? 'سؤال للقاعة' : t === 'scenario' ? 'الخلاصة (تظهر بعد الاختيار)' : 'الفكرة الذهبية (اختيارية)') + '</label>' + RTE.html(k + 'rule', s.rule) + '</div>';
+  }
   else f += '<div class="field"><label>' + (t === 'mistakes' ? 'الأخطاء وتصحيحاتها' : t === 'tools' ? 'الأدوات واستخداماتها' : 'الأمثلة') + ' (سطر لكل عنصر، بصيغة: العنوان :: التفصيل)</label><textarea data-sf="items" rows="5">' + h(arr(s.items).map(x => String(x).replace('::', ' :: ')).join('\n')) + '</textarea></div><div class="field"><label>الرسالة (اختيارية)</label>' + RTE.html(k + 'rule', s.rule) + '</div>';
   f += '<div class="field"><label>صورة الشريحة (اختيارية، تظهر أعلى محتواها)</label>' + ImgPick.html(k + 'img', s.image) + '</div>' +
     '<div class="grid2"><div class="field"><label>رابط مصدر للتوسع (اختياري)</label><input data-sf="srcUrl" value="' + h(s.srcUrl || '') + '" placeholder="https://"></div><div class="field"><label>نص الرابط</label><input data-sf="srcLabel" value="' + h(s.srcLabel || '') + '" placeholder="مصدر للتوسع"></div></div>' +
@@ -318,9 +327,15 @@ function collectSlides(root) {
     const t = g('type') || old.type; const s = { id: old.id || genId('sl'), type: t, title: g('title').trim() };
     if (t === 'opening' || t === 'summary') { s.text = RTE.val(box, k + 'text'); s.rule = RTE.val(box, k + 'rule'); }
     else if (t === 'principle') { s.intro = RTE.val(box, k + 'intro'); s.points = g('points').split('\n').map(x => x.trim()).filter(Boolean); s.rule = RTE.val(box, k + 'rule'); }
+    else if (SK_TYPES.indexOf(t) > -1) {
+      if (t === 'hook' || t === 'scenario') s.text = RTE.val(box, k + 'text'); else s.intro = RTE.val(box, k + 'intro');
+      if (t !== 'hook') s.items = g('items').split('\n').map(x => x.trim()).filter(Boolean).map(x => x.replace(/\s*::\s*/g, ' :: '));
+      ['big', 'label', 'src'].forEach(x => { const el = $('[data-sf="' + x + '"]', box); if (el) s[x] = el.value.trim(); });
+      s.rule = RTE.val(box, k + 'rule');
+    }
     else { s.items = g('items').split('\n').map(x => x.trim()).filter(Boolean).map(x => x.replace(/\s*::\s*/, '::')); s.rule = RTE.val(box, k + 'rule'); }
     // الحقول الخاصة بالأنواع الأخرى تُحفظ من الحالة القديمة عند تبديل النوع حتى لا تضيع
-    ['text', 'intro', 'points', 'items', 'rule'].forEach(x => { if (s[x] === undefined && old[x] !== undefined) s[x] = old[x]; });
+    ['text', 'intro', 'points', 'items', 'rule', 'big', 'label', 'src'].forEach(x => { if (s[x] === undefined && old[x] !== undefined) s[x] = old[x]; });
     s.note = g('note').trim(); s.image = ImgPick.val(k + 'img'); s.srcUrl = g('srcUrl').trim(); s.srcLabel = g('srcLabel').trim(); s.videoUrl = g('videoUrl').trim();
     if (old.chart) s.chart = old.chart;
     return s;

@@ -150,7 +150,7 @@ Views.axis = {
       '<div class="big-ico">' + iconSvg(a.icon || 'star', 36, '#fff', 1.8) + '</div><div style="position:relative"><div class="sub">' + h(a.classic || '') + '</div><h1>' + h(a.title) + '</h1>' + (a.duration ? '<div class="sub">⏱ ' + h(a.duration) + ' · <span class="num">' + n + '</span> شريحة · <span class="num">' + exs.length + '</span> تمرين</div>' : '') + '</div></div>';
     if (n) {
       out += '<div class="deck" style="--ac:' + col + '" data-deck="' + h(a.id) + '"><div class="deck-bar"><div class="deck-dots">' + a.slides.map((_, i) => '<span class="deck-dot ' + (i <= idx ? 'on' : '') + '" data-slide="' + i + '"></span>').join('') + '</div><span class="deck-count num">' + (idx + 1) + ' / ' + n + '</span></div>' +
-        '<div class="deck-viewport"><div class="deck-track" style="transform:translateX(' + (idx * 100) + '%)">' + a.slides.map((s, i) => renderSlide(s, a, i, n)).join('') + '</div></div>' +
+        '<div class="deck-viewport"><div class="deck-track" style="transform:translateX(' + (idx * 100) + '%)">' + a.slides.map((s, i) => renderSlide(s, a, i, n, i === idx)).join('') + '</div></div>' +
         '<div class="deck-nav"><button class="deck-arrow" data-deck-go="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="السابقة">→</button><span class="swipe-hint">اسحب يمينًا أو يسارًا للتنقل بين الشرائح</span><button class="deck-arrow" data-deck-go="1" ' + (idx >= n - 1 ? 'disabled' : '') + ' title="التالية">←</button></div></div>';
       if (Admin.ctl()) out += '<div class="trainer-note" id="tnote">' + trainerNoteHtml(a, idx) + '</div>';
     } else out += '<div class="empty" style="margin-top:18px">لا توجد شرائح في هذا المحور بعد.</div>';
@@ -177,6 +177,7 @@ const Deck = {
   to(id, i) {
     UIState.deck[id] = i; const deck = $('[data-deck="' + id + '"]'); if (!deck) return; const n = $$('.slide', deck).length;
     $('.deck-track', deck).style.transform = 'translateX(' + (i * 100) + '%)';
+    $$('.slide', deck).forEach((s, k) => s.classList.toggle('cur', k === i));
     $$('.deck-dot', deck).forEach((d, k) => d.classList.toggle('on', k <= i));
     $('.deck-count', deck).textContent = (i + 1) + ' / ' + n;
     const [prev, next] = $$('[data-deck-go]', deck); prev.disabled = i === 0; next.disabled = i >= n - 1;
