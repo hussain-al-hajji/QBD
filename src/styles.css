@@ -67,6 +67,7 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .topbar{position:sticky;top:0;z-index:40;background:var(--topbar-bg);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
 .topbar .wrap{display:flex;align-items:center;gap:12px;min-height:64px;padding-top:8px;padding-bottom:8px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer;flex:1}
+.brand-min{flex:0 1 auto;margin-inline-end:auto}
 .brand-logo{width:40px;height:40px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 6px 16px rgba(138,21,56,.3)}
 .brand-text{min-width:0}
 .brand-title{font-family:var(--f-display);font-weight:800;font-size:16px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

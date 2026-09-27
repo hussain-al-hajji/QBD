@@ -27,8 +27,8 @@ const H = 3600 * 1000;
     for (let i = 0; i < 3 && await p.$('.modal-back'); i++) { await p.click('.modal [data-close]').catch(() => p.keyboard.press('Escape')); await p.waitForTimeout(300); }
     const me = await p.evaluate(() => Me.data);
     R.trainee = { registeredHome: await state(p) };
-    await p.click('[data-go="landing"]'); await p.waitForTimeout(500);
-    R.trainee.onLanding = await state(p); R.trainee.enterBtn = !!(await p.$('.top-cta[data-act="lp-enter"]')); R.trainee.noLoginBtn = !(await p.$('[data-act="open-login"]'));
+    R.trainee.shortLabel = await p.$eval('.brand-title', e => e.textContent); await p.click('.brand'); await p.waitForTimeout(500);
+    R.trainee.onLanding = await state(p); R.trainee.fullTitleOnLanding = await p.$eval('.brand-title', e => e.textContent); R.trainee.oldBtnGone = !(await p.$('.top-actions [data-go="landing"]')); R.trainee.enterBtn = !!(await p.$('.top-cta[data-act="lp-enter"]')); R.trainee.noLoginBtn = !(await p.$('[data-act="open-login"]'));
     await p.click('.top-cta[data-act="lp-enter"]'); await p.waitForTimeout(400); R.trainee.backHome = await state(p);
     await reloadAged(p, 71); R.trainee.after71h = await state(p);
     const uidBefore = R.trainee.after71h.authUid;

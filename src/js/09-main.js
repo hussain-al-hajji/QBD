@@ -697,6 +697,7 @@ function adminLogin() {
 function boot() {
   Me.load(); Session.boot();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) Session.check(); });
+  document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('brand')) { e.preventDefault(); e.target.click(); } });
   Router.cur = Router.parse();
   SafeHist.replace(Router.cur, Router.url(Router.cur));
   authInit();
