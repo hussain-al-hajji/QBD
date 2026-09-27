@@ -741,6 +741,21 @@ html[data-motion="reduce"] *,html[data-motion="reduce"] *::before,html[data-moti
 .prefs-grid{display:flex;flex-direction:column;gap:14px;margin-top:10px;font-family:var(--f-ui)}
 .prefs-grid .sim-seg label{padding:8px 14px}
 html[data-theme="dark"] .rule-box .lbl,html[data-theme="dark"] .ex-block .lbl{color:#FFD98A}
+/* الوضع الداكن: مكوّنات كانت بخلفيات فاتحة ثابتة أو نص بألوان المحاور الداكنة */
+html[data-theme="dark"] .pill{background:var(--surface-2);color:var(--ink-2)}
+html[data-theme="dark"] .btn-soft{background:rgba(224,102,138,.16);color:#FFB3C8}
+html[data-theme="dark"] .btn-dark{background:#2F3648;color:#fff}
+html[data-theme="dark"] .ex-block.scenario{background:linear-gradient(135deg,#2A2415,#1E1B16);border-color:#4A3B20}
+html[data-theme="dark"] .ex-block.hint{background:#2B2616;border-color:#4A4020}
+html[data-theme="dark"] .locked-note{background:var(--surface-2);color:var(--ink-3)}
+html[data-theme="dark"] .act-ico{background:linear-gradient(135deg,#2B2616,#3A2A14)}
+html[data-theme="dark"] .ex-head .ico,html[data-theme="dark"] .q-card .qn{background:color-mix(in srgb,var(--ac,#E0668A) 24%,var(--surface));color:var(--ink)}
+html[data-theme="dark"] .axis-no{background:rgba(17,20,28,.86);color:var(--ink)}
+html[data-theme="dark"] .tool.danger-tool{background:#2A1518;border-color:#5A2A2E}
+html[data-theme="dark"] .story-sector,html[data-theme="dark"] .story-more,html[data-theme="dark"] .slide-no,html[data-theme="dark"] .sk-tag,html[data-theme="dark"] .sk-chk-ring b,html[data-theme="dark"] .sk-vs-k,html[data-theme="dark"] .sk-jr-n,html[data-theme="dark"] .sim-step.on,html[data-theme="dark"] .gauge b{color:color-mix(in srgb,var(--ac,#E0668A) 45%,#fff)}
+html[data-theme="dark"] .tool .th .ti{filter:brightness(1.9) saturate(.8)}
+html[data-theme="dark"] .pp-life,html[data-theme="dark"] .co-pop{background:#fff;color:#1C2340}
+html[data-theme="dark"] .sim-factors .down .num,html[data-theme="dark"] .sk-face.front em{color:#FF8A8F}
 .admin-band,.admin-top{flex-wrap:wrap}
 .pr-sel{min-width:0;flex:1 1 180px;max-width:100%}
 
@@ -1385,6 +1400,9 @@ html[data-theme="dark"] .banner-offline{background:#3B2A10;color:#FFD98A;border-
 .feat-sw.on i{background:#0E7C7B}
 .feat-sw.on i::after{inset-inline-start:16px}
 .feat-sw:disabled{opacity:.5;cursor:not-allowed}
+/* بطاقة المختبر على الجوال: النص بعرض كامل والزر في سطر مستقل */
+@media (max-width:640px){.lab-banner{flex-wrap:wrap;gap:14px;padding:18px}.lab-banner .lab-ico{width:54px;height:54px;font-size:26px;border-radius:16px}.lab-banner .grow{flex:1 1 calc(100% - 70px);min-width:0}.lab-banner h3{font-size:19px}.lab-banner>.btn{flex:1 1 100%;justify-content:center}}
+@media (max-width:640px){.card.row{flex-wrap:wrap}.card.row>.grow{flex:1 1 100%;min-width:0}.card.row>.btn{flex:1 1 100%;justify-content:center}.pr-brand{min-width:0}.pr-brand b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}}
 
 </style>
 </head>
