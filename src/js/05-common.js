@@ -237,11 +237,13 @@ function renderSlide(s, a, i, n, cur) {
   const col = Content.color(a); const type = SLIDE_TYPES[s.type] ? s.type : 'principle';
   const head = '<div class="slide-top"><span class="slide-type"><span class="st-ico">' + (SLIDE_ICONS[type] || '•') + '</span>' + h(SLIDE_TYPES[type]) + '</span><span class="slide-prog"><i style="width:' + ((i + 1) / n * 100).toFixed(1) + '%"></i></span><span class="slide-no num">' + String(i + 1).padStart(2, '0') + '<small>/' + String(n).padStart(2, '0') + '</small></span></div>';
   const wrap = (inner, cls) => '<div class="slide slide-' + type + (cur ? ' cur' : '') + (cls ? ' ' + cls : '') + '" style="--ac:' + col + ';--acg:' + tint(col, .1) + ';--acd:' + shade(col, -0.35) + '"><span class="slide-wm num" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span><div class="slide-in">' + head +
-    (s.image ? '<img class="slide-img" src=\"' + imgSrc(s.image) + '\" alt="">' : '') + '<h2>' + h(s.title) + '</h2>' + inner + '</div></div>';
+    '<h2>' + h(s.title) + '</h2>' + inner + '</div></div>';
+  // صورة يرفعها المدرب: تأخذ مكان المرئيات بجانب النص (قبل الرسم البياني والرسم التعبيري)
+  const photo = s.image ? '<img class="slide-photo" src="' + imgSrc(s.image) + '" alt="">' : '';
   if (SK_TYPES.indexOf(type) > -1) {
-    const sc = !s.chart && SK_SCENE.indexOf(type) > -1 ? slideScene(s, a, type) : null;
-    const chart = s.chart ? '<div class="slide-visual sk-chart">' + Charts.render(s.chart, col) + '</div>' : sc ? '<div class="slide-visual sk-scene vis-opt">' + Scenes.render(sc, col) + '</div>' : '';
-    return wrap((chart ? '<div class="sk-split' + (sc ? ' sk-split-scene' : '') + '"><div class="sk-main">' + SlideKit[type](s, a, i, col) + '</div>' + chart + '</div>' : SlideKit[type](s, a, i, col)) + mediaHtml(s), s.chart ? 'vis-chart' : sc ? 'vis-scene' : '');
+    const sc = !s.chart && !photo && SK_SCENE.indexOf(type) > -1 ? slideScene(s, a, type) : null;
+    const chart = (photo || s.chart) ? '<div class="slide-visual sk-chart' + (photo ? ' has-photo' : '') + '">' + photo + (s.chart ? Charts.render(s.chart, col) : '') + '</div>' : sc ? '<div class="slide-visual sk-scene vis-opt">' + Scenes.render(sc, col) + '</div>' : '';
+    return wrap((chart ? '<div class="sk-split' + (sc ? ' sk-split-scene' : '') + '"><div class="sk-main">' + SlideKit[type](s, a, i, col) + '</div>' + chart + '</div>' : SlideKit[type](s, a, i, col)) + mediaHtml(s), photo ? 'vis-photo' : s.chart ? 'vis-chart' : sc ? 'vis-scene' : 'vis-none');
   }
   let text = '', visual = '';
   const chart = s.chart ? Charts.render(s.chart, col) : '';
@@ -258,6 +260,8 @@ function renderSlide(s, a, i, n, cur) {
     visual = chart || Scenes.render(slideScene(s, a, type) || (a.scene || 'idea'), col);
   }
   const many = (s.items || []).length + (s.points || []).length;
+  // لا مكان محجوز: بلا صورة ولا رسم بياني ولا رسم تعبيري يمتد النص على عرض الشريحة كاملًا
+  if (photo) return wrap('<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual has-photo">' + photo + chart + '</div></div>', 'vis-photo' + (many > 4 ? ' many' : ''));
   if (!chart && s.scene === 'none') return wrap('<div class="slide-grid no-visual"><div>' + text + mediaHtml(s) + '</div></div>', 'vis-none');
   return wrap('<div class="slide-grid"><div>' + text + mediaHtml(s) + '</div><div class="slide-visual' + (chart ? '' : ' vis-opt') + '">' + visual + '</div></div>', (chart ? 'vis-chart' : 'vis-scene') + (many > 4 ? ' many' : ''));
 }

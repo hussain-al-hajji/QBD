@@ -1415,3 +1415,27 @@ html[data-theme="dark"] .hn-item.active .hn-ico,html[data-theme="dark"] .adm-nav
 .deck.fixed .sk-scene{margin-top:0}.deck.fixed .sk-scene svg{max-height:min(var(--vh-scene,44vh),40vh);width:100%}
 .deck.fixed .sk-split-scene .sk-nums{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 @media (max-width:760px){.sk-scene{display:none}}
+
+/* عمود المرئيات: الرسم البياني يأخذ عرض عموده (كان ينكمش إلى صفر داخل حاوية flex) */
+.deck.fixed .sk-chart svg{width:100%;height:auto}
+/* صورة الشريحة بجانب النص: يُعاد ترتيب النص في عمود أضيق ليتلاءم معها */
+.slide-photo{display:block;width:100%;height:auto;border-radius:18px;object-fit:contain;box-shadow:var(--sh-1)}
+.slide-visual.has-photo{display:flex;flex-direction:column;gap:14px;align-items:center}
+.slide-visual.has-photo svg{width:100%}
+.deck.fixed .slide-photo{max-height:var(--vh-max,56vh);width:auto;max-width:100%;margin-inline:auto}
+.deck.fixed .vis-photo .slide-grid{grid-template-columns:minmax(0,1fr) minmax(0,.9fr)}
+.deck.fixed .vis-photo.many .slide-grid{grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr)}
+.deck.fixed .vis-photo .has-photo .slide-photo+svg{max-height:calc(var(--vh-max,56vh) * .45)}
+html[data-theme="dark"] .slide-visual.has-photo{background:transparent}
+/* شريحة بلا أي مرئيات: النص بعرض الشريحة كاملًا */
+.vis-none .slide-grid,.slide-grid.no-visual{grid-template-columns:1fr}
+/* افتتاحية بالأرقام مع رسم بياني: عمود النص أعرض من حلقة الرقم */
+.deck.fixed .slide-hook .sk-split{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr)}
+.deck.fixed .slide-hook .sk-split .sk-hook{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr)}
+/* شرائح البطاقات (أدوات، أمثلة، أخطاء) مع صورة: عمود صورة أضيق والبطاقات في عمودين */
+.deck.fixed .slide-tools.vis-photo .slide-grid,.deck.fixed .slide-examples.vis-photo .slide-grid,.deck.fixed .slide-mistakes.vis-photo .slide-grid{grid-template-columns:minmax(0,1fr) clamp(200px,30%,440px)}
+.deck.fixed .vis-photo .pairs{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+/* الأنماط الحديثة مع صورة: عمود المرئيات أضيق، والصورة أقصر إن كان تحتها رسم بياني */
+.deck.fixed .vis-photo .sk-split{grid-template-columns:minmax(0,1.55fr) minmax(0,.75fr)}
+.deck.fixed .has-photo .slide-photo:not(:only-child){max-height:calc(var(--vh-max,56vh) * .5)}
+.deck.fixed .vis-photo .sk-nums{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
