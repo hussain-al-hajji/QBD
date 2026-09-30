@@ -28,14 +28,14 @@
   --surface-2:#F7FAFB;
   --ink:#1C2340;
   --ink-2:#4A5470;
-  --ink-3:#7D879C;
+  --ink-3:#566074;
   --line:#E1E9EC;
   --brand:#8A1538;
   --brand-2:#C8702A;
   --brand-3:#D9A62E;
-  --mint:#138A5E;
+  --mint:#0F7550;
   --danger:#E5484D;
-  --ok:#138A5E;
+  --ok:#0F7550;
   --ok-bg:#E6F7EE;
   --bad-bg:#FDECEC;
   --r-xl:28px; --r-lg:20px; --r-md:14px; --r-sm:10px;
@@ -44,7 +44,7 @@
   --f-display:'Cairo',sans-serif;
   --f-ui:'IBM Plex Sans Arabic',sans-serif;
   --f-body:'Noto Sans Arabic','IBM Plex Sans Arabic',sans-serif;
-  --grad:linear-gradient(120deg,#1F3A5F 0%,#8A1538 45%,#138A5E 100%);
+  --grad:linear-gradient(120deg,#1F3A5F 0%,#8A1538 45%,#0F7550 100%);
   --grad-warm:linear-gradient(120deg,#D9A62E 0%,#C8702A 100%);
 }
 *{box-sizing:border-box}
@@ -1553,6 +1553,17 @@ html[data-theme="dark"] .slide-visual.has-photo{background:transparent}
 .deck.fixed .has-photo .slide-photo:not(:only-child){max-height:calc(var(--vh-max,56vh) * .5)}
 .deck.fixed .vis-photo .sk-nums{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
 
+/* ---------- الوضع الفاتح: إصلاحات التباين (الفحص الآلي نفسه) — ألوان المحاور تُغمَّق قليلًا حيث تحمل نصًا ---------- */
+.sim-seg label.on,.group-btn.on,.cls-opt.sel{background:color-mix(in srgb,var(--ac,#8A1538) 72%,#000)}
+.slide-type,.sk-face.back,.sk-ask{background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#8A1538) 72%,#000),color-mix(in srgb,var(--acd,var(--ac,#8A1538)) 68%,#000))}
+.axis-hero{background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#8A1538) 74%,#000),color-mix(in srgb,var(--ac,#8A1538) 48%,#000))!important}
+.chart-table thead th{background:color-mix(in srgb,var(--ac,#8A1538) 72%,#000)!important}
+.sk-tag,.gauge b,.kpi-grid b,.story-sector,.story-more,.sk-jr-n,.rule-box .lbl,.sim-big{color:color-mix(in srgb,var(--ac,#8A1538) 70%,#000)}
+.ex-block.extract .muted{color:var(--ink-2)}
+.sk-chk-ring b,.sk-chk-ring small{background:var(--surface);border-radius:5px}
+html:not([data-theme="dark"]) .lp-step-n{color:#8C6210}
+.lp-obj-n{background:linear-gradient(135deg,var(--lp-maroon),#8C6210);-webkit-background-clip:text;background-clip:text}
+html:not([data-theme="dark"]) .pr-qr .pr-empty{color:#1C2340}
 /* ---------- الوضع الداكن: إصلاحات التباين (من الفحص الآلي tests/contrast-scenarios.js) — لا تمس الوضع الفاتح ---------- */
 html[data-theme="dark"]{--grad-dark:linear-gradient(120deg,#1F3A5F 0%,#8A1538 45%,#0E6545 100%);--grad-text:linear-gradient(120deg,#A9C8F5 0%,#FF9DBA 50%,#86E3B8 100%)}
 /* أزرار أساسية: نص أبيض على تدرج أغمق */
