@@ -326,6 +326,8 @@ function exColor(e) { const ax = Content.axisOfEx(e.id); const a = ax && Content
 function postKey(e) { if (Admin.ok()) return ADMIN_ID; // المدرب يشارك دائمًا بمفتاح «الإدارة» ولا يمس إجابات المجموعات
   if (e.mode === 'group') { const g = Me.group(); return g ? 'g' + g : null; } return Me.uid(); }
 function isRevealed(e) { return !!(Store.reveal && Store.reveal[e.id]); }
+// زر الكشف للمدرب وحده، لكل أنواع التمارين (النصية: يكشف النموذج المساعد، المحاكاة: التصحيح والحل النموذجي)
+function revealBtn(e) { if (!Admin.ok()) return ''; const on = isRevealed(e); return '<button class="btn ' + (on ? 'btn-soft' : 'btn-mint') + ' btn-xs reveal-btn" data-act="reveal" data-id="' + h(e.id) + '" title="' + (e.format === 'text' ? 'يظهر النموذج المساعد لكل المتدربين' : e.format === 'sim' ? 'يظهر التصحيح والحل النموذجي لكل المتدربين' : 'تظهر الإجابات الصحيحة لكل المتدربين') + '">' + (on ? '🔒 إخفاء الإجابات' : '🔓 كشف الإجابات') + '</button>'; }
 function bankOf(e) { // بنك كلمات بترتيب ثابت مخلوط حسب معرّف التمرين
   const words = e.items.map(i => i.answer); let s = 0; for (const ch of e.id) s = (s * 33 + ch.charCodeAt(0)) % 100003;
   const out = words.slice(); for (let i = out.length - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor(s / 233280 * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; } return out;
@@ -479,7 +481,7 @@ Views.ex = {
     let out = '<div style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + Layout.crumbs(a ? '<span class="crumb-tag">' + h(a.title) + '</span>' : '<span class="crumb-tag">' + (isSurvey ? 'ختام البرنامج' : 'أنشطة') + '</span>') +
       (e.image ? '<img class="ex-img" src=\"' + imgSrc(e.image) + '\" alt="">' : '') +
       '<div class="ex-head"><div class="ico">' + h(e.icon || '✍️') + '</div><div><h1>' + h(e.title) + '</h1><div class="row" style="margin-top:4px"><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + '</span>' + (e.format !== 'text' ? '<span class="pill">' + h(FORMATS[e.format]) + '</span>' : '') + '</div></div></div>' +
-      (Admin.ok() ? '<div class="live-bar">' + Presence.badge(e.id) + Invite.btn(e.id) + '</div>' : '');
+      (Admin.ok() ? '<div class="live-bar">' + Presence.badge(e.id) + Invite.btn(e.id) + (isSurvey ? '' : revealBtn(e)) + '</div>' : '');
     if (isSurvey) {
       out += '<div class="ex-block task"><div class="lbl">📝 قيّم تجربتك</div>' + richHtml(e.task) + '</div>' + '<div id="ansZone">' + surveyFormHtml(e) + '</div><div id="feedZone">' + surveyFeedHtml(e) + '</div></div>';
       return out;
@@ -490,13 +492,13 @@ Views.ex = {
     const steps = e.steps && e.steps.length ? e.steps : (DEFAULT_STEPS[e.format] || DEFAULT_STEPS.text);
     out += '<div class="ex-block"><div class="lbl">🛠 كيف تنجز التمرين؟</div><ol class="steps-list">' + steps.map((s, i) => '<li><span class="n num">' + (i + 1) + '</span><span>' + h(s) + '</span></li>').join('') + '</ol></div>';
     if (e.mode === 'group') out += '<div id="groupZone">' + groupPickerHtml(e) + '</div>';
-    if (e.format === 'text' || !e.hint) out += '<div class="ex-block task"><div class="lbl">📝 المطلوب منك</div>' + richHtml(e.task || 'اكتب إجابتك.') + '</div>';
-    else out += '<div class="ex-block hint"><div class="lbl">💡 تلميح عام</div>' + richHtml(e.hint) + '</div>';
+    if (e.format === 'text' || !e.hint || (e.format === 'sim' && e.task)) out += '<div class="ex-block task"><div class="lbl">📝 المطلوب منك</div>' + richHtml(e.task || 'اكتب إجابتك.') + '</div>';
+    if (e.format !== 'text' && e.hint) out += '<div class="ex-block hint"><div class="lbl">💡 تلميح عام</div>' + richHtml(e.hint) + '</div>';
     out += e.format === 'sim' ? '<div id="simZone">' + Sims.html(e) + '</div><div id="feedZone">' + Sims.feed(e) + '</div>' : '<div id="ansZone">' + answerBoxHtml(e) + '</div><div id="feedZone">' + feedHtml(e) + '</div>';
     // النموذج المساعد (تلميح بمثال موجز) للتمارين النصية فقط؛ ويُحذف كليًا من النماذج التفاعلية
     const whyBox = '<div class="ex-block" style="margin-top:0"><div class="lbl">🎯 لماذا هذا النشاط؟</div>' + richHtml(e.why || 'لتطبيق مفاهيم المحور عمليًا.') + '</div>';
     if (e.format === 'text') out += '<div class="two-col">' + whyBox +
-      '<div class="ex-block model-box" style="margin-top:0"><div class="lbl">🧩 نموذج مساعد</div>' + (UIState.modelShown[e.id] ? '<div class="model-body">' + richHtml(e.model || 'فكّر في مثال من تجربتك كمستخدم لتطبيق تجاري، ثم طبّق الفكرة نفسها على الموقف.') + '</div>' : '<button class="btn btn-soft btn-sm" data-act="show-model" data-ex="' + h(e.id) + '">👁 أظهر النموذج المساعد</button>') + '</div></div>';
+      '<div class="ex-block model-box" style="margin-top:0"><div class="lbl">🧩 نموذج مساعد</div>' + (isRevealed(e) || Admin.ok() ? (Admin.ok() && !isRevealed(e) ? '<div class="muted model-admin-note">🛡️ يراه المدرب فقط حتى الكشف</div>' : '') + '<div class="model-body">' + richHtml(e.model || 'فكّر في مثال من تجربتك كمستخدم لتطبيق تجاري، ثم طبّق الفكرة نفسها على الموقف.') + '</div>' : '<div class="muted model-locked">🔒 يظهر النموذج المساعد عندما يكشفه المدرب.</div>') + '</div></div>';
     else out += '<div style="margin-top:22px">' + whyBox + '</div>';
     out += exNavHtml(e) + '</div>';
     return out;

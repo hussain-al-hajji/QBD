@@ -337,6 +337,7 @@ document.addEventListener('click', async ev => {
     }
     case 'save-inter': saveInter(exId); break;
     case 'sim-save': Sims.save(exId); break;
+    case 'cls-pick': Sims.pick(exId, +t.getAttribute('data-i'), t.getAttribute('data-v')); break;
     case 'sv-rate': { UIState.draft.sv.ratings[t.getAttribute('data-i')] = +t.getAttribute('data-v'); App.render(); break; }
     case 'sv-nps': { UIState.draft.sv.nps = +t.getAttribute('data-v'); App.render(); break; }
     case 'sv-save': {

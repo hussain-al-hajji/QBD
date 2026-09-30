@@ -33,7 +33,7 @@ function exSummary(e) {
   const ps = Store.posts[e.id] || {}; const keys = Object.keys(ps).filter(k => ps[k]).sort((a, b) => (ps[b].ts || 0) - (ps[a].ts || 0));
   if (!keys.length) return '<div class="summary">لا مشاركات بعد.</div>';
   const reveal = isRevealed(e);
-  return '<div class="summary"><b class="num">' + keys.length + '</b> مشاركة' + (e.format !== 'text' && e.format !== 'sim' ? ' · ' + (reveal ? '🔓 مكشوفة' : '🔒 غير مكشوفة') : '') +
+  return '<div class="summary"><b class="num">' + keys.length + '</b> مشاركة' + (e.kind !== 'survey' ? ' · ' + (reveal ? '🔓 مكشوفة' : '🔒 غير مكشوفة') : '') +
     keys.slice(0, 30).map(k => { const p = ps[k]; const who = k.charAt(0) === 'g' && e.mode === 'group' ? Groups.label(+k.slice(1)) : (p.name || 'مشارك');
       let brief = '';
       if (e.format === 'text') brief = h(String(p.text || '').slice(0, 140)) + (String(p.text || '').length > 140 ? '…' : '');
@@ -51,7 +51,7 @@ function exRow(e, o = {}) {
     (isDef && e._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-ex" data-id="' + h(e.id) + '">↺ استرجاع الافتراضي</button>' : '') +
     (o.kind !== 'survey' ? '<button class="btn btn-danger btn-xs" data-act="delete-ex" data-id="' + h(e.id) + '" title="' + (isDef ? 'ينتقل إلى «المحذوفات» ويمكن استرجاعه' : 'حذف نهائي') + '">🗑 حذف</button>' : '') +
     '<button class="btn btn-danger btn-xs" data-act="clear-posts" data-id="' + h(e.id) + '">🧹 مسح المشاركات</button>' +
-    (e.format !== 'text' && e.format !== 'sim' ? '<button class="btn btn-mint btn-xs" data-act="reveal" data-id="' + h(e.id) + '">' + (isRevealed(e) ? '🔒 إخفاء الإجابات' : '🔓 كشف الإجابات الصحيحة') + '</button>' : '') +
+    (o.kind !== 'survey' ? revealBtn(e) : '') +
     '</div>' + (o.kind !== 'survey' ? '<div class="live-bar sm">' + Presence.badge(e.id) + Invite.btn(e.id) + '</div>' : '') + exSummary(e) + '</div>';
 }
 
