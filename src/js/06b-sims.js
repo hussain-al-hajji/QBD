@@ -177,7 +177,7 @@ const Sims = {
       '<div class="sim-grid"><div class="sim-form">' + S.form(s, e.id, dis, o) + '</div><div id="simLive-' + h(e.id) + '">' + S.live(s, o) + '</div></div>' +
       (locked ? '<div class="locked-note" style="margin-top:10px">🔒 كشف المدرب الإجابات — التصنيف مقفل ولا يمكن تعديله أو حفظه.</div>'
         : '<div class="save-row"><button class="btn btn-primary" data-act="sim-save" data-ex="' + h(e.id) + '" ' + dis + '>💾 حفظ ' + (cls ? 'التصنيف' : 'النتيجة') + (e.mode === 'group' ? ' للمجموعة' : '') + '</button><button class="btn btn-ghost btn-sm" data-act="sim-reset" data-ex="' + h(e.id) + '" ' + dis + '>↺ البدء من جديد</button></div>') + '</div>' +
-      (reveal && S.optimal ? Sims.modelHtml(e) : '');
+      (reveal ? (S.optimal ? Sims.modelHtml(e) : '') + philosophyHtml(e.sim) : '');
   },
   // «✅ الحل النموذجي»: نفس النموذج للقراءة فقط + نتيجته، مقارنة بنتيجة المتدرب
   modelHtml(e) {

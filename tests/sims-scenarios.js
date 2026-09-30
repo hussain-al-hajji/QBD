@@ -64,7 +64,7 @@ const go = (p, id) => p.evaluate(id => { UIState.sim = {}; Router.go('ex', { id 
   const saved = await T.p.evaluate(() => window.__mock.server.posts.a1e5.u1);
   R.trainee.saved = { summary: saved.summary, metric: saved.metric }; ok('الملخص «أجاب على n من N» والدرجة في metric', saved.summary === 'أجاب على 4 من 8' && saved.metric === 3);
   // المحاكاة ذات الإعدادات: لا حل نموذجي قبل الكشف
-  await go(T.p, 'a3e5'); R.trainee.noModelBefore = !(await T.p.$('.sim-model')); ok('لا حل نموذجي قبل الكشف', R.trainee.noModelBefore);
+  await go(T.p, 'a3e5'); R.trainee.noModelBefore = !(await T.p.$('.sim-model')); ok('لا حل نموذجي قبل الكشف', R.trainee.noModelBefore); ok('لا فلسفة حل قبل الكشف', !(await T.p.$('.sim-philosophy')));
   // القيد (onSet): تجاوز سعة الأتمتة يُرفض
   await go(T.p, 'a9e5');
   for (const k of ['sync', 'books', 'bot']) { await T.p.check('[data-sim-f="' + k + '"]'); await T.p.waitForTimeout(80); }
@@ -85,7 +85,7 @@ const go = (p, id) => p.evaluate(id => { UIState.sim = {}; Router.go('ex', { id 
   R.admin.revealWritten = await A.p.evaluate(() => window.__mock.server.reveal && window.__mock.server.reveal.a1e5 === true); ok('الكشف يُكتب في reveal', R.admin.revealWritten);
   R.admin.errs = A.errs; await A.ctx.close();
   // ---------- 4) المتدرب بعد الكشف ----------
-  const B = await open({ me: ME, data: SEED({ a1e5: true, a3e5: true, a1e3: true }) });
+  const B = await open({ me: ME, data: SEED(Object.fromEntries(['a1e5','a2e5','a3e5','a4e5','a5e5','a6e5','a7e5','a8e5','a9e5','a10e5','a11e5','a12e5','a13e4','a1e3'].map(k => [k, true]))) });
   await go(B.p, 'a1e5');
   R.after.corrections = await B.p.$$eval('.cls-why', e => e.length); R.after.locked = !(await B.p.$('[data-act="sim-save"]')) && !!(await B.p.$('.cls-opt:disabled'));
   ok('التصنيف بعد الكشف: تصحيح بسبب كل بند وقفل', R.after.corrections === 8 && R.after.locked);
@@ -101,6 +101,10 @@ const go = (p, id) => p.evaluate(id => { UIState.sim = {}; Router.go('ex', { id 
   await B.p.evaluate(() => DB.update('', Object.fromEntries(Content.axes().map(a => { const l = Content.exercisesOf(a.id); return ['reveal/' + l[l.length - 1].id, true]; })))).catch(() => {});
   R.after.allSims = await B.p.evaluate(async () => { const out = []; for (const a of Content.axes()) { const l = Content.exercisesOf(a.id); const e = l[l.length - 1]; UIState.sim = {}; Router.go('ex', { id: e.id }); await new Promise(r => setTimeout(r, 120)); out.push(e.id + ':' + (!!document.querySelector('#simZone .sim-live'))); } return out; });
   ok('كل المحاكيات تعمل', R.after.allSims.every(x => /true$/.test(x)));
+  // فلسفة الحل: تظهر بعد الكشف لكل المحاكيات (تصنيف وإعدادات) بأقسامها الأربعة، وتغيب قبله
+  R.after.philosophy = await B.p.evaluate(async () => { const out = []; for (const a of Content.axes()) { const l = Content.exercisesOf(a.id); const e = l[l.length - 1]; UIState.sim = {}; Router.go('ex', { id: e.id }); await new Promise(r => setTimeout(r, 120)); const el = document.querySelector('.sim-philosophy'); out.push(e.sim + ':' + (el ? el.querySelectorAll('.sp-row').length : 0)); } return out; });
+  ok('فلسفة الحل بعد الكشف: 4 أقسام لكل محاكاة', R.after.philosophy.length === 13 && R.after.philosophy.every(x => /:4$/.test(x)));
+  R.after.philoAll = await B.p.evaluate(() => Object.keys(SIMS).filter(k => !SIM_PHILOSOPHY[k])); ok('لكل نوع محاكاة شرح', !R.after.philoAll.length);
   R.after.errs = B.errs; await B.ctx.close();
   // ---------- 5) جوال ----------
   const M = await open({ me: ME, w: 380 }); const ov = [];

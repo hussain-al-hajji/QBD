@@ -670,6 +670,12 @@ font{background:transparent!important;box-shadow:none!important}
 @media (min-width:861px){.sim-grid>[id^="simLive-"]{position:sticky;top:80px}.sim-grid>[id^="simLive-"] .sim-live{position:static}.cls-box .sim-grid>[id^="simLive-"]{position:static}}
 .sim-model{margin-top:18px;border:2px solid #8FD1AE;border-radius:20px;padding:14px;background:var(--surface)}
 .sim-model h3{margin:0}
+.sim-philosophy{margin-top:14px;border:2px solid #C9B5E8;border-radius:20px;padding:14px;background:var(--surface)}
+.sim-philosophy h3{margin:0 0 6px}
+.sp-row{padding:10px 0;border-top:1px solid var(--line)}.sp-row:first-of-type{border-top:0}
+.sp-row b{font-family:var(--f-display);font-size:15px;color:var(--ink)}
+.sp-row p{margin:4px 0 0;font-family:var(--f-body);font-size:14.5px;line-height:1.9;color:var(--ink-2)}
+html[data-theme="dark"] .sim-philosophy{border-color:#5B4A85}
 .sim-cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0 14px}
 .sim-cmp>div{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;font-family:var(--f-ui)}
 .sim-cmp span{font-size:12px;color:var(--ink-3)}.sim-cmp b{font-family:var(--f-display);font-size:18px}.sim-cmp .best b{color:#10573A}
