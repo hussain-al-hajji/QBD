@@ -454,7 +454,6 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .trainer-lock-row{display:flex;justify-content:center;margin-top:14px}
 .trainer-lock{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;color:var(--ink-3);opacity:.28;transition:opacity .2s,border-color .2s}
 .trainer-lock:hover,.trainer-lock:focus-visible{opacity:1;border-color:var(--line);color:var(--ink)}
-.icon-btn .aa{font-family:var(--f-ui);font-size:14px;font-weight:800}
 .top-panel{display:inline-flex;align-items:center;gap:6px}
 @media (max-width:560px){.top-panel .lbl{display:none}}
 @media (max-width:820px){.login{grid-template-columns:1fr}.login-art{max-height:260px;overflow:hidden}}
@@ -818,15 +817,8 @@ font{background:transparent!important;box-shadow:none!important}
 
 /* ===== سهولة الوصول: الوضع الليلي، التباين العالي، حجم الخط، تقليل الحركة ===== */
 
-html[data-contrast="high"]{--ink:#000;--ink-2:#111;--ink-3:#2B2B2B;--line:#6B6B6B}
 
-html[data-contrast="high"] a{text-decoration:underline}
-html[data-contrast="high"] :focus-visible{outline:3px solid #FFB000!important;outline-offset:2px}
-html[data-contrast="high"] .muted{color:var(--ink-3)!important}
-html[data-fs="sm"] body{zoom:.92}html[data-fs="lg"] body{zoom:1.12}html[data-fs="xl"] body{zoom:1.25}
-html[data-motion="reduce"] *,html[data-motion="reduce"] *::before,html[data-motion="reduce"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-.prefs-grid{display:flex;flex-direction:column;gap:14px;margin-top:10px;font-family:var(--f-ui)}
-.prefs-grid .sim-seg label{padding:8px 14px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .admin-band,.admin-top{flex-wrap:wrap}
 .pr-sel{min-width:0;flex:1 1 180px;max-width:100%}
@@ -860,7 +852,7 @@ html[data-motion="reduce"] *,html[data-motion="reduce"] *::before,html[data-moti
 .home-pane>.section:first-child{margin-top:0}
 .home-pane .axis-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 @keyframes paneIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-html[data-motion="reduce"] .home-pane{animation:none}
+@media (prefers-reduced-motion:reduce){.home-pane{animation:none}}
 .hn-next{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;width:100%;margin-top:8px;padding:14px 18px;border-radius:18px;border:1px dashed var(--line);background:var(--surface);cursor:pointer;color:var(--ink);text-align:start}
 .hn-next span{font-family:var(--f-ui);font-size:12.5px;color:var(--ink-3)}
 .hn-next b{font-size:15px;color:var(--brand)}
@@ -1119,8 +1111,8 @@ html[data-motion="reduce"] .home-pane{animation:none}
   .lp-axis{flex-direction:column;gap:10px}
   .lp-scroll-hint{display:none}
 }
-html[data-motion="reduce"] .rv{opacity:1;transform:none}
-html[data-motion="reduce"] .lp-line path{stroke-dashoffset:0}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.lp-line path{stroke-dashoffset:0}}
 
 /* نافذة الدخول */
 .login-modal{max-width:640px!important;padding:0!important;overflow:auto}
@@ -1225,7 +1217,7 @@ main.wrap:has(> .lp)+.footer{margin-top:0}
 .points li .n{background:linear-gradient(135deg,var(--ac),var(--acd,var(--ac)));border-radius:10px}
 .slide.cur .points li,.slide.cur .pair,.slide.cur .sk-num,.slide.cur .sk-fw-col,.slide.cur .sk-jr-st,.slide.cur .sk-flip,.slide.cur .sk-opt,.slide.cur .sk-chk-it{animation:skIn .5s calc(var(--i,0) * 70ms + .1s) both}
 @keyframes skIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-html[data-motion="reduce"] .slide.cur *{animation:none!important}
+@media (prefers-reduced-motion:reduce){.slide.cur *{animation:none!important}}
 /* الأزواج (أمثلة/أدوات/أخطاء) */
 .pairs{gap:10px}
 .pair{border-radius:16px;box-shadow:0 4px 14px rgba(28,35,64,.04);transition:transform .2s,box-shadow .2s}
@@ -3025,8 +3017,8 @@ window.addEventListener('popstate', e => { Router.cur = (e.state && e.state.view
 const Layout = {
   topbar() {
     const s = Content.site(); const admin = Admin.ok(), me = Me.isReg() ? Me.data : null;
-    // الأدوات المشتركة: ترجمة + إعدادات العرض (أيقونات بلا نص)
-    const tools = Translate.button() + '<button class="icon-btn notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض"><b class="aa">Aa</b></button>';
+    // الأدوات المشتركة: الترجمة (أيقونة بلا نص)
+    const tools = Translate.button();
     const out = act => '<button class="icon-btn" data-act="' + act + '" title="تسجيل الخروج" aria-label="تسجيل الخروج">' + iconSvg('logout', 18) + '</button>';
     const enter = App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '';
     let acts;
@@ -3074,23 +3066,6 @@ const Layout = {
     return '<div class="crumbs">' + (b ? '<button class="back-btn" data-back>→ رجوع</button>' : '') + '<button class="back-btn" data-go="home">' + iconSvg('home', 15) + ' المنصة التعليمية</button>' + extra + '</div>';
   }
 };
-
-// ---------- تفضيلات العرض لسهولة الوصول (تُحفظ على جهاز المستخدم فقط) ----------
-const Prefs = {
-  get() { try { const p = Object.assign({ fs: 'md', contrast: 'normal', motion: 'normal' }, JSON.parse(SafeLS.get('ec_prefs') || '{}')); delete p.theme; return p; } catch (e) { return { fs: 'md', contrast: 'normal', motion: 'normal' }; } }, // المظهر الفاتح وحده: أي قيمة theme قديمة تُهمل
-  set(k, v) { const p = Prefs.get(); p[k] = v; SafeLS.set('ec_prefs', JSON.stringify(p)); Prefs.apply(); },
-  apply() {
-    const p = Prefs.get(); const r = document.documentElement;
-    r.setAttribute('data-fs', p.fs); r.setAttribute('data-contrast', p.contrast);
-    let red = p.motion === 'reduce'; if (p.motion === 'normal') { try { red = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} } r.setAttribute('data-motion', red ? 'reduce' : 'normal');
-  },
-  menu() {
-    const seg = (k, opts) => { const v = Prefs.get()[k]; return '<div class="sim-seg">' + opts.map(([val, l]) => '<label class="' + (v === val ? 'on' : '') + '" data-pref="' + k + '" data-v="' + val + '">' + l + '</label>').join('') + '</div>'; };
-    const body = () => '<h3>Aa إعدادات العرض</h3><div class="prefs-grid"><div><b>حجم الخط</b><br>' + seg('fs', [['sm', 'صغير'], ['md', 'عادي'], ['lg', 'كبير'], ['xl', 'كبير جدًا']]) + '</div><div><b>التباين</b><br>' + seg('contrast', [['normal', 'عادي'], ['high', 'عالٍ']]) + '</div><div><b>الحركة</b><br>' + seg('motion', [['normal', 'عادية'], ['reduce', 'مخففة']]) + '</div></div><p class="muted" style="font-size:12.5px;margin-top:12px">تُحفظ هذه الإعدادات على هذا الجهاز فقط.</p><div class="actions"><button class="btn btn-primary" data-x>تم</button></div>';
-    const m = UI.modal(body()); const wire = () => { $$('[data-pref]', m.el).forEach(l => l.onclick = () => { Prefs.set(l.getAttribute('data-pref'), l.getAttribute('data-v')); m.el.innerHTML = body(); wire(); }); $('[data-x]', m.el).onclick = () => m.close(); }; wire();
-  }
-};
-Prefs.apply();
 
 // ---------- الترجمة الآلية (Google Translate) — تُحمَّل عند الطلب فقط ----------
 // المحتوى الأصلي عربي بالكامل؛ الزر يترجم الصفحة الحالية وكل ما يُرسم لاحقًا، و«العربية» تعيدها كما كانت.
@@ -4703,7 +4678,7 @@ Views.landing = {
     const L = Views.landing; const seen = L._seen || (L._seen = new Set());
     setTimeout(() => { L._played = true; }, 2500); // بعد أول عرض لا تتكرر حركات الدخول عند إعادة الرسم
     const els = $$('.lp .rv', root); els.forEach((e, i) => { e.setAttribute('data-rv', i); if (seen.has(i)) e.classList.add('in'); });
-    const reduce = document.documentElement.getAttribute('data-motion') === 'reduce';
+    let reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} // إعداد نظام الجهاز
     if (reduce || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); }
     else {
       if (L._io) L._io.disconnect();
@@ -7020,7 +6995,7 @@ document.addEventListener('click', async ev => {
     case 'admin-panel': Router.go('admin'); window.scrollTo(0, 0); break;
     case 'icon-pick': IconPick.open(t); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
-    case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
+    case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'auto' : 'smooth' }); break; }
     case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
     // قفل «دخول المدرب» أسفل نافذة الدخول
     case 'admin-enter': {
@@ -7106,7 +7081,6 @@ document.addEventListener('click', async ev => {
     }
     case 'content-pdf': buildContentPdf(); break;
     case 'translate': Translate.menu(); break;
-    case 'prefs': Prefs.menu(); break;
     case 'save-card': saveMemberCard(Object.assign({}, Me.data, { member: Me.data.member || ((Store.users[Me.uid()] || {}).member) })); break;
     case 'my-filter': UIState.myFilter = t.getAttribute('data-k'); App.render(); break;
     case 'checkin': {

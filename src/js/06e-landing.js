@@ -109,7 +109,7 @@ Views.landing = {
     const L = Views.landing; const seen = L._seen || (L._seen = new Set());
     setTimeout(() => { L._played = true; }, 2500); // بعد أول عرض لا تتكرر حركات الدخول عند إعادة الرسم
     const els = $$('.lp .rv', root); els.forEach((e, i) => { e.setAttribute('data-rv', i); if (seen.has(i)) e.classList.add('in'); });
-    const reduce = document.documentElement.getAttribute('data-motion') === 'reduce';
+    let reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} // إعداد نظام الجهاز
     if (reduce || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); }
     else {
       if (L._io) L._io.disconnect();

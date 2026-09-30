@@ -323,7 +323,7 @@ document.addEventListener('click', async ev => {
     case 'admin-panel': Router.go('admin'); window.scrollTo(0, 0); break;
     case 'icon-pick': IconPick.open(t); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
-    case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
+    case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'auto' : 'smooth' }); break; }
     case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
     // قفل «دخول المدرب» أسفل نافذة الدخول
     case 'admin-enter': {
@@ -409,7 +409,6 @@ document.addEventListener('click', async ev => {
     }
     case 'content-pdf': buildContentPdf(); break;
     case 'translate': Translate.menu(); break;
-    case 'prefs': Prefs.menu(); break;
     case 'save-card': saveMemberCard(Object.assign({}, Me.data, { member: Me.data.member || ((Store.users[Me.uid()] || {}).member) })); break;
     case 'my-filter': UIState.myFilter = t.getAttribute('data-k'); App.render(); break;
     case 'checkin': {

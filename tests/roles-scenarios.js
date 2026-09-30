@@ -27,7 +27,7 @@ const ME = { uid: 'u1', name: 'سارة أحمد', member: 1001, ts: 1, code: 'A
   { // 1) زائر لم يسجّل: الصفحة التعريفية ثم نافذة الدخول
     const { ctx, p, net, errs } = await open();
     R.visitor = { landingActs: await acts(p) };
-    ok('visitor: ترجمة + Aa فقط', JSON.stringify(R.visitor.landingActs) === JSON.stringify(['translate', 'prefs']));
+    ok('visitor: ترجمة فقط', JSON.stringify(R.visitor.landingActs) === JSON.stringify(['translate']));
     await p.click('[data-act="open-login"]'); await p.waitForTimeout(300);
     const lock = await p.$('.login-modal .trainer-lock');
     R.visitor.lock = !!lock; ok('قفل المدرب في نافذة الدخول', !!lock);
@@ -38,17 +38,17 @@ const ME = { uid: 'u1', name: 'سارة أحمد', member: 1001, ts: 1, code: 'A
     // تصفح كزائر
     await p.click('.modal [data-act="guest"]'); await p.waitForTimeout(400);
     R.guest = { acts: await acts(p) };
-    ok('زائر: ترجمة + Aa + تسجيل دخول', JSON.stringify(R.guest.acts) === JSON.stringify(['translate', 'prefs', 'guest-login']));
+    ok('زائر: ترجمة + تسجيل دخول', JSON.stringify(R.guest.acts) === JSON.stringify(['translate', 'guest-login']));
     await p.evaluate(() => Router.go('ex', { id: 'a1e3' })); await p.waitForTimeout(400);
     R.guest.exLocked = !(await p.$('#ans-a1e3')); ok('التمرين مغلق للزائر', R.guest.exLocked);
     await p.click('.topbar [data-act="guest-login"]'); await p.waitForTimeout(400);
     R.guest.backToLogin = !!(await p.$('.login-modal')) && !(await p.evaluate(() => Me.guest)); ok('«تسجيل دخول» يعيد لصفحة الدخول', R.guest.backToLogin);
     R.visitor.realNet = net.real; R.visitor.errs = errs; await ctx.close();
   }
-  { // 2) متدرب مسجل: حسابي + ترجمة + Aa + خروج بتأكيد
+  { // 2) متدرب مسجل: حسابي + ترجمة + خروج بتأكيد
     const { ctx, p, net, errs } = await open({ me: ME, hash: '#/home' });
     R.trainee = { acts: await acts(p) };
-    ok('متدرب: حسابي + ترجمة + Aa + خروج', JSON.stringify(R.trainee.acts) === JSON.stringify(['account', 'translate', 'prefs', 'user-logout']));
+    ok('متدرب: حسابي + ترجمة + خروج', JSON.stringify(R.trainee.acts) === JSON.stringify(['account', 'translate', 'user-logout']));
     R.trainee.chipName = await p.$eval('.user-chip .nm', e => e.textContent); ok('الاسم الأول', R.trainee.chipName === 'سارة');
     await p.click('.topbar [data-act="user-logout"]'); await p.waitForSelector('.modal [data-ok]');
     R.trainee.confirmShown = true; await p.click('.modal [data-no]'); await p.waitForTimeout(300);
@@ -62,7 +62,7 @@ const ME = { uid: 'u1', name: 'سارة أحمد', member: 1001, ts: 1, code: 'A
     await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(300); await p.click('[data-google]'); await p.waitForTimeout(900);
     R.admin = { view: await p.evaluate(() => Router.cur.view), acts: await acts(p), uid: await p.evaluate(() => Me.uid()), stored: await p.evaluate(() => JSON.parse(localStorage.getItem('qbd:ec_me')).uid) };
     ok('المدرب: الواجهة التعليمية أولًا', R.admin.view === 'home');
-    ok('المدرب: لوحة التحكم + ترجمة + Aa + خروج', JSON.stringify(R.admin.acts) === JSON.stringify(['admin-panel', 'translate', 'prefs', 'admin-exit']));
+    ok('المدرب: لوحة التحكم + ترجمة + خروج', JSON.stringify(R.admin.acts) === JSON.stringify(['admin-panel', 'translate', 'admin-exit']));
     ok('هوية الإدارة في الذاكرة فقط', R.admin.uid === 'admin' && R.admin.stored === 'u1');
     // مشاركة فردية
     await p.evaluate(() => Router.go('ex', { id: 'a1e3' })); await p.waitForTimeout(400);

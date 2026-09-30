@@ -44,8 +44,8 @@ window.addEventListener('popstate', e => { Router.cur = (e.state && e.state.view
 const Layout = {
   topbar() {
     const s = Content.site(); const admin = Admin.ok(), me = Me.isReg() ? Me.data : null;
-    // الأدوات المشتركة: ترجمة + إعدادات العرض (أيقونات بلا نص)
-    const tools = Translate.button() + '<button class="icon-btn notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض"><b class="aa">Aa</b></button>';
+    // الأدوات المشتركة: الترجمة (أيقونة بلا نص)
+    const tools = Translate.button();
     const out = act => '<button class="icon-btn" data-act="' + act + '" title="تسجيل الخروج" aria-label="تسجيل الخروج">' + iconSvg('logout', 18) + '</button>';
     const enter = App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '';
     let acts;
@@ -93,23 +93,6 @@ const Layout = {
     return '<div class="crumbs">' + (b ? '<button class="back-btn" data-back>→ رجوع</button>' : '') + '<button class="back-btn" data-go="home">' + iconSvg('home', 15) + ' المنصة التعليمية</button>' + extra + '</div>';
   }
 };
-
-// ---------- تفضيلات العرض لسهولة الوصول (تُحفظ على جهاز المستخدم فقط) ----------
-const Prefs = {
-  get() { try { const p = Object.assign({ fs: 'md', contrast: 'normal', motion: 'normal' }, JSON.parse(SafeLS.get('ec_prefs') || '{}')); delete p.theme; return p; } catch (e) { return { fs: 'md', contrast: 'normal', motion: 'normal' }; } }, // المظهر الفاتح وحده: أي قيمة theme قديمة تُهمل
-  set(k, v) { const p = Prefs.get(); p[k] = v; SafeLS.set('ec_prefs', JSON.stringify(p)); Prefs.apply(); },
-  apply() {
-    const p = Prefs.get(); const r = document.documentElement;
-    r.setAttribute('data-fs', p.fs); r.setAttribute('data-contrast', p.contrast);
-    let red = p.motion === 'reduce'; if (p.motion === 'normal') { try { red = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} } r.setAttribute('data-motion', red ? 'reduce' : 'normal');
-  },
-  menu() {
-    const seg = (k, opts) => { const v = Prefs.get()[k]; return '<div class="sim-seg">' + opts.map(([val, l]) => '<label class="' + (v === val ? 'on' : '') + '" data-pref="' + k + '" data-v="' + val + '">' + l + '</label>').join('') + '</div>'; };
-    const body = () => '<h3>Aa إعدادات العرض</h3><div class="prefs-grid"><div><b>حجم الخط</b><br>' + seg('fs', [['sm', 'صغير'], ['md', 'عادي'], ['lg', 'كبير'], ['xl', 'كبير جدًا']]) + '</div><div><b>التباين</b><br>' + seg('contrast', [['normal', 'عادي'], ['high', 'عالٍ']]) + '</div><div><b>الحركة</b><br>' + seg('motion', [['normal', 'عادية'], ['reduce', 'مخففة']]) + '</div></div><p class="muted" style="font-size:12.5px;margin-top:12px">تُحفظ هذه الإعدادات على هذا الجهاز فقط.</p><div class="actions"><button class="btn btn-primary" data-x>تم</button></div>';
-    const m = UI.modal(body()); const wire = () => { $$('[data-pref]', m.el).forEach(l => l.onclick = () => { Prefs.set(l.getAttribute('data-pref'), l.getAttribute('data-v')); m.el.innerHTML = body(); wire(); }); $('[data-x]', m.el).onclick = () => m.close(); }; wire();
-  }
-};
-Prefs.apply();
 
 // ---------- الترجمة الآلية (Google Translate) — تُحمَّل عند الطلب فقط ----------
 // المحتوى الأصلي عربي بالكامل؛ الزر يترجم الصفحة الحالية وكل ما يُرسم لاحقًا، و«العربية» تعيدها كما كانت.
