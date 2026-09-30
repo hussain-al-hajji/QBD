@@ -478,7 +478,8 @@ Views.ex = {
     const col = exColor(e); const isSurvey = e.kind === 'survey';
     let out = '<div style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + Layout.crumbs(a ? '<span class="crumb-tag">' + h(a.title) + '</span>' : '<span class="crumb-tag">' + (isSurvey ? 'ختام البرنامج' : 'أنشطة') + '</span>') +
       (e.image ? '<img class="ex-img" src=\"' + imgSrc(e.image) + '\" alt="">' : '') +
-      '<div class="ex-head"><div class="ico">' + h(e.icon || '✍️') + '</div><div><h1>' + h(e.title) + '</h1><div class="row" style="margin-top:4px"><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + '</span>' + (e.format !== 'text' ? '<span class="pill">' + h(FORMATS[e.format]) + '</span>' : '') + '</div></div></div>';
+      '<div class="ex-head"><div class="ico">' + h(e.icon || '✍️') + '</div><div><h1>' + h(e.title) + '</h1><div class="row" style="margin-top:4px"><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + '</span>' + (e.format !== 'text' ? '<span class="pill">' + h(FORMATS[e.format]) + '</span>' : '') + '</div></div></div>' +
+      (Admin.ok() ? '<div class="live-bar">' + Presence.badge(e.id) + Invite.btn(e.id) + '</div>' : '');
     if (isSurvey) {
       out += '<div class="ex-block task"><div class="lbl">📝 قيّم تجربتك</div>' + richHtml(e.task) + '</div>' + '<div id="ansZone">' + surveyFormHtml(e) + '</div><div id="feedZone">' + surveyFeedHtml(e) + '</div></div>';
       return out;

@@ -321,6 +321,68 @@
         ".write": "auth != null && newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1)))"
       }
     },
+    "presence": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$ex": {
+        "$sid": {
+          ".write": "auth != null && auth.uid === $sid",
+          ".validate": "$ex.length <= 60 && newData.hasChildren(['ts'])",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length <= 80"
+          },
+          "u": {
+            ".validate": "newData.isString() && newData.val().length <= 40 && (newData.val() === '' || newData.val() === auth.uid || root.child('devices').child(newData.val()).child(auth.uid).exists())"
+          },
+          "g": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 30"
+          },
+          "ts": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "invite": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".validate": "newData.hasChildren(['id', 'ex', 'ts'])",
+      "id": {
+        ".validate": "newData.isString() && newData.val().length <= 40"
+      },
+      "ex": {
+        ".validate": "newData.isString() && newData.val().length <= 60"
+      },
+      "title": {
+        ".validate": "newData.isString() && newData.val().length <= 200"
+      },
+      "ts": {
+        ".validate": "newData.isNumber()"
+      },
+      "$other": {
+        ".validate": false
+      }
+    },
+    "removed": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "axes": {
+        "$id": {
+          ".validate": "newData.isNumber()"
+        }
+      },
+      "ex": {
+        "$id": {
+          ".validate": "newData.isNumber()"
+        }
+      },
+      "$other": {
+        ".validate": false
+      }
+    },
     "meta": {
       ".read": true,
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",

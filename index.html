@@ -411,6 +411,19 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .or-line{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-family:var(--f-ui);font-size:13px;margin:14px 0}
 .or-line::before,.or-line::after{content:"";height:1px;background:var(--line);flex:1}
 /* قفل دخول المدرب: باهت أسفل نافذة الدخول، يتضح عند المرور/التركيز */
+/* عداد الحضور الحي ودعوة المدرب */
+.live-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 4px}
+.live-bar.sm{margin:8px 0 0}
+.live-count{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-ui);font-size:13px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.live-count .live-dot{background:var(--ink-3);animation:none;width:8px;height:8px}
+.live-count.on .live-dot{background:#E0314B;animation:pulse 1.6s infinite}
+.live-count.on{color:var(--ink);border-color:#E7B7C2}
+.live-count.warn{cursor:default;color:#8A5A00;background:#FFF6E0;border-color:#F0D48A}
+html[data-theme="dark"] .live-count.warn{color:#FFD98A;background:#3A2E12;border-color:#6B5520}
+html[data-theme="dark"] .live-count.on{border-color:#7A3446}
+.invite-on{box-shadow:0 0 0 3px rgba(26,160,120,.18)}
+.pres-list{list-style:none;padding:0;margin:0;display:grid;gap:6px;font-family:var(--f-ui)}
+.pres-list li{padding:6px 10px;border-radius:10px;background:var(--surface-2,rgba(0,0,0,.03))}
 .trainer-lock-row{display:flex;justify-content:center;margin-top:14px}
 .trainer-lock{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;color:var(--ink-3);opacity:.28;transition:opacity .2s,border-color .2s}
 .trainer-lock:hover,.trainer-lock:focus-visible{opacity:1;border-color:var(--line);color:var(--ink)}
@@ -1618,7 +1631,7 @@ const DB = (function () {
       // تعذر تحميل مكتبة الاتصال: لا تخزين محلي ولا كتابة — القراءة تنتظر، والكتابة تُرفض برسالة واضحة
       status.lib = false;
       const fail = () => Promise.reject(new Error('تعذر تحميل مكتبة الاتصال بقاعدة البيانات'));
-      return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, now() { return Date.now(); } };
+      return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, onDisconnectRemove: fail, cancelDisconnect() {}, now() { return Date.now(); } };
     }
     firebase.initializeApp(Object.fromEntries(Object.entries(firebaseConfig).filter(([k, v]) => v && k !== 'appCheckSiteKey')));
     // App Check يُفعَّل قبل أي استخدام للقاعدة أو الدخول، حتى تُرفق كل الطلبات بشهادة أنها من موقعنا الحقيقي
@@ -1642,6 +1655,9 @@ const DB = (function () {
       remove(path, o) { const g = guard('remove', path, null, o); if (g) return g; return track(db.ref(norm(path)).remove(), path, o); },
       push(path, v) { const g = guard('push', path); if (g) return g; const r = db.ref(norm(path)).push(); return track(r.set(clean(v)), path).then(() => r.key); },
       transaction(path, fn, o) { const g = guard('transaction', path, null, o); if (g) return g; return track(db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()), path, o); },
+      // حذف تلقائي على الخادم عند انقطاع هذا العميل (إغلاق الصفحة أو فقد الشبكة)
+      onDisconnectRemove(path) { return db.ref(norm(path)).onDisconnect().remove(); },
+      cancelDisconnect(path) { try { db.ref(norm(path)).onDisconnect().cancel(); } catch (e) {} },
       now() { return Date.now() + offset; }
     };
   }
@@ -1679,6 +1695,9 @@ const DB = (function () {
     update(path, obj, o) { lguard('update', path, obj, o); const base = norm(path); Object.keys(obj || {}).forEach(k => setAt(base ? base + '/' + k : k, obj[k])); persist(); Object.keys(obj || {}).forEach(k => notify(base ? base + '/' + k : k)); return Promise.resolve(); },
     remove(path, o) { lguard('remove', path, null, o); setAt(path, null); persist(); notify(path); return Promise.resolve(); },
     push(path, v) { const k = genId('k'); return this.set(norm(path) + '/' + k, v).then(() => k); },
+    // محليًا: الحذف عند مغادرة الصفحة (pagehide) بدل انقطاع الخادم
+    onDisconnectRemove(path) { if (!this._od) { this._od = new Set(); window.addEventListener('pagehide', () => { this._od.forEach(p => setAt(p, null)); persist(); }); } this._od.add(norm(path)); return Promise.resolve(); },
+    cancelDisconnect(path) { if (this._od) this._od.delete(norm(path)); },
     transaction(path, fn) { const nv = fn(clone(getAt(path))); if (nv !== undefined) { setAt(path, nv); persist(); notify(path); } return Promise.resolve(clone(getAt(path))); },
     now() { return Date.now(); }
   };
@@ -2480,7 +2499,7 @@ const Scenes = (function () {
 // ---------------------------------------------------------------------
 const Store = {
   contentAxes: {}, contentEx: {}, addedAxes: {}, addedEx: {}, visibility: {}, enabled: {}, order: [],
-  site: {}, groupCount: DEFAULT_GROUPS, groupNames: {}, assign: {}, users: {}, posts: {}, reveal: {},
+  site: {}, groupCount: DEFAULT_GROUPS, groupNames: {}, assign: {}, users: {}, posts: {}, reveal: {}, presence: {}, presenceDenied: false, invite: null, removedAxes: {}, removedEx: {},
   labTimers: {}, labAnswers: {}, broadcast: null, resetStamp: 0, registered: 0, ready: false,
   contentLab: null, contentAssess: null, contentStories: {}, addedStories: {}, storyOrder: [], storyLikes: {}, exOrder: {}, assess: {}, assessCfg: {}, attendance: {}, attCfg: {}
 };
@@ -3800,7 +3819,8 @@ Views.ex = {
     const col = exColor(e); const isSurvey = e.kind === 'survey';
     let out = '<div style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + Layout.crumbs(a ? '<span class="crumb-tag">' + h(a.title) + '</span>' : '<span class="crumb-tag">' + (isSurvey ? 'ختام البرنامج' : 'أنشطة') + '</span>') +
       (e.image ? '<img class="ex-img" src=\"' + imgSrc(e.image) + '\" alt="">' : '') +
-      '<div class="ex-head"><div class="ico">' + h(e.icon || '✍️') + '</div><div><h1>' + h(e.title) + '</h1><div class="row" style="margin-top:4px"><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + '</span>' + (e.format !== 'text' ? '<span class="pill">' + h(FORMATS[e.format]) + '</span>' : '') + '</div></div></div>';
+      '<div class="ex-head"><div class="ico">' + h(e.icon || '✍️') + '</div><div><h1>' + h(e.title) + '</h1><div class="row" style="margin-top:4px"><span class="pill">' + (e.mode === 'group' ? '👥 جماعي' : '👤 فردي') + '</span>' + (e.format !== 'text' ? '<span class="pill">' + h(FORMATS[e.format]) + '</span>' : '') + '</div></div></div>' +
+      (Admin.ok() ? '<div class="live-bar">' + Presence.badge(e.id) + Invite.btn(e.id) + '</div>' : '');
     if (isSurvey) {
       out += '<div class="ex-block task"><div class="lbl">📝 قيّم تجربتك</div>' + richHtml(e.task) + '</div>' + '<div id="ansZone">' + surveyFormHtml(e) + '</div><div id="feedZone">' + surveyFeedHtml(e) + '</div></div>';
       return out;
@@ -4615,6 +4635,83 @@ const LoginModal = {
 };
 
 
+/* ===== 06f-live.js ===== */
+// ---------------------------------------------------------------------
+// الحضور الحي على صفحات التمارين + دعوة المدرب للانضمام إلى تمرين
+// ---------------------------------------------------------------------
+// عقد أُضيفت بعد النسخة الأولى من القواعد: رفض الكتابة فيها يعني غالبًا أن القواعد المنشورة قديمة
+const NEW_RULE_NODES = ['presence', 'invite', 'removed'];
+const RULES_HELP = 'غالبًا لأن قواعد Firebase المنشورة أقدم من هذه النسخة من المنصة.<br><b>الحل:</b> Firebase Console ← Realtime Database ← <b>Rules</b> ← الصق محتوى الملف <span dir="ltr">database.rules.json</span> كاملًا ← <b>Publish</b>.';
+function rulesOutdatedAlert(node) { UI.alert('رفضت قاعدة البيانات الكتابة في «' + h(node) + '» — ' + RULES_HELP, 'القواعد تحتاج تحديثًا'); }
+
+// كل زائر لصفحة تمرين يسجّل وجوده في presence/<exId>/<sessionId> ويُحذف تلقائيًا عند انقطاعه.
+// المدرب وحده يقرأ العقدة، ولا يُسجَّل هو نفسه.
+const PRESENCE_TTL = 6 * 3600 * 1000; // تُتجاهل التسجيلات الأقدم من 6 ساعات (بقايا جلسات لم تُحذف)
+const Presence = {
+  cur: null, key: '', sid: null, _conn: false,
+  // معرّف الجلسة: رقم جلسة الدخول في Firebase (تفرضه القواعد)، أو معرّف عشوائي في الوضع المحلي
+  sessionId() { if (AUTH.enabled) return authUid(); return Presence.sid || (Presence.sid = genId('s')); },
+  payload() { const reg = Me.isReg(); return { n: reg ? String(Me.data.name || '').slice(0, 80) : '', u: reg ? String(Me.data.uid) : '', g: reg ? (Me.group() || 0) : 0, ts: DB.now() }; },
+  // يُستدعى بعد كل رسم: يطابق التسجيل مع الصفحة الحالية والهوية الحالية
+  sync() {
+    const ex = App.dataReady && Router.cur.view === 'ex' && !Admin.ok() && Content.ex(Router.cur.id) ? Router.cur.id : null;
+    const sid = ex ? Presence.sessionId() : null; const p = sid ? Presence.payload() : null;
+    const key = p ? [ex, sid, p.n, p.u, p.g].join('|') : '';
+    if (key === Presence.key) return;
+    Presence.leave(); if (!key) return;
+    Presence.key = key; Presence.cur = 'presence/' + ex + '/' + sid; Presence.write();
+  },
+  // الحذف عند الانقطاع يُسجَّل أولًا ثم الكتابة (ترتيب Firebase الموصى به)
+  write() { const path = Presence.cur; if (!path) return; Promise.resolve(DB.onDisconnectRemove(path)).then(() => DB.set(path, Presence.payload(), { quiet: true, beforeReady: true })).catch(e => console.warn('presence', e)); },
+  leave() { const path = Presence.cur; Presence.cur = null; Presence.key = ''; if (!path) return; DB.cancelDisconnect(path); DB.remove(path, { quiet: true, beforeReady: true }).catch(() => {}); },
+  // عند عودة الاتصال يكون الخادم قد حذف التسجيل: نعيده
+  onStatus(st) { if (st.connected && !Presence._conn && Presence.cur) Presence.write(); Presence._conn = !!st.connected; },
+  list(ex) { const o = (Store.presence || {})[ex] || {}; const now = DB.now(); return Object.keys(o).map(k => o[k]).filter(x => x && now - (+x.ts || 0) < PRESENCE_TTL); },
+  // عداد المدرب (صفحة التمرين وصف التمرين في لوحة التحكم)
+  badge(ex) {
+    if (!Admin.ok()) return '';
+    if (Store.presenceDenied) return '<span class="live-count warn" title="' + h('انشر قواعد Firebase المحدّثة') + '">⚠️ العداد معطّل — انشر قواعد Firebase المحدّثة</span>';
+    const n = Presence.list(ex).length;
+    return '<button class="live-count' + (n ? ' on' : '') + '" data-act="presence-show" data-ex="' + h(ex) + '" title="من على صفحة التمرين الآن"><span class="live-dot"></span><b class="num">' + n + '</b> على الصفحة الآن</button>';
+  },
+  show(ex) {
+    const l = Presence.list(ex); const named = l.filter(x => x.n).sort((a, b) => String(a.n).localeCompare(String(b.n), 'ar')); const guests = l.length - named.length;
+    UI.alert((l.length ? '<ul class="pres-list">' + named.map(x => '<li><b>' + h(x.n) + '</b>' + (x.g ? ' <span class="muted">· ' + h(Groups.label(x.g)) + '</span>' : '') + '</li>').join('') + (guests ? '<li class="muted">(<span class="num">' + guests + '</span>) زائر</li>' : '') + '</ul>' : '<div class="empty">لا أحد على الصفحة الآن.</div>'), '👥 على صفحة «' + Content.exTitle(ex) + '» الآن');
+  }
+};
+
+// دعوة المدرب: invite = { id, ex, title, ts } — الدعوة الجديدة تحل محل السابقة
+const INVITE_TTL = 3 * 3600 * 1000;
+const Invite = {
+  active(ex) { const v = Store.invite; return !!(v && v.ex === ex && DB.now() - (+v.ts || 0) < INVITE_TTL); },
+  btn(ex) {
+    if (!Admin.ok()) return '';
+    return Invite.active(ex) ? '<button class="btn btn-mint btn-xs invite-on" data-act="invite-cancel" data-ex="' + h(ex) + '" title="إلغاء الدعوة">📣 مدعوون الآن · إلغاء</button>'
+      : '<button class="btn btn-soft btn-xs" data-act="invite" data-ex="' + h(ex) + '" title="دعوة المتدربين المسجلين إلى هذا التمرين الآن">📣 دعوة</button>';
+  },
+  async send(ex) {
+    const e = Content.ex(ex); if (!e) return;
+    try { await DB.set('invite', { id: genId('i'), ex, title: String(e.title || '').slice(0, 200), ts: DB.now() }, { quiet: true }); UI.toast('📣 أُرسلت الدعوة إلى المتدربين المسجلين'); }
+    catch (er) { rulesOutdatedAlert('invite'); }
+    App.render();
+  },
+  async cancel() { try { await DB.remove('invite', { quiet: true }); UI.toast('أُلغيت الدعوة'); } catch (er) { rulesOutdatedAlert('invite'); } App.render(); },
+  // للمتدرب المسجل: نافذة واحدة لكل دعوة، لا تتكرر، ولا تظهر على صفحة التمرين نفسه أو لدعوة قديمة
+  check() {
+    const v = Store.invite; if (!v || !v.id || !Me.isReg() || Admin.ok() || Invite.m) return;
+    if (DB.now() - (+v.ts || 0) >= INVITE_TTL) return;
+    if (SafeLS.get('ec_inv_seen') === String(v.id)) return;
+    const e = Content.ex(v.ex); if (!e || e._hidden) return;
+    if (Router.cur.view === 'ex' && Router.cur.id === v.ex) { SafeLS.set('ec_inv_seen', String(v.id)); return; }
+    SafeLS.set('ec_inv_seen', String(v.id));
+    const m = Invite.m = UI.modal('<h3>📣 دعوة من المدرّب</h3><p style="font-family:var(--f-ui)">انضم الآن إلى <b>' + h(e.title || v.title || '') + '</b></p><div class="actions"><button class="btn btn-primary" data-ok>انتقل إلى التمرين</button><button class="btn btn-ghost" data-no>إغلاق</button></div>', { onClose: () => { Invite.m = null; } });
+    m.el.classList.add('invite-modal');
+    $('[data-ok]', m.el).onclick = () => { m.close(); Router.go('ex', { id: v.ex }); window.scrollTo(0, 0); };
+    $('[data-no]', m.el).onclick = () => m.close();
+  }
+};
+
+
 /* ===== 07-admin.js ===== */
 // ---------------------------------------------------------------------
 // لوحة الأدمن — شاشة واحدة متصلة + نماذج الإنشاء/التعديل
@@ -4669,7 +4766,7 @@ function exRow(e, o = {}) {
     (isDef ? (e._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-ex" data-id="' + h(e.id) + '">↺ استرجاع الافتراضي</button>' : '') : '<button class="btn btn-danger btn-xs" data-act="delete-ex" data-id="' + h(e.id) + '">🗑 حذف نهائي</button>') +
     '<button class="btn btn-danger btn-xs" data-act="clear-posts" data-id="' + h(e.id) + '">🧹 مسح المشاركات</button>' +
     (e.format !== 'text' && e.format !== 'sim' ? '<button class="btn btn-mint btn-xs" data-act="reveal" data-id="' + h(e.id) + '">' + (isRevealed(e) ? '🔒 إخفاء الإجابات' : '🔓 كشف الإجابات الصحيحة') + '</button>' : '') +
-    '</div>' + exSummary(e) + '</div>';
+    '</div>' + (o.kind !== 'survey' ? '<div class="live-bar sm">' + Presence.badge(e.id) + Invite.btn(e.id) + '</div>' : '') + exSummary(e) + '</div>';
 }
 
 Views.admin = {
@@ -5876,6 +5973,7 @@ const App = {
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
     $$('[data-filter]', root).forEach(applyFilter);
+    Presence.sync(); Invite.check();
     $$('textarea:not([maxlength])', root).forEach(t => { t.maxLength = 4000; }); $$('input[type=text]:not([maxlength]),input:not([type]):not([maxlength])', root).forEach(t => { t.maxLength = 250; });
     document.title = (Content.site().headerTitle || 'الدورة');
   },
@@ -5921,8 +6019,14 @@ function watchDefs() {
     }
   };
   const pub = Object.keys(d);
+  // عقد عامة غير معطِّلة للإقلاع: رفض قراءتها (قواعد قديمة) لا يوقف المنصة
+  const errs = {};
+  d['invite'] = v => { Store.invite = v || null; setTimeout(Invite.check, 0); }; errs['invite'] = () => { Store.invite = null; };
+  d['removed'] = v => { v = v || {}; Store.removedAxes = v.axes || {}; Store.removedEx = v.ex || {}; }; errs['removed'] = () => { Store.removedAxes = {}; Store.removedEx = {}; };
   const me = Me.uid();
   if (Admin.ok()) {
+    d['presence'] = v => { Store.presence = v || {}; Store.presenceDenied = false; };
+    errs['presence'] = () => { Store.presence = {}; Store.presenceDenied = true; App.onData(); };
     Object.assign(d, {
       'private': v => { Store.priv = v || {}; mergeUsers(); },
       'leads': v => { Store.leads = v || {}; },
@@ -5938,19 +6042,19 @@ function watchDefs() {
     ['30', '60', '90'].forEach(n => { d['followups/d' + n + '/' + me] = v => { Store.followups = Object.assign({}, Store.followups); Store.followups['d' + n] = v ? { [me]: v } : {}; }; });
     d['secrets/' + me] = v => { Store.mySecret = v || ''; };
   }
-  return { defs: d, pub };
+  return { defs: d, pub, errs };
 }
 function syncWatchers() {
-  const { defs, pub } = watchDefs(); Watch.publicPaths = pub;
+  const { defs, pub, errs } = watchDefs(); Watch.publicPaths = pub;
   Object.keys(Watch.active).forEach(p => { if (!defs[p]) { try { Watch.active[p](); } catch (e) {} delete Watch.active[p]; } });
-  if (!Admin.ok()) { Store.backupIndex = {}; Store.cohortIndex = {}; Store.secure = {}; Store.secrets = {}; if (!Me.uid()) { Store.priv = {}; Store.leads = {}; Store.followups = {}; Store.mySecret = ''; mergeUsers(); } }
+  if (!Admin.ok()) { Store.presence = {}; Store.presenceDenied = false; Store.backupIndex = {}; Store.cohortIndex = {}; Store.secure = {}; Store.secrets = {}; if (!Me.uid()) { Store.priv = {}; Store.leads = {}; Store.followups = {}; Store.mySecret = ''; mergeUsers(); } }
   Object.keys(defs).forEach(path => {
     if (Watch.active[path]) return;
     Watch.active[path] = DB.watch(path, v => {
       defs[path](v);
       if (!Watch.seen.has(path)) { Watch.seen.add(path); if (!App.dataReady && Watch.publicPaths.every(x => Watch.seen.has(x))) { App.dataReady = true; DB.markReady(); App.render(); } }
       App.onData();
-    }, e => { console.warn('watch denied', path, e); if (Watch.publicPaths.indexOf(path) > -1) { App.watchError = e; App.render(); } });
+    }, e => { console.warn('watch denied', path, e); if (errs[path]) errs[path](e); if (Watch.publicPaths.indexOf(path) > -1) { App.watchError = e; App.render(); } });
   });
 }
 function watchAll() { syncWatchers(); }
@@ -6110,6 +6214,9 @@ document.addEventListener('click', async ev => {
     case 'open-login': LoginModal.open(); break;
     // الزائر: «تسجيل دخول» يعيده إلى صفحة الدخول
     case 'guest-login': Me.guest = false; SafeLS.del('ec_guest'); SafeSS.del('ec_guest'); Router.go('home'); window.scrollTo(0, 0); setTimeout(() => LoginModal.open(), 50); break;
+    case 'presence-show': Presence.show(t.getAttribute('data-ex')); break;
+    case 'invite': Invite.send(t.getAttribute('data-ex')); break;
+    case 'invite-cancel': Invite.cancel(); break;
     case 'admin-panel': Router.go('admin'); window.scrollTo(0, 0); break;
     case 'icon-pick': IconPick.open(t); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
@@ -6570,8 +6677,11 @@ function boot() {
   setTimeout(bk, 15000); setInterval(bk, 3600000);
   setInterval(() => Monitor.publish(false), 60000); // لقطة لوحة المشرف تُحدَّث من جلسة المدرب
   setTimeout(() => { if (!App.dataReady) { App.slow = true; App.render(); } }, 8000);
-  DB.onStatus(debounce(() => { if (App.dataReady) App.render(); }, 120));
-  DB.onReject = (e, where) => { console.warn('write rejected', where, e); UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };
+  DB.onStatus(debounce(() => { if (App.dataReady) App.render(); }, 120)); DB.onStatus(Presence.onStatus);
+  setInterval(() => { if (Presence.cur) Presence.write(); }, 30 * 60000); // تجديد الطابع الزمني للجلسات الطويلة
+  DB.onReject = (e, where) => { console.warn('write rejected', where, e);
+    const denied = (e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)); const node = String(where || '').split(/[\/,]/)[0];
+    if (denied && Admin.ok() && NEW_RULE_NODES.indexOf(node) > -1) { rulesOutdatedAlert(node); App.onData(); return; } UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };
   DB.onSynced = () => UI.toast('✅ عاد الاتصال وحُفظت كل التعديلات المعلّقة', 4000);
   window.addEventListener('beforeunload', e => { if (DB.status && DB.status.pending > 0) { e.preventDefault(); e.returnValue = ''; return ''; } });
   App.render();

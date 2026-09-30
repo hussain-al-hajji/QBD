@@ -51,7 +51,7 @@ function exRow(e, o = {}) {
     (isDef ? (e._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-ex" data-id="' + h(e.id) + '">↺ استرجاع الافتراضي</button>' : '') : '<button class="btn btn-danger btn-xs" data-act="delete-ex" data-id="' + h(e.id) + '">🗑 حذف نهائي</button>') +
     '<button class="btn btn-danger btn-xs" data-act="clear-posts" data-id="' + h(e.id) + '">🧹 مسح المشاركات</button>' +
     (e.format !== 'text' && e.format !== 'sim' ? '<button class="btn btn-mint btn-xs" data-act="reveal" data-id="' + h(e.id) + '">' + (isRevealed(e) ? '🔒 إخفاء الإجابات' : '🔓 كشف الإجابات الصحيحة') + '</button>' : '') +
-    '</div>' + exSummary(e) + '</div>';
+    '</div>' + (o.kind !== 'survey' ? '<div class="live-bar sm">' + Presence.badge(e.id) + Invite.btn(e.id) + '</div>' : '') + exSummary(e) + '</div>';
 }
 
 Views.admin = {

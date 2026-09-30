@@ -389,6 +389,19 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .or-line{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-family:var(--f-ui);font-size:13px;margin:14px 0}
 .or-line::before,.or-line::after{content:"";height:1px;background:var(--line);flex:1}
 /* قفل دخول المدرب: باهت أسفل نافذة الدخول، يتضح عند المرور/التركيز */
+/* عداد الحضور الحي ودعوة المدرب */
+.live-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 4px}
+.live-bar.sm{margin:8px 0 0}
+.live-count{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-ui);font-size:13px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.live-count .live-dot{background:var(--ink-3);animation:none;width:8px;height:8px}
+.live-count.on .live-dot{background:#E0314B;animation:pulse 1.6s infinite}
+.live-count.on{color:var(--ink);border-color:#E7B7C2}
+.live-count.warn{cursor:default;color:#8A5A00;background:#FFF6E0;border-color:#F0D48A}
+html[data-theme="dark"] .live-count.warn{color:#FFD98A;background:#3A2E12;border-color:#6B5520}
+html[data-theme="dark"] .live-count.on{border-color:#7A3446}
+.invite-on{box-shadow:0 0 0 3px rgba(26,160,120,.18)}
+.pres-list{list-style:none;padding:0;margin:0;display:grid;gap:6px;font-family:var(--f-ui)}
+.pres-list li{padding:6px 10px;border-radius:10px;background:var(--surface-2,rgba(0,0,0,.03))}
 .trainer-lock-row{display:flex;justify-content:center;margin-top:14px}
 .trainer-lock{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;color:var(--ink-3);opacity:.28;transition:opacity .2s,border-color .2s}
 .trainer-lock:hover,.trainer-lock:focus-visible{opacity:1;border-color:var(--line);color:var(--ink)}

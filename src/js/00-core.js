@@ -138,7 +138,7 @@ const DB = (function () {
       // تعذر تحميل مكتبة الاتصال: لا تخزين محلي ولا كتابة — القراءة تنتظر، والكتابة تُرفض برسالة واضحة
       status.lib = false;
       const fail = () => Promise.reject(new Error('تعذر تحميل مكتبة الاتصال بقاعدة البيانات'));
-      return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, now() { return Date.now(); } };
+      return { real: true, status, onStatus(fn) { status.listeners.push(fn); }, markReady() {}, watch() { return () => {}; }, get() { return new Promise(() => {}); }, set: fail, update: fail, remove: fail, push: fail, transaction: fail, onDisconnectRemove: fail, cancelDisconnect() {}, now() { return Date.now(); } };
     }
     firebase.initializeApp(Object.fromEntries(Object.entries(firebaseConfig).filter(([k, v]) => v && k !== 'appCheckSiteKey')));
     // App Check يُفعَّل قبل أي استخدام للقاعدة أو الدخول، حتى تُرفق كل الطلبات بشهادة أنها من موقعنا الحقيقي
@@ -162,6 +162,9 @@ const DB = (function () {
       remove(path, o) { const g = guard('remove', path, null, o); if (g) return g; return track(db.ref(norm(path)).remove(), path, o); },
       push(path, v) { const g = guard('push', path); if (g) return g; const r = db.ref(norm(path)).push(); return track(r.set(clean(v)), path).then(() => r.key); },
       transaction(path, fn, o) { const g = guard('transaction', path, null, o); if (g) return g; return track(db.ref(norm(path)).transaction(fn).then(r => r.snapshot.val()), path, o); },
+      // حذف تلقائي على الخادم عند انقطاع هذا العميل (إغلاق الصفحة أو فقد الشبكة)
+      onDisconnectRemove(path) { return db.ref(norm(path)).onDisconnect().remove(); },
+      cancelDisconnect(path) { try { db.ref(norm(path)).onDisconnect().cancel(); } catch (e) {} },
       now() { return Date.now() + offset; }
     };
   }
@@ -199,6 +202,9 @@ const DB = (function () {
     update(path, obj, o) { lguard('update', path, obj, o); const base = norm(path); Object.keys(obj || {}).forEach(k => setAt(base ? base + '/' + k : k, obj[k])); persist(); Object.keys(obj || {}).forEach(k => notify(base ? base + '/' + k : k)); return Promise.resolve(); },
     remove(path, o) { lguard('remove', path, null, o); setAt(path, null); persist(); notify(path); return Promise.resolve(); },
     push(path, v) { const k = genId('k'); return this.set(norm(path) + '/' + k, v).then(() => k); },
+    // محليًا: الحذف عند مغادرة الصفحة (pagehide) بدل انقطاع الخادم
+    onDisconnectRemove(path) { if (!this._od) { this._od = new Set(); window.addEventListener('pagehide', () => { this._od.forEach(p => setAt(p, null)); persist(); }); } this._od.add(norm(path)); return Promise.resolve(); },
+    cancelDisconnect(path) { if (this._od) this._od.delete(norm(path)); },
     transaction(path, fn) { const nv = fn(clone(getAt(path))); if (nv !== undefined) { setAt(path, nv); persist(); notify(path); } return Promise.resolve(clone(getAt(path))); },
     now() { return Date.now(); }
   };

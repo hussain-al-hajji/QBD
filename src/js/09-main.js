@@ -27,6 +27,7 @@ const App = {
     preserveRender(root, html);
     if (view.after) try { view.after(root); } catch (e) { console.error(e); }
     $$('[data-filter]', root).forEach(applyFilter);
+    Presence.sync(); Invite.check();
     $$('textarea:not([maxlength])', root).forEach(t => { t.maxLength = 4000; }); $$('input[type=text]:not([maxlength]),input:not([type]):not([maxlength])', root).forEach(t => { t.maxLength = 250; });
     document.title = (Content.site().headerTitle || 'الدورة');
   },
@@ -72,8 +73,14 @@ function watchDefs() {
     }
   };
   const pub = Object.keys(d);
+  // عقد عامة غير معطِّلة للإقلاع: رفض قراءتها (قواعد قديمة) لا يوقف المنصة
+  const errs = {};
+  d['invite'] = v => { Store.invite = v || null; setTimeout(Invite.check, 0); }; errs['invite'] = () => { Store.invite = null; };
+  d['removed'] = v => { v = v || {}; Store.removedAxes = v.axes || {}; Store.removedEx = v.ex || {}; }; errs['removed'] = () => { Store.removedAxes = {}; Store.removedEx = {}; };
   const me = Me.uid();
   if (Admin.ok()) {
+    d['presence'] = v => { Store.presence = v || {}; Store.presenceDenied = false; };
+    errs['presence'] = () => { Store.presence = {}; Store.presenceDenied = true; App.onData(); };
     Object.assign(d, {
       'private': v => { Store.priv = v || {}; mergeUsers(); },
       'leads': v => { Store.leads = v || {}; },
@@ -89,19 +96,19 @@ function watchDefs() {
     ['30', '60', '90'].forEach(n => { d['followups/d' + n + '/' + me] = v => { Store.followups = Object.assign({}, Store.followups); Store.followups['d' + n] = v ? { [me]: v } : {}; }; });
     d['secrets/' + me] = v => { Store.mySecret = v || ''; };
   }
-  return { defs: d, pub };
+  return { defs: d, pub, errs };
 }
 function syncWatchers() {
-  const { defs, pub } = watchDefs(); Watch.publicPaths = pub;
+  const { defs, pub, errs } = watchDefs(); Watch.publicPaths = pub;
   Object.keys(Watch.active).forEach(p => { if (!defs[p]) { try { Watch.active[p](); } catch (e) {} delete Watch.active[p]; } });
-  if (!Admin.ok()) { Store.backupIndex = {}; Store.cohortIndex = {}; Store.secure = {}; Store.secrets = {}; if (!Me.uid()) { Store.priv = {}; Store.leads = {}; Store.followups = {}; Store.mySecret = ''; mergeUsers(); } }
+  if (!Admin.ok()) { Store.presence = {}; Store.presenceDenied = false; Store.backupIndex = {}; Store.cohortIndex = {}; Store.secure = {}; Store.secrets = {}; if (!Me.uid()) { Store.priv = {}; Store.leads = {}; Store.followups = {}; Store.mySecret = ''; mergeUsers(); } }
   Object.keys(defs).forEach(path => {
     if (Watch.active[path]) return;
     Watch.active[path] = DB.watch(path, v => {
       defs[path](v);
       if (!Watch.seen.has(path)) { Watch.seen.add(path); if (!App.dataReady && Watch.publicPaths.every(x => Watch.seen.has(x))) { App.dataReady = true; DB.markReady(); App.render(); } }
       App.onData();
-    }, e => { console.warn('watch denied', path, e); if (Watch.publicPaths.indexOf(path) > -1) { App.watchError = e; App.render(); } });
+    }, e => { console.warn('watch denied', path, e); if (errs[path]) errs[path](e); if (Watch.publicPaths.indexOf(path) > -1) { App.watchError = e; App.render(); } });
   });
 }
 function watchAll() { syncWatchers(); }
@@ -261,6 +268,9 @@ document.addEventListener('click', async ev => {
     case 'open-login': LoginModal.open(); break;
     // الزائر: «تسجيل دخول» يعيده إلى صفحة الدخول
     case 'guest-login': Me.guest = false; SafeLS.del('ec_guest'); SafeSS.del('ec_guest'); Router.go('home'); window.scrollTo(0, 0); setTimeout(() => LoginModal.open(), 50); break;
+    case 'presence-show': Presence.show(t.getAttribute('data-ex')); break;
+    case 'invite': Invite.send(t.getAttribute('data-ex')); break;
+    case 'invite-cancel': Invite.cancel(); break;
     case 'admin-panel': Router.go('admin'); window.scrollTo(0, 0); break;
     case 'icon-pick': IconPick.open(t); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
@@ -721,8 +731,11 @@ function boot() {
   setTimeout(bk, 15000); setInterval(bk, 3600000);
   setInterval(() => Monitor.publish(false), 60000); // لقطة لوحة المشرف تُحدَّث من جلسة المدرب
   setTimeout(() => { if (!App.dataReady) { App.slow = true; App.render(); } }, 8000);
-  DB.onStatus(debounce(() => { if (App.dataReady) App.render(); }, 120));
-  DB.onReject = (e, where) => { console.warn('write rejected', where, e); UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };
+  DB.onStatus(debounce(() => { if (App.dataReady) App.render(); }, 120)); DB.onStatus(Presence.onStatus);
+  setInterval(() => { if (Presence.cur) Presence.write(); }, 30 * 60000); // تجديد الطابع الزمني للجلسات الطويلة
+  DB.onReject = (e, where) => { console.warn('write rejected', where, e);
+    const denied = (e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)); const node = String(where || '').split(/[\/,]/)[0];
+    if (denied && Admin.ok() && NEW_RULE_NODES.indexOf(node) > -1) { rulesOutdatedAlert(node); App.onData(); return; } UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };
   DB.onSynced = () => UI.toast('✅ عاد الاتصال وحُفظت كل التعديلات المعلّقة', 4000);
   window.addEventListener('beforeunload', e => { if (DB.status && DB.status.pending > 0) { e.preventDefault(); e.returnValue = ''; return ''; } });
   App.render();

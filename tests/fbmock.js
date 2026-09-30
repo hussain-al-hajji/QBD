@@ -71,7 +71,10 @@
   function queue(kind, path, value) { return new Promise((resolve, reject) => { const op = { kind, path, value: clone(value), resolve, reject }; M.attempts.push({ kind, path: path || '(root)', t: Date.now() }); M.pending.push(op); fire(); flush(); }); }
   M.replace = json => { M.server = JSON.parse(json) || {}; fire(); };
   M.load = () => { M.loaded = true; fireConn(); fire(); flush(); };
-  M.setConnected = c => { M.connected = c; fireConn(); if (c && !M.loaded) M.load(); else if (c) flush(); };
+  M.onDisc = [];
+  // انقطاع العميل كما يراه الخادم: تُنفَّذ عمليات onDisconnect المسجلة ثم تُنسى
+  M.serverDrop = () => { const ops = M.onDisc; M.onDisc = []; ops.forEach(op => { M.server = applyOp(M.server, op); }); persistServer(); if (window.__srvPush) try { window.__srvPush(JSON.stringify(M.server)); } catch (e) {} fire(); };
+  M.setConnected = c => { if (!c && M.connected) M.serverDrop(); M.connected = c; fireConn(); if (c && !M.loaded) M.load(); else if (c) flush(); };
   setTimeout(() => { if (M.connected) M.load(); }, cfg.delayFirst);
   window.addEventListener('storage', e => { if (e.key === SKEY && cfg.shared) { try { M.server = JSON.parse(e.newValue || '{}'); } catch (er) {} fire(); } });
   function ref(path) {
@@ -85,6 +88,9 @@
       update(o) { return queue('update', path, o); },
       remove() { return queue('set', path, null); },
       push() { return ref(path + '/p' + Math.random().toString(36).slice(2, 10)); },
+      // onDisconnect: تُسجَّل العملية الآن (بعد فحص القواعد) وتُنفَّذ على الخادم عند انقطاع العميل
+      onDisconnect() { const reg = (kind, v) => { const op = { kind, path, value: clone(v) }; if (cfg.rules && !allowed(op)) { M.denied.push('onDisconnect:' + path); return Promise.reject(Object.assign(new Error('PERMISSION_DENIED'), { code: 'PERMISSION_DENIED' })); } M.onDisc = M.onDisc.filter(o => o.path !== path); M.onDisc.push(op); return Promise.resolve(); };
+        return { remove: () => reg('set', null), set: v => reg('set', v), cancel: () => { M.onDisc = M.onDisc.filter(o => o.path !== path); return Promise.resolve(); } }; },
       transaction(fn) { return new Promise((res, rej) => { const run = () => { if (!(M.loaded && M.connected)) return setTimeout(run, 50); const cur = getAt(view(), path); const nv = fn(clone(cur)); if (nv === undefined) return res({ committed: false, snapshot: snap(cur, path) }); queue('set', path, nv).then(() => res({ committed: true, snapshot: snap(nv, path) }), rej); }; run(); }); }
     };
   }
