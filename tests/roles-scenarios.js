@@ -33,7 +33,7 @@ const ME = { uid: 'u1', name: 'سارة أحمد', member: 1001, ts: 1, code: 'A
     R.visitor.lock = !!lock; ok('قفل المدرب في نافذة الدخول', !!lock);
     R.visitor.lockOpacity = +(await p.$eval('.trainer-lock', e => getComputedStyle(e).opacity)); ok('القفل باهت', R.visitor.lockOpacity < 0.5);
     await p.focus('.modal [data-act="guest"]'); await p.keyboard.press('Tab'); await p.waitForTimeout(300);
-    R.visitor.lockFocusOpacity = +(await p.$eval('.trainer-lock', e => getComputedStyle(e).opacity)); ok('القفل واضح عند التركيز', R.visitor.lockFocusOpacity > 0.9);
+    R.visitor.lockFocused = await p.evaluate(() => document.activeElement && document.activeElement.classList.contains('trainer-lock')); await p.waitForFunction(() => +getComputedStyle(document.querySelector('.trainer-lock')).opacity > 0.9, null, { timeout: 2000 }).catch(() => {}); R.visitor.lockFocusOpacity = +(await p.$eval('.trainer-lock', e => getComputedStyle(e).opacity)); ok('القفل واضح عند التركيز', R.visitor.lockFocusOpacity > 0.9);
     R.visitor.noGear = !(await p.$('.topbar [data-act="admin-enter"]')); ok('لا ترس في الشريط العلوي', R.visitor.noGear);
     // تصفح كزائر
     await p.click('.modal [data-act="guest"]'); await p.waitForTimeout(400);
