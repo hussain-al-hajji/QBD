@@ -66,7 +66,7 @@ function iconSvg(name, size = 22, color = 'currentColor', sw = 2) {
 
 // ---------------------------------------------------------------------
 // أيقونات الواجهة بدل الإيموجي: كل إيموجي معروف في الواجهة (أو رمز :name:) يُستبدل عند العرض
-// بأيقونة خطية من ICONS بلون النص المحيط، فتنسجم مع مكانها ومع الوضع الداكن.
+// بأيقونة خطية من ICONS بلون النص المحيط، فتنسجم مع مكانها.
 // للتخصيص حسب المشروع: عدّل ICONS أو EMOJI_ICON أدناه، أو اختر الأيقونة من لوحة الإدارة.
 // ---------------------------------------------------------------------
 Object.assign(ICONS, {
@@ -100,8 +100,6 @@ Object.assign(ICONS, {
   hourglass: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22"/><path d="M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4A2 2 0 0 0 17 6.2V2"/>',
   wifiOff: '<path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M2 8.8a15 15 0 0 1 4.2-2.6"/><path d="M10.7 5c4-.4 8.1.9 11.3 3.8"/><path d="M16.9 11.3a10 10 0 0 1 2.2 1.7"/><path d="M5 13a10 10 0 0 1 5.2-2.8"/><path d="m2 2 20 20"/>',
   mapPin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>',
-  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
   wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/>',
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
@@ -144,7 +142,7 @@ const EMOJI_ICON = {
   '📤': 'share', '⛶': 'maximize', '⭐': 'star', '🌟': 'star', '★': 'star', '🚀': 'rocket', '🏅': 'medal', '🎓': 'gradCap', '🎉': 'party', '📄': 'file', '📃': 'file',
   '🟢': 'dot', '✨': 'sparkles', '🧪': 'flask', '📚': 'books', '🔗': 'link', '📖': 'bookOpen', '📘': 'bookOpen', '👍': 'thumbsUp', '🎯': 'target', '🪟': 'appWindow',
   '👁': 'eye', '👀': 'eye', '📈': 'trendUp', '📥': 'download', '📋': 'clipboard', '⚡': 'bolt', '🗺': 'map', '🧰': 'briefcase', '📌': 'pin', '🤝': 'handshake',
-  '🌐': 'globe', '🌍': 'globe', '⏳': 'hourglass', '📡': 'wifiOff', '📍': 'mapPin', '📣': 'megaphone', '☀': 'sun', '🌙': 'moon', '🖥': 'monitor', '🛠': 'wrench',
+  '🌐': 'globe', '🌍': 'globe', '⏳': 'hourglass', '📡': 'wifiOff', '📍': 'mapPin', '📣': 'megaphone', '🖥': 'monitor', '🛠': 'wrench',
   '📷': 'camera', '📸': 'camera', '⚠': 'alert', '🧠': 'brain', '🔎': 'search', '🔍': 'search', '📊': 'barChart', '🧩': 'blocks', '🔁': 'loop', '🛤': 'route', '🎤': 'mic',
   '🧮': 'calculator', '🏆': 'trophy', '💳': 'card', '📦': 'box', '❌': 'xCircle', '⚖': 'scale', '↩': 'undo', '💖': 'heart', '❤': 'heart', '🏗': 'building', '🛍': 'bag',
   '🛒': 'cart', '🎞': 'film', '🏪': 'store', '🚚': 'truck', '⚙': 'gear', '🙈': 'eyeOff', '🧹': 'eraser', '🧬': 'copy', '📑': 'files', '🔑': 'key', '🔄': 'refresh',

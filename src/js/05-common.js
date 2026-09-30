@@ -96,23 +96,20 @@ const Layout = {
 
 // ---------- تفضيلات العرض لسهولة الوصول (تُحفظ على جهاز المستخدم فقط) ----------
 const Prefs = {
-  get() { try { return Object.assign({ theme: 'auto', fs: 'md', contrast: 'normal', motion: 'normal' }, JSON.parse(SafeLS.get('ec_prefs') || '{}')); } catch (e) { return { theme: 'auto', fs: 'md', contrast: 'normal', motion: 'normal' }; } },
+  get() { try { const p = Object.assign({ fs: 'md', contrast: 'normal', motion: 'normal' }, JSON.parse(SafeLS.get('ec_prefs') || '{}')); delete p.theme; return p; } catch (e) { return { fs: 'md', contrast: 'normal', motion: 'normal' }; } }, // المظهر الفاتح وحده: أي قيمة theme قديمة تُهمل
   set(k, v) { const p = Prefs.get(); p[k] = v; SafeLS.set('ec_prefs', JSON.stringify(p)); Prefs.apply(); },
   apply() {
-    const p = Prefs.get(); const r = document.documentElement; let dark = p.theme === 'dark';
-    if (p.theme === 'auto') { try { dark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) {} }
-    r.setAttribute('data-theme', dark ? 'dark' : 'light'); r.setAttribute('data-fs', p.fs); r.setAttribute('data-contrast', p.contrast);
+    const p = Prefs.get(); const r = document.documentElement;
+    r.setAttribute('data-fs', p.fs); r.setAttribute('data-contrast', p.contrast);
     let red = p.motion === 'reduce'; if (p.motion === 'normal') { try { red = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} } r.setAttribute('data-motion', red ? 'reduce' : 'normal');
-    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', dark ? '#11141C' : '#8A1538');
   },
   menu() {
     const seg = (k, opts) => { const v = Prefs.get()[k]; return '<div class="sim-seg">' + opts.map(([val, l]) => '<label class="' + (v === val ? 'on' : '') + '" data-pref="' + k + '" data-v="' + val + '">' + l + '</label>').join('') + '</div>'; };
-    const body = () => '<h3>Aa إعدادات العرض</h3><div class="prefs-grid"><div><b>المظهر</b><br>' + seg('theme', [['light', '☀️ فاتح'], ['dark', '🌙 داكن'], ['auto', '🖥 حسب الجهاز']]) + '</div><div><b>حجم الخط</b><br>' + seg('fs', [['sm', 'صغير'], ['md', 'عادي'], ['lg', 'كبير'], ['xl', 'كبير جدًا']]) + '</div><div><b>التباين</b><br>' + seg('contrast', [['normal', 'عادي'], ['high', 'عالٍ']]) + '</div><div><b>الحركة</b><br>' + seg('motion', [['normal', 'عادية'], ['reduce', 'مخففة']]) + '</div></div><p class="muted" style="font-size:12.5px;margin-top:12px">تُحفظ هذه الإعدادات على هذا الجهاز فقط.</p><div class="actions"><button class="btn btn-primary" data-x>تم</button></div>';
+    const body = () => '<h3>Aa إعدادات العرض</h3><div class="prefs-grid"><div><b>حجم الخط</b><br>' + seg('fs', [['sm', 'صغير'], ['md', 'عادي'], ['lg', 'كبير'], ['xl', 'كبير جدًا']]) + '</div><div><b>التباين</b><br>' + seg('contrast', [['normal', 'عادي'], ['high', 'عالٍ']]) + '</div><div><b>الحركة</b><br>' + seg('motion', [['normal', 'عادية'], ['reduce', 'مخففة']]) + '</div></div><p class="muted" style="font-size:12.5px;margin-top:12px">تُحفظ هذه الإعدادات على هذا الجهاز فقط.</p><div class="actions"><button class="btn btn-primary" data-x>تم</button></div>';
     const m = UI.modal(body()); const wire = () => { $$('[data-pref]', m.el).forEach(l => l.onclick = () => { Prefs.set(l.getAttribute('data-pref'), l.getAttribute('data-v')); m.el.innerHTML = body(); wire(); }); $('[data-x]', m.el).onclick = () => m.close(); }; wire();
   }
 };
 Prefs.apply();
-try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => Prefs.apply()); } catch (e) {}
 
 // ---------- الترجمة الآلية (Google Translate) — تُحمَّل عند الطلب فقط ----------
 // المحتوى الأصلي عربي بالكامل؛ الزر يترجم الصفحة الحالية وكل ما يُرسم لاحقًا، و«العربية» تعيدها كما كانت.

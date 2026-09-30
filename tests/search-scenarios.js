@@ -17,8 +17,8 @@ const fails = []; const ok = (k, v) => { if (!v) fails.push(k); return v; };
     await ctx.route(/firebase-app-compat\.js/, r => r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
     await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
     await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
-    await p.addInitScript(([d, r, me, dark]) => { window.__MOCKCFG = { data: d, rules: r, delayFirst: 80 }; window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };
-      localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); if (dark) localStorage.setItem('qbd:ec_prefs', JSON.stringify({ theme: 'dark' })); }, [SEED, RULES, ME, !!o.dark]);
+    await p.addInitScript(([d, r, me]) => { window.__MOCKCFG = { data: d, rules: r, delayFirst: 80 }; window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };
+      localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); }, [SEED, RULES, ME]);
     await p.goto(U + '#/home'); await p.waitForTimeout(900); return { ctx, p, net, errs };
   }
   const { ctx, p, net, errs } = await open();
@@ -75,10 +75,10 @@ const fails = []; const ok = (k, v) => { if (!v) fails.push(k); return v; };
   R.click = await p.evaluate(() => Router.cur.view); ok('النقر يفتح', R.click === 'ex' || R.click === 'axis');
   ok('المحور المعطّل لا يظهر في النتائج', R.clickNone === 0);
   R.errs = errs; R.realNet = net.real; await ctx.close();
-  // داكن وجوال
-  for (const o of [{}, { dark: true }, { w: 375 }, { w: 375, dark: true }]) {
+  // جوال
+  for (const o of [{}, { w: 375 }]) {
     const d = await open(o); await d.p.fill('#homeSearch', 'الدفع'); await d.p.waitForTimeout(200);
-    const k = (o.dark ? 'dark' : 'light') + (o.w ? '_mobile' : '');
+    const k = 'light' + (o.w ? '_mobile' : '');
     R[k] = await d.p.evaluate(() => { const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(m[0]) + .7152 * f(m[1]) + .0722 * f(m[2]); };
       const bgOf = el => { while (el) { const b = getComputedStyle(el).backgroundColor; if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; el = el.parentElement; } return 'rgb(255,255,255)'; };
       const cr = el => { const a = lum(getComputedStyle(el).color), b = lum(bgOf(el)); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); };

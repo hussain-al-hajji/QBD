@@ -1,4 +1,4 @@
-// فحص تباين آلي للوضع الداكن (أو الفاتح: node tests/contrast-scenarios.js light) على شاشات المنصة كلها
+// فحص تباين آلي على شاشات المنصة كلها (المظهر الفاتح هو الوحيد)
 // لكل عنصر نصي ظاهر: لون النص مقابل الخلفية الفعلية (بدمج شفافية الأسلاف والتدرجات) بعد إنهاء الحركات.
 // الحد: 4.5، و3 للنص الكبير (24px، أو 18.66px عريض). تدرجات النص (background-clip:text) تُفحص بأضعف لون فيها.
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
@@ -6,7 +6,6 @@ const fs = require('fs'); const path = require('path');
 const MOCK = fs.readFileSync(path.join(__dirname, 'fbmock.js'), 'utf8');
 const RULES = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'database.rules.json'), 'utf8'));
 const U = 'file://' + path.resolve(__dirname, '..', 'index.html');
-const THEME = process.argv[2] || 'dark';
 const ME = { uid: 'u1', name: 'سارة أحمد', member: 1001, ts: 1, group: 1, code: 'ABCDEF' };
 const SEED = { admins: { adm1: true }, users: { u1: { name: 'سارة أحمد', member: 1001, ts: 1, group: 1, gkey: 'g1' }, u2: { name: 'علي حسن', member: 1002, ts: 1 } }, secrets: { u1: 'ABCDEF' },
   settings: { attendance: { enabled: true, cert: true } }, reveal: { a1e1: true, a1e2: true, a1e4: true, a2e3: true, a1e5: true, a3e5: true, a1e3: true },
@@ -20,7 +19,7 @@ const SEED = { admins: { adm1: true }, users: { u1: { name: 'سارة أحمد',
     await c.route(/firebaseio\.com|identitytoolkit|securetoken|fonts\.|cdnjs|translate\.google/, r => r.abort());
     await c.route(/firebase-app-compat\.js/, r => r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
     await c.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
-    await p.addInitScript(([d, rules, me, admin, theme]) => { window.__MOCKCFG = { data: d, rules, delayFirst: 50, googleUser: admin ? { uid: 'adm1', email: 't@x' } : null }; window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' }; localStorage.setItem('qbd:ec_prefs', JSON.stringify({ theme })); localStorage.setItem('qbd:ec_inv_seen', 'i1'); if (me) { localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [SEED, RULES, me, admin, THEME]);
+    await p.addInitScript(([d, rules, me, admin]) => { window.__MOCKCFG = { data: d, rules, delayFirst: 50, googleUser: admin ? { uid: 'adm1', email: 't@x' } : null }; window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };  localStorage.setItem('qbd:ec_inv_seen', 'i1'); if (me) { localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [SEED, RULES, me, admin]);
     await p.goto(U); await p.waitForTimeout(900);
     if (admin) { await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(200); await p.click('[data-google]'); await p.waitForTimeout(900); }
     return { c, p, errs };
@@ -87,6 +86,6 @@ const SEED = { admins: { adm1: true }, users: { u1: { name: 'سارة أحمد',
   // ---------- جوال ----------
   ({ c, p, errs } = await ctx(ME, false, 375)); for (const [v, id] of [['home'], ['ex', 'a5e5'], ['ex', 'a1e5'], ['account']]) { await go(p, v, id); await check(p, 'mobile:' + v + (id ? ':' + id : '')); } allErrs.push(...errs); await c.close();
   const list = Object.values(hits).sort((a, b) => a.cr - b.cr);
-  console.log(JSON.stringify({ theme: THEME, checked, failures: list.length, list: list.map(x => x.cr + ' (<' + x.need + ') | ' + x.sel + ' | ' + x.txt + ' | ' + x.fg + ' | ' + x.where.join(', ')), errs: allErrs }, null, 1));
+  console.log(JSON.stringify({ checked, failures: list.length, list: list.map(x => x.cr + ' (<' + x.need + ') | ' + x.sel + ' | ' + x.txt + ' | ' + x.fg + ' | ' + x.where.join(', ')), errs: allErrs }, null, 1));
   await b.close(); process.exit(list.length || allErrs.length ? 1 : 0);
 })();
