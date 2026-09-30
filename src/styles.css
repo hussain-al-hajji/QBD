@@ -32,6 +32,8 @@ h1,h2,h3,h4{font-family:var(--f-display);margin:0;line-height:1.35;color:var(--i
 p{margin:0 0 .5em}
 p:last-child{margin-bottom:0}
 button,input,select,textarea{font-family:var(--f-ui);font-size:15px}
+/* حقول الإدخال وخيارات الأسئلة بخط المحتوى */
+input,select,textarea,.opt,.cmp-opt,.cls-t{font-family:var(--f-body)}
 button{cursor:pointer;border:none;background:none;color:inherit}
 a{color:var(--brand)}
 ul,ol{margin:.3em 0;padding-inline-start:1.3em}
@@ -41,7 +43,7 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .center{text-align:center}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1}
-.num{font-feature-settings:"tnum";direction:ltr;unicode-bidi:isolate}
+.num{font-feature-settings:"tnum";font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
 
 /* ---------- Buttons ---------- */
 .btn{font-family:var(--f-ui);font-weight:600;font-size:15px;padding:11px 20px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s,box-shadow .15s,background .15s,opacity .15s;white-space:nowrap;line-height:1.3;text-decoration:none}
@@ -393,7 +395,7 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .home-search{margin:18px 0 6px;position:relative}
 .hs-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:4px 12px;box-shadow:var(--shadow-sm,0 2px 8px rgba(0,0,0,.04));color:var(--ink-3)}
 .hs-box:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(138,21,56,.12)}
-.hs-box input{flex:1;min-width:0;border:0!important;background:none!important;box-shadow:none!important;outline:none;font-family:var(--f-ui);font-size:15.5px;padding:10px 0;color:var(--ink)}
+.hs-box input{flex:1;min-width:0;border:0!important;background:none!important;box-shadow:none!important;outline:none;font-size:15.5px;padding:10px 0;color:var(--ink)}
 .hs-box input::-webkit-search-cancel-button{display:none}
 .hs-clear{border:0;background:var(--surface-2);color:var(--ink-2);width:28px;height:28px;border-radius:50%;cursor:pointer;flex:none}
 .search-results:not(:empty){margin-top:8px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px;display:flex;flex-direction:column;gap:8px}
@@ -1528,3 +1530,28 @@ html[data-theme="dark"] .slide-visual.has-photo{background:transparent}
 .deck.fixed .vis-photo .sk-split{grid-template-columns:minmax(0,1.55fr) minmax(0,.75fr)}
 .deck.fixed .has-photo .slide-photo:not(:only-child){max-height:calc(var(--vh-max,56vh) * .5)}
 .deck.fixed .vis-photo .sk-nums{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))}
+
+/* ---------- الوضع الداكن: إصلاحات التباين (من الفحص الآلي tests/contrast-scenarios.js) — لا تمس الوضع الفاتح ---------- */
+html[data-theme="dark"]{--grad-dark:linear-gradient(120deg,#1F3A5F 0%,#8A1538 45%,#0E6545 100%);--grad-text:linear-gradient(120deg,#A9C8F5 0%,#FF9DBA 50%,#86E3B8 100%)}
+/* أزرار أساسية: نص أبيض على تدرج أغمق */
+html[data-theme="dark"] .btn-primary{background:var(--grad-dark)}
+/* تدرجات النص (عنوان الهيرو والأرقام الكبيرة) بتدرج فاتح */
+html[data-theme="dark"] .hero h1,html[data-theme="dark"] .big-pct{background:var(--grad-text);-webkit-background-clip:text;background-clip:text}
+html[data-theme="dark"] .sk-num b,html[data-theme="dark"] .sk-fw-name,html[data-theme="dark"] .lp-obj-n{background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#E0668A) 42%,#fff),color-mix(in srgb,var(--acd,var(--ac,#E0668A)) 38%,#fff));-webkit-background-clip:text;background-clip:text}
+/* نصوص بلون المحور تُفتَّح */
+html[data-theme="dark"] .sim-big,html[data-theme="dark"] .gauge b,html[data-theme="dark"] .kpi-grid b{color:color-mix(in srgb,var(--ac,#E0668A) 45%,#fff)}
+/* شارات وأزرار ملونة بنص أبيض: خلفية أغمق */
+html[data-theme="dark"] .sim-seg label.on,html[data-theme="dark"] .group-btn.on,html[data-theme="dark"] .cls-opt.sel{background:color-mix(in srgb,var(--ac,#8A1538) 68%,#000)}
+html[data-theme="dark"] .slide-type,html[data-theme="dark"] .sk-face.back,html[data-theme="dark"] .sk-ask{background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#8A1538) 68%,#000),color-mix(in srgb,var(--acd,var(--ac,#8A1538)) 62%,#000))}
+html[data-theme="dark"] .axis-hero{background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#8A1538) 66%,#000),color-mix(in srgb,var(--ac,#8A1538) 40%,#000))!important}
+html[data-theme="dark"] .slide thead th,html[data-theme="dark"] .deck thead th,html[data-theme="dark"] .chart-table thead th{background:color-mix(in srgb,var(--ac,#8A1538) 66%,#000)!important;color:#fff!important}
+html[data-theme="dark"] .hn-item.active .hn-count,html[data-theme="dark"] .att-table th{background:#A8345A}
+/* الأخضر والأحمر (عوامل المحاكيات والشارات) */
+html[data-theme="dark"] .sim-factors li.up span,html[data-theme="dark"] .ok-pill,html[data-theme="dark"] .ok-pill *,html[data-theme="dark"] .sim-checks li.ok b,html[data-theme="dark"] .mx-total .best{color:#7FE0B0!important}
+html[data-theme="dark"] .sim-factors li.down span,html[data-theme="dark"] .del-btn,html[data-theme="dark"] .mx-total .bad{color:#FF8A8F}
+html[data-theme="dark"] .del-btn:hover{background:#3B1C22}
+html[data-theme="dark"] .tag.fmt{background:rgba(224,102,138,.16);color:#FFB3C8}
+/* نصوص ثانوية داخل معاينات الجوال الفاتحة، والحلقات */
+html[data-theme="dark"] .lst-meta{color:#5B6478}
+html[data-theme="dark"] .sk-chk-ring small{color:var(--ink-2);background:var(--surface);border-radius:4px}
+html[data-theme="dark"] .sk-chk-ring b{background:var(--surface);border-radius:6px}
