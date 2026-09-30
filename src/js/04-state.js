@@ -178,7 +178,7 @@ const Assess = {
   isOpen(ph) { return Assess.cfg()[ph] === 'open'; },
   rec(ph, uid) { return ((Store.assess || {})[ph] || {})[uid] || null; },
   score(answers) { const A = Content.assess(); const a = ansList(answers, A.items.length); return A.items.reduce((n, it, i) => n + (a[i] != null && +a[i] === +it.answer ? 1 : 0), 0); },
-  list(ph) { const o = (Store.assess || {})[ph] || {}; return Object.keys(o).filter(u => o[u] && o[u].done).map(u => Object.assign({ uid: u }, o[u], { score: Assess.score(o[u].answers) })); },
+  list(ph) { const o = (Store.assess || {})[ph] || {}; return Object.keys(o).filter(u => u !== ADMIN_ID && o[u] && o[u].done).map(u => Object.assign({ uid: u }, o[u], { score: Assess.score(o[u].answers) })); },
   avg(ph) { const l = Assess.list(ph); const n = Content.assess().items.length || 1; return l.length ? l.reduce((s, x) => s + x.score, 0) / l.length / n * 100 : null; },
   perQuestion(ph) { const A = Content.assess(); const l = Assess.list(ph); return A.items.map((it, i) => { const ans = l.filter(x => { const a = ansList(x.answers, A.items.length); return a[i] != null; }); const ok = ans.filter(x => +ansList(x.answers, A.items.length)[i] === +it.answer).length; return l.length ? Math.round(ok / l.length * 100) : null; }); }
 };
@@ -290,10 +290,14 @@ const Me = {
     Router.syncHash();
   },
   setGuest() { Me.data = null; Me.guest = true; SafeLS.set('ec_guest', '1'); SafeSS.set('ec_guest', '1'); },
-  uid() { return Me.data ? Me.data.uid : null; },
-  isReg() { return !!(Me.data && Me.data.uid); },
-  group() { return Me.data && Me.data.group ? +Me.data.group : null; },
-  setGroup(n) { if (!Me.data) return; Me.data.group = n; Me.save(Me.data); DB.update('users/' + Me.data.uid, { group: n, gkey: 'g' + n }); }
+  // عند دخول المدرب تحلّ هوية «الإدارة» محل هوية المتدرب المحفوظة على الجهاز (وتعود هي بعد خروجه)
+  uid() { return Admin.ok() ? ADMIN_ID : (Me.data ? Me.data.uid : null); },
+  isReg() { return !Admin.ok() && !!(Me.data && Me.data.uid); },
+  // من يستطيع المشاركة في التمارين: المتدرب المسجل والمدرب (والزائر لا)
+  canPost() { return Admin.ok() || Me.isReg(); },
+  actor() { return Admin.ok() ? { uid: ADMIN_ID, name: ADMIN_NAME, role: '' } : Me.data; },
+  group() { return !Admin.ok() && Me.data && Me.data.group ? +Me.data.group : null; },
+  setGroup(n) { if (!Me.data || Admin.ok()) return; Me.data.group = n; Me.save(Me.data); DB.update('users/' + Me.data.uid, { group: n, gkey: 'g' + n }); }
 };
 
 // ---------- الإنجاز والأوسمة ----------
@@ -329,6 +333,6 @@ const Likes = {
   },
   btn(path, likesObj) {
     const l = Likes.count(path, likesObj); const n = Object.keys(l).length; const mine = Me.uid() && l[Me.uid()];
-    return '<button class="like-btn ' + (mine ? 'on' : '') + '" data-like="' + h(path) + '" ' + (Me.isReg() ? '' : 'disabled title="للمسجلين فقط"') + '>👍 <span class="num">' + n + '</span></button>';
+    return '<button class="like-btn ' + (mine ? 'on' : '') + '" data-like="' + h(path) + '" ' + (Me.canPost() ? '' : 'disabled title="للمسجلين فقط"') + '>👍 <span class="num">' + n + '</span></button>';
   }
 };

@@ -53,7 +53,7 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
   }
   { // 2) دخول المدرب
     const { ctx, p, net } = await open(b);
-    await p.click('[data-act="admin-enter"]'); await p.waitForTimeout(300);
+    await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(300);
     R.login = { emailForm: !!(await p.$('#alEmail')), noPasscodePrompt: !(await p.$('.modal [data-in][type="password"]:not(#alPass)')) };
     R.login.googleBtn = !!(await p.$('[data-google]')); await p.click('.al-email summary');
     await p.fill('#alEmail', 'trainer@qdb.test'); await p.fill('#alPass', 'wrong'); await p.click('.modal [data-ok]'); await p.waitForTimeout(300);
@@ -61,7 +61,7 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
     await p.fill('#alEmail', 'someone@qdb.test'); await p.fill('#alPass', 'pw123456'); await p.click('.modal [data-ok]'); await p.waitForTimeout(400);
     R.login.notAdminMsg = (await p.$eval('#alErr', e => e.textContent)).slice(0, 60); R.login.notAdminInAdmin = await p.evaluate(() => Admin.ok());
     await p.fill('#alEmail', 'trainer@qdb.test'); await p.fill('#alPass', 'Secret#123'); await p.click('.modal [data-ok]'); await p.waitForTimeout(700);
-    R.login.adminView = await p.evaluate(() => Router.cur.view === 'admin' && Admin.ok());
+    R.login.adminHomeFirst = await p.evaluate(() => Router.cur.view === 'home' && Admin.ok() && !!document.querySelector('.topbar [data-act="admin-panel"]'));
     R.adminCan = { hideSection: await tryW(p, "() => DB.set('visibility/home_tools', false)"), editSite: await tryW(p, "() => DB.set('site/home/heroTitle', 'عنوان جديد')"), backup: await tryW(p, "() => autoBackup(true)") };
     R.adminCan.serverHidden = (await S(p, 'visibility/home_tools')) === false;
     await p.click('[data-act="admin-exit"]'); await p.waitForTimeout(400);
@@ -70,11 +70,11 @@ const tryW = (p, fnSrc) => p.evaluate(async src => { try { await (new Function('
   }
   { // 3) Google: حساب مدرب وحساب غير مدرب
     let r = await open(b, '', { googleUser: { uid: 'adm1', email: 'trainer@gmail.com' } });
-    await r.p.click('[data-act="admin-enter"]'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);
+    await r.p.evaluate(() => LoginModal.open()); await r.p.click('.trainer-lock'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);
     R.appCheckActivatedWith = await r.p.evaluate(() => window.__mock.appCheck);
-    R.google = { adminView: await r.p.evaluate(() => Router.cur.view === 'admin' && Admin.ok()), canHide: await tryW(r.p, "() => DB.set('visibility/home_x', false)") }; await r.ctx.close();
+    R.google = { adminHomeFirst: await r.p.evaluate(() => Router.cur.view === 'home' && Admin.ok() && !!document.querySelector('.topbar [data-act="admin-panel"]')), canHide: await tryW(r.p, "() => DB.set('visibility/home_x', false)") }; await r.ctx.close();
     r = await open(b, '', { googleUser: { uid: 'g777', email: 'stranger@gmail.com' } });
-    await r.p.click('[data-act="admin-enter"]'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);
+    await r.p.evaluate(() => LoginModal.open()); await r.p.click('.trainer-lock'); await r.p.waitForTimeout(300); await r.p.click('[data-google]'); await r.p.waitForTimeout(600);
     R.google.strangerMsg = (await r.p.$eval('#alErr', e => e.textContent)).replace(/\s+/g, ' ').slice(0, 140); R.google.strangerAdmin = await r.p.evaluate(() => Admin.ok()); await r.ctx.close();
   }
   console.log(JSON.stringify(R, null, 1)); await b.close();

@@ -32,8 +32,8 @@ const base = att => ({ admins: { adm1: true }, users: { u1: { name: 'سارة أ
   await trainee('traineeDefaultOff', {});
   { // المدرب يبدّل المفاتيح
     const { ctx, p, net, errs } = await open(base({ enabled: true, cert: true }), { googleUser: { uid: 'adm1', email: 't@x' } });
-    await p.click('[data-act="admin-enter"]'); await p.waitForTimeout(300); await p.click('[data-google]'); await p.waitForTimeout(900);
-    await p.evaluate(() => { UIState.adminGrp = [...document.querySelectorAll('[data-tool="attend"]')].length ? UIState.adminGrp : UIState.adminGrp; });
+    await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(300); await p.click('[data-google]'); await p.waitForTimeout(900);
+    await p.click('.topbar [data-act="admin-panel"]'); await p.waitForTimeout(300);
     const grp = await p.evaluate(() => { for (const g of ['g_users', 'g_sponsor', 'g_export', 'g_home']) { UIState.adminGrp = g; App.render(); if (document.querySelector('[data-tool="attend"]')) return g; } return null; });
     const A = { group: grp, switches: await p.$$eval('.feat-sw', e => e.map(x => x.getAttribute('data-f') + ':' + x.classList.contains('on'))) };
     await p.click('.feat-sw[data-f="cert"]'); await p.waitForTimeout(400);

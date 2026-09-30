@@ -96,7 +96,7 @@ const Points = {
     const users = Store.users || {}; const P = {}; Object.keys(users).forEach(u => { P[u] = { uid: u, pts: 0, ex: 0, likes: 0, first: 0, att: 0, as: 0 }; });
     const exs = Content.allExercises().map(x => x.e).filter(Boolean);
     exs.forEach(e => { const ps = Store.posts[e.id] || {}; let firstK = null, firstTs = Infinity;
-      Object.keys(ps).forEach(k => { const p = ps[k]; if (!p) return; const who = e.mode === 'group' ? Object.keys(p.members || {}) : [k]; const lk = Object.keys(p.likes || {}).length;
+      Object.keys(ps).forEach(k => { const p = ps[k]; if (!p || k === ADMIN_ID) return; const who = e.mode === 'group' ? Object.keys(p.members || {}) : [k]; const lk = Object.keys(p.likes || {}).length;
         who.forEach(u => { if (!P[u]) return; P[u].ex++; P[u].pts += e.format === 'sim' ? 15 : 10; P[u].likes += lk; P[u].pts += lk * 2; });
         if ((p.ts || Infinity) < firstTs && e.mode !== 'group') { firstTs = p.ts; firstK = k; } });
       if (firstK && P[firstK]) { P[firstK].first++; P[firstK].pts += 5; } });

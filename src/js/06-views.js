@@ -136,7 +136,7 @@ Views.assess = {
       return out;
     }
     if (!Assess.isOpen(ph) && !Admin.ctl()) return out + '<div class="empty" style="margin-top:16px">🔒 ' + lbl + ' غير متاح الآن — سيفتحه المدرّب ' + (ph === 'pre' ? 'قبل بدء التدريب' : 'بعد انتهاء التدريب') + '.</div>';
-    if (!Me.isReg()) return out + '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
+    if (!Me.canPost()) return out + '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
     const key = 'as_' + ph; let d = UIState.draft[key]; if (!d) { d = A.items.map(() => null); UIState.draft[key] = d; }
     out += '<div class="answer-box"><div class="status-note" style="margin-bottom:6px">أجب عن كل الأسئلة ثم اضغط «إرسال». يمكنك تغيير اختيارك قبل الإرسال فقط، ولا تظهر النتائج إلا بعد أن يكشفها المدرّب.</div>' +
       seededOrder(n, Me.uid() + ph).map((i, pos) => { const it = A.items[i]; return '<div class="q-card"><div class="qt"><span class="qn num">' + (pos + 1) + '</span><span>' + h(it.q) + '</span></div><div class="opts">' + seededOrder(it.options.length, Me.uid() + ph + i).map((k, kp) => { const o = it.options[k]; const sel = d[i] !== null && +d[i] === k; return '<button class="opt ' + (sel ? 'sel' : '') + '" data-act="as-pick" data-ph="' + ph + '" data-i="' + i + '" data-v="' + k + '"><span class="mk">' + (sel ? '✓' : '') + '</span><span><b>' + LETTERS[kp] + ')</b> ' + h(o) + '</span></button>'; }).join('') + '</div></div>'; }).join('') +
@@ -323,7 +323,8 @@ const DEFAULT_STEPS = {
   text: ['اقرأ الموقف جيدًا.', 'اكتب إجابتك في الصندوق.', 'اضغط «حفظ» وتابع مشاركات زملائك مباشرة.']
 };
 function exColor(e) { const ax = Content.axisOfEx(e.id); const a = ax && Content.axis(ax); return a ? Content.color(a) : (e.kind === 'survey' ? '#C8702A' : '#C8702A'); }
-function postKey(e) { if (e.mode === 'group') { const g = Me.group(); return g ? 'g' + g : null; } return Me.uid(); }
+function postKey(e) { if (Admin.ok()) return ADMIN_ID; // المدرب يشارك دائمًا بمفتاح «الإدارة» ولا يمس إجابات المجموعات
+  if (e.mode === 'group') { const g = Me.group(); return g ? 'g' + g : null; } return Me.uid(); }
 function isRevealed(e) { return !!(Store.reveal && Store.reveal[e.id]); }
 function bankOf(e) { // بنك كلمات بترتيب ثابت مخلوط حسب معرّف التمرين
   const words = e.items.map(i => i.answer); let s = 0; for (const ch of e.id) s = (s * 33 + ch.charCodeAt(0)) % 100003;
@@ -332,6 +333,7 @@ function bankOf(e) { // بنك كلمات بترتيب ثابت مخلوط حس�
 const LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'];
 
 function groupPickerHtml(e, o = {}) {
+  if (Admin.ok()) return '<div class="group-picker admin-note"><div class="ex-block-lbl" style="font-family:var(--f-display);font-weight:700">🛡️ تشارك باسم «الإدارة»</div><div class="muted" style="font-family:var(--f-ui);font-size:13px">المدرب لا يختار مجموعة ولا ينضم إليها؛ إجابتك تُحفظ باسم «الإدارة» منفصلة عن إجابات المجموعات ولا تغيّر شيئًا فيها.</div></div>';
   const my = Me.group(); const assigned = Me.uid() ? Groups.assignedOf(Me.uid()) : null;
   let out = '<div class="group-picker"><div class="ex-block-lbl" style="font-family:var(--f-display);font-weight:700">👥 اختر مجموعتك</div>' + (o.note ? '<div class="muted" style="font-family:var(--f-ui);font-size:13px">' + o.note + '</div>' : '');
   if (assigned) out += '<div class="assign-hint">📌 عيّنك المدرّب في <b>' + h(Groups.label(assigned)) + '</b> — اختر مجموعتك المخصّصة لتجنّب الخطأ.</div>';
@@ -372,15 +374,15 @@ function mcqStats(e) {
 }
 function mcqPollHtml(e) {
   const reveal = isRevealed(e); const st = mcqStats(e);
-  const mine = Me.isReg() ? ansList(((Store.posts[e.id] || {})[Me.uid()] || {}).answers, e.items.length) : [];
+  const mine = Me.canPost() ? ansList(((Store.posts[e.id] || {})[Me.uid()] || {}).answers, e.items.length) : [];
   return e.items.map((it, i) => {
     const my = mine[i]; const answered = my !== null && my !== undefined && my !== '';
-    const showPct = answered || !Me.isReg() || Admin.ctl();
+    const showPct = answered || !Me.canPost() || Admin.ctl();
     return '<div class="q-card"><div class="qt"><span class="qn num">' + (i + 1) + '</span><span>' + h(it.q) + '</span></div><div class="opts">' +
       it.options.map((o, k) => {
         const sel = answered && +my === k; const c = st[i].counts[k]; const pct = st[i].total ? Math.round(c / st[i].total * 100) : 0;
         let cls = sel ? 'sel' : ''; if (reveal) { if (k === +it.answer) cls = 'right'; else if (sel) cls = 'wrong'; }
-        return '<button class="opt poll ' + cls + '" data-act="vote" data-ex="' + h(e.id) + '" data-i="' + i + '" data-v="' + k + '" ' + (Me.isReg() ? '' : 'disabled') + '>' +
+        return '<button class="opt poll ' + cls + '" data-act="vote" data-ex="' + h(e.id) + '" data-i="' + i + '" data-v="' + k + '" ' + (Me.canPost() ? '' : 'disabled') + '>' +
           (showPct ? '<span class="poll-bar" style="width:' + pct + '%"></span>' : '') +
           '<span class="mk">' + (sel ? '✓' : '') + '</span><span class="grow"><b>' + LETTERS[k] + ')</b> ' + h(o) + '</span>' +
           (showPct ? '<span class="poll-pct num">' + pct + '%</span>' : '') + '</button>';
@@ -425,8 +427,8 @@ function interactiveHtml(e, post, canAct, editing) {
 
 function answerBoxHtml(e) {
   const col = exColor(e);
-  if (e.format === 'mcq') return '<div class="answer-box" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + (Me.isReg() ? '<div class="status-note" style="margin-bottom:4px">👆 اضغط أي خيار لحفظ إجابتك فورًا، ويمكنك تغييرها في أي وقت.</div>' : '<div class="locked-note">🔒 للمسجلين فقط — يمكنك مشاهدة نتائج التصويت دون المشاركة.</div>') + mcqPollHtml(e) + '</div>';
-  if (!Me.isReg()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط — صناديق الإجابة معطّلة في وضع التصفح كزائر.</div>' + (e.format !== 'text' ? '<div class="disabled-area">' + interactiveHtml(e, null, false, false) + '</div>' : '<textarea disabled placeholder="🔒 للمسجلين فقط"></textarea>') + '</div>';
+  if (e.format === 'mcq') return '<div class="answer-box" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + (Me.canPost() ? '<div class="status-note" style="margin-bottom:4px">👆 اضغط أي خيار لحفظ إجابتك فورًا، ويمكنك تغييرها في أي وقت.</div>' : '<div class="locked-note">🔒 للمسجلين فقط — يمكنك مشاهدة نتائج التصويت دون المشاركة.</div>') + mcqPollHtml(e) + '</div>';
+  if (!Me.canPost()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط — صناديق الإجابة معطّلة في وضع التصفح كزائر.</div>' + (e.format !== 'text' ? '<div class="disabled-area">' + interactiveHtml(e, null, false, false) + '</div>' : '<textarea disabled placeholder="🔒 للمسجلين فقط"></textarea>') + '</div>';
   const isGroup = e.mode === 'group'; const key = postKey(e);
   if (isGroup && !key) {
     return '<div class="answer-box">' + (e.format !== 'text' ? '<div class="locked-note">👆 اختر مجموعتك أولًا لتتمكن من الإجابة — الأسئلة معروضة للاطلاع.</div><div class="disabled-area">' + interactiveHtml(e, null, false, false) + '</div>' : '<div class="locked-note">👆 اختر مجموعتك أولًا لتتمكن من كتابة إجابة المجموعة.</div>') + '</div>';
@@ -445,15 +447,16 @@ function answerBoxHtml(e) {
 function feedHtml(e) {
   if (e.format === 'mcq') return ''; // نتائج التصويت تظهر داخل الخيارات نفسها
   const ps = Store.posts[e.id] || {}; const keys = Object.keys(ps).filter(k => ps[k]).sort((x, y) => (ps[y].ts || 0) - (ps[x].ts || 0));
-  const reveal = isRevealed(e); const myKey = Me.isReg() ? postKey(e) : null;
+  const reveal = isRevealed(e); const myKey = Me.canPost() ? postKey(e) : null;
   const del = k => Admin.ctl() ? '<button class="del-btn" data-act="del-post" data-ex="' + h(e.id) + '" data-k="' + h(k) + '" title="حذف هذه المشاركة">🗑 حذف</button>' : '';
   if (e.format !== 'text' && e.mode === 'group') {
-    const gkeys = keys.slice().sort((x, y) => (+x.slice(1)) - (+y.slice(1)));
+    // إجابة المدرب (المفتاح admin) تُعرض باسم «الإدارة» أولًا ومنفصلة عن المجموعات
+    const gkeys = keys.filter(k => k !== ADMIN_ID).sort((x, y) => (+x.slice(1)) - (+y.slice(1))); if (ps[ADMIN_ID]) gkeys.unshift(ADMIN_ID);
     return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>إجابات المجموعات</h3><span class="pill num">' + gkeys.length + '</span>' + (reveal ? '<span class="pill" style="background:#E6F7EE;color:#10573A">🔓 الإجابات مكشوفة</span>' : '') + '</div>' +
-      (gkeys.length ? '<div class="group-answers">' + gkeys.map(k => '<div class="ga-card ' + (k === myKey ? 'mine' : '') + '"><h4>' + (k === myKey ? '⭐ ' : '') + h(Groups.label(+k.slice(1))) + '<span class="grow"></span>' + del(k) + '</h4>' + answersSummary(e, ps[k].answers, reveal) + '<div class="post-foot" style="margin-top:6px"><span class="muted" style="font-family:var(--f-ui);font-size:12px">آخر حفظ: ' + h(ps[k].name || '') + ' · ' + ago(ps[k].ts || 0) + '</span>' + Likes.btn('posts/' + e.id + '/' + k, ps[k].likes) + '</div></div>').join('') + '</div>' : '<div class="empty">لم ترسل أي مجموعة إجاباتها بعد.</div>') + '</div>';
+      (gkeys.length ? '<div class="group-answers">' + gkeys.map(k => '<div class="ga-card ' + (k === myKey ? 'mine' : '') + '"><h4>' + (k === myKey ? '⭐ ' : '') + h(k === ADMIN_ID ? '🛡️ ' + ADMIN_NAME : Groups.label(+k.slice(1))) + '<span class="grow"></span>' + del(k) + '</h4>' + answersSummary(e, ps[k].answers, reveal) + '<div class="post-foot" style="margin-top:6px"><span class="muted" style="font-family:var(--f-ui);font-size:12px">آخر حفظ: ' + h(ps[k].name || '') + ' · ' + ago(ps[k].ts || 0) + '</span>' + Likes.btn('posts/' + e.id + '/' + k, ps[k].likes) + '</div></div>').join('') + '</div>' : '<div class="empty">لم ترسل أي مجموعة إجاباتها بعد.</div>') + '</div>';
   }
   return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>مشاركات الجميع مباشرة</h3><span class="pill num">' + keys.length + '</span>' + (reveal && e.format !== 'text' ? '<span class="pill" style="background:#E6F7EE;color:#10573A">🔓 الإجابات مكشوفة</span>' : '') + '</div>' +
-    (keys.length ? '<div class="posts">' + keys.map(k => { const p = ps[k]; const isG = k.charAt(0) === 'g' && e.mode === 'group'; const who = isG ? Groups.label(+k.slice(1)) : (p.name || 'مشارك'); const sub = isG ? 'كتبها: ' + (p.name || '') : (p.role || '');
+    (keys.length ? '<div class="posts">' + keys.map(k => { const p = ps[k]; const isG = k.charAt(0) === 'g' && e.mode === 'group'; const who = k === ADMIN_ID ? ADMIN_NAME : isG ? Groups.label(+k.slice(1)) : (p.name || 'مشارك'); const sub = isG ? 'كتبها: ' + (p.name || '') : (p.role || '');
       return '<div class="post ' + (k === myKey ? 'mine' : '') + '"><div class="post-head"><span class="av">' + h(isG ? '👥' : initials(who)) + '</span><div><div class="who">' + h(who) + '</div><div class="role">' + h(sub) + ' · ' + ago(p.ts || 0) + '</div></div></div>' +
         (e.format === 'text' ? '<div class="post-body">' + h(p.text || '') + '</div>' : '<div>' + answersSummary(e, p.answers, reveal) + '</div>') +
         '<div class="post-foot">' + Likes.btn('posts/' + e.id + '/' + k, p.likes) + del(k) + '</div></div>'; }).join('') + '</div>' : '<div class="empty">لا توجد مشاركات بعد — كن أول المشاركين ✨</div>') + '</div>';
@@ -502,7 +505,7 @@ Views.ex = {
 // ============ تقييم البرنامج (نجوم + توصية + رأي) ============
 function starsHtml(v, attrs, dis) { return '<span class="stars">' + [1, 2, 3, 4, 5].map(n => '<button class="star ' + (v >= n ? 'on' : '') + '" ' + attrs + ' data-v="' + n + '" ' + dis + ' title="' + n + '">★</button>').join('') + '</span>'; }
 function surveyFormHtml(e) {
-  if (!Me.isReg()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
+  if (!Me.canPost()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
   const post = (Store.posts[e.id] || {})[Me.uid()]; const editing = !!UIState.editing[e.id];
   if (post && !editing) return '<div class="answer-box"><div class="row" style="margin-bottom:8px"><b style="font-family:var(--f-display)">✅ شكرًا لتقييمك</b><span class="grow"></span><button class="btn btn-soft btn-sm" data-act="edit-ans" data-ex="' + h(e.id) + '">✏️ تعديل</button></div>' +
     e.rates.map((r, i) => '<div class="rate-row"><span>' + h(r) + '</span>' + starsHtml(+((post.ratings || {})[i]) || 0, '', 'disabled') + '</div>').join('') + (post.nps != null ? '<div class="rate-row"><span>التوصية</span><b class="num">' + post.nps + ' / 10</b></div>' : '') + (post.text ? '<div class="answer-view" style="margin-top:8px">' + h(post.text) + '</div>' : '') + '</div>';
@@ -545,7 +548,8 @@ Views.lab = {
     return L.stages.map((s, i) => {
       const openAt = i * Content.lab().minutes * 60000; const open = started && el >= openAt; const a = ans['s' + i]; const ek = 'lab' + i;
       let body = '';
-      if (!Me.isReg()) body = '<div class="locked-note">🔒 للمسجلين فقط</div>';
+      if (Admin.ok()) body = '<div class="lock-note">🛡️ المختبر نشاط للمجموعات؛ تتابع مخرجاتها أدناه.</div>';
+      else if (!Me.isReg()) body = '<div class="locked-note">🔒 للمسجلين فقط</div>';
       else if (!g) body = '<div class="lock-note">👆 اختر مجموعتك أولًا</div>';
       else if (!started) body = '<div class="lock-note">🔒 تُتاح بعد الضغط على «ابدأ الوقت»' + (i ? ' ومرور ' + (i * Content.lab().minutes) + ' دقيقة' : '') + '</div>';
       else if (!open) body = '<div class="lock-note" data-lock-at="' + openAt + '">🔒 باقي <span class="num">' + mmss(openAt - el) + '</span> على إتاحتها</div>';

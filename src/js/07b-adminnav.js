@@ -3,7 +3,7 @@
 // ونقل أي أداة من عنوان إلى آخر بالسحب (أو بقائمة «نقل إلى» على الجوال) — تُحفظ في site/adminNav
 // ---------------------------------------------------------------------
 const ADMIN_BLOCKS = {
-  users: { icon: '👥', title: 'المسجّلون' }, groups: { icon: '🧩', title: 'إدارة المجموعات' }, preview: { icon: '👀', title: 'معاينة كمتدرب' },
+  users: { icon: '👥', title: 'المسجّلون' }, groups: { icon: '🧩', title: 'إدارة المجموعات' },
   congrats: { icon: '🏆', title: 'تهنئة الإنجاز' }, regform: { icon: '📝', title: 'نموذج التسجيل والخصوصية' }, attend: { icon: '📍', title: 'الحضور وشهادة المشاركة' },
   assess: { icon: '📋', title: 'التقييم القبلي والبعدي' }, broadcast: { icon: '📣', title: 'بث رسالة مباشرة' },
   monitor: { icon: '👁', title: 'رابط متابعة للمشرف' }, leads: { icon: '🤝', title: 'المهتمون ببرامج البنك' }, followup: { icon: '📈', title: 'المتابعة بعد البرنامج' },
@@ -17,7 +17,7 @@ const ADMIN_BLOCKS = {
   acts: { icon: '⚡', title: 'قسم «أنشطة»', wide: true }, survey: { icon: '🎓', title: 'ختام البرنامج (الاستطلاع)', wide: true }, lab: { icon: '🧪', title: 'المختبر الختامي', wide: true }
 };
 const ADMIN_GROUPS_DEF = [
-  { id: 'g_users', icon: '👥', title: 'إدارة المسجلين', blocks: ['users', 'groups', 'preview', 'congrats', 'regform', 'attend', 'assess', 'broadcast'] },
+  { id: 'g_users', icon: '👥', title: 'إدارة المسجلين', blocks: ['users', 'groups', 'congrats', 'regform', 'attend', 'assess', 'broadcast'] },
   { id: 'g_sponsor', icon: '🤝', title: 'الجهة الراعية والدفعات', blocks: ['monitor', 'leads', 'followup', 'gamify', 'tplTool', 'cohorts'] },
   { id: 'g_export', icon: '📤', title: 'التصدير والنسخ', blocks: ['pdf', 'guide', 'report', 'csv', 'person', 'backup', 'autobk', 'reset'] },
   { id: 'g_home', icon: '🏠', title: 'واجهة الصفحة الرئيسية', blocks: ['homeUi', 'landing', 'homeSecs'] },
@@ -61,7 +61,7 @@ Views.admin.shell = function (blocks) {
       (cur.blocks.length ? cur.blocks.map(b => '<div class="adm-card" draggable="true" data-adm-blk="' + b + '"><span class="drag-handle">⠿</span><span class="adm-ico">' + ADMIN_BLOCKS[b].icon + '</span><b class="grow">' + h(AdminNav.blockTitle(b)) + '</b><select data-adm-to="' + b + '" aria-label="نقل إلى"><option value="">نقل إلى…</option>' + gs.filter(g => g.id !== cur.id).map(g => '<option value="' + h(g.id) + '">' + h(g.icon + ' ' + g.title) + '</option>').join('') + '</select></div>').join('') : '<div class="empty">لا توجد أدوات تحت هذا العنوان — اسحب إليه أدوات من عناوين أخرى.</div>') + '</div>';
   } else {
     let grid = []; const flush = () => { if (grid.length) { pane += '<div class="tools-grid">' + grid.join('') + '</div>'; grid = []; } };
-    cur.blocks.forEach(b => { const html = blocks[b] || ''; if (ADMIN_BLOCKS[b].wide) { flush(); pane += '<div class="adm-wide" data-blk="' + b + '">' + html + '</div>'; } else grid.push(html); });
+    cur.blocks.filter(b => ADMIN_BLOCKS[b]).forEach(b => { const html = blocks[b] || ''; if (ADMIN_BLOCKS[b].wide) { flush(); pane += '<div class="adm-wide" data-blk="' + b + '">' + html + '</div>'; } else grid.push(html); });
     flush();
     if (!cur.blocks.length) pane += '<div class="empty">لا توجد أدوات تحت هذا العنوان. اضغط «✏️ تخصيص» لنقل أدوات إليه.</div>';
   }

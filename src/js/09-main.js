@@ -20,8 +20,7 @@ const App = {
     if (App.onLanding && !App._wasLanding) { Views.landing._played = false; Views.landing._seen = new Set(); Views.landing._counted = false; } App._wasLanding = App.onLanding;
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">المنصة التعليمية</button></div>'; }
-    const html = (v === 'present' && view === Views.present) || (v === 'show' && view === Views.show) ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
-      (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
+    const html = (v === 'present' && view === Views.present) || (v === 'show' && view === Views.show) ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer();
     // صفحة الهبوط: لا نعيد رسمها إن لم يتغير شيء حتى لا تتكرر الحركات مع كل تحديث للبيانات
     if (App.onLanding && html === App._lastLanding && root.firstChild) return;
     App._lastLanding = App.onLanding ? html : null;
@@ -172,8 +171,8 @@ async function saveText(exId) {
   const e = Content.ex(exId); const ta = $('#ans-' + CSS.escape(exId)); const text = ta ? ta.value.trim() : '';
   if (!text) { UI.alert('اكتب إجابتك أولًا.'); return; }
   const key = postKey(e); if (!key) return;
-  const me = Me.data; const upd = { text, name: me.name, role: me.role || '', ts: DB.now() };
-  if (e.mode === 'group') { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid;
+  const me = Me.actor(); const upd = { text, name: me.name, role: me.role || '', ts: DB.now() };
+  if (e.mode === 'group' && !Admin.ok()) { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid; // المدرب: بلا مجموعة ولا أعضاء
   await DB.update('posts/' + exId + '/' + key, upd);
   if (ta) ta.value = ''; UIState.editing[exId] = false; UI.toast('✅ تم الحفظ'); App.render();
 }
@@ -181,9 +180,9 @@ async function saveInter(exId) {
   const e = Content.ex(exId); const d = UIState.draft[exId] || [];
   const missing = e.items.some((_, i) => d[i] === null || d[i] === undefined || d[i] === '');
   if (missing) { UI.alert(e.format === 'fillblank' ? 'املأ كل الفراغات قبل الإرسال.' : 'أجب عن كل الأسئلة قبل الحفظ.'); return; }
-  const key = postKey(e); if (!key) return; const me = Me.data;
+  const key = postKey(e); if (!key) return; const me = Me.actor();
   const upd = { answers: e.items.map((_, i) => d[i]), name: me.name, role: me.role || '', ts: DB.now() };
-  if (e.mode === 'group') { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid;
+  if (e.mode === 'group' && !Admin.ok()) { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid; // المدرب: بلا مجموعة ولا أعضاء
   await DB.update('posts/' + exId + '/' + key, upd);
   UIState.editing[exId] = false; UIState.draft[exId] = upd.answers.slice(); UI.toast(e.mode === 'group' ? '📤 أُرسلت إجابات المجموعة' : '✅ تم حفظ إجاباتك'); App.render();
 }
@@ -258,22 +257,26 @@ document.addEventListener('click', async ev => {
   const root = document.getElementById('app');
   switch (act) {
     // ----- عام -----
-    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، وستعود إلى الصفحة التعريفية للبرنامج لتسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تسجيل مستخدم جديد' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; syncWatchers(); Router.go('home'); window.scrollTo(0, 0); } break; }
+    case 'switch-user': case 'user-logout': { const ok = await UI.confirm('تسجيل الخروج من هذا الجهاز؟ لن يُحذف أي شيء من بياناتك، وللعودة ستحتاج رقم عضويتك ورمز الدخول.', { ok: 'تسجيل الخروج', title: 'تسجيل الخروج' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; syncWatchers(); Router.go('home'); window.scrollTo(0, 0); } break; }
     case 'open-login': LoginModal.open(); break;
+    // الزائر: «تسجيل دخول» يعيده إلى صفحة الدخول
+    case 'guest-login': Me.guest = false; SafeLS.del('ec_guest'); SafeSS.del('ec_guest'); Router.go('home'); window.scrollTo(0, 0); setTimeout(() => LoginModal.open(), 50); break;
+    case 'admin-panel': Router.go('admin'); window.scrollTo(0, 0); break;
     case 'icon-pick': IconPick.open(t); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
     case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
     case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
+    // قفل «دخول المدرب» أسفل نافذة الدخول
     case 'admin-enter': {
-      if (Admin.ok()) { SafeSS.del('ec_preview'); Router.go('admin'); break; }
+      LoginModal.close();
+      if (Admin.ok()) { Router.go('home'); break; }
       if (AUTH.enabled) { adminLogin(); break; }
-      const v = await UI.prompt('أدخل الرمز السري للوحة الإدارة', { title: '🔐 لوحة الإدارة', type: 'password', inputmode: 'numeric', ok: 'دخول' });
-      if (v == null) break; if (v.trim() === ADMIN_PASS) { SafeSS.set('ec_admin', '1'); SafeSS.del('ec_preview'); Router.go('admin'); } else UI.alert('الرمز غير صحيح.');
+      const v = await UI.prompt('أدخل الرمز السري للوحة الإدارة', { title: '🔐 دخول المدرب', type: 'password', inputmode: 'numeric', ok: 'دخول' });
+      if (v == null) break; if (v.trim() === ADMIN_PASS) { SafeSS.set('ec_admin', '1'); Router.go('home'); window.scrollTo(0, 0); } else UI.alert('الرمز غير صحيح.');
       break;
     }
-    case 'admin-exit': SafeSS.del('ec_admin'); SafeSS.del('ec_preview'); if (AUTH.enabled) { AUTH.isAdmin = false; try { await firebase.auth().signOut(); } catch (e) {} } Router.go('home'); break;
-    case 'preview': SafeSS.set('ec_preview', '1'); Router.go('home'); break;
-    case 'preview-exit': SafeSS.del('ec_preview'); Router.go('admin'); break;
+    // خروج المدرب: تعود هوية المتدرب المحفوظة على الجهاز (إن وُجدت)
+    case 'admin-exit': SafeSS.del('ec_admin'); if (AUTH.enabled) { AUTH.isAdmin = false; try { await firebase.auth().signOut(); } catch (e) {} } Router.go('home'); window.scrollTo(0, 0); break;
     case 'bc-close': SafeLS.set('ec_bc_closed', t.getAttribute('data-id')); App.render(); break;
     case 'register': doRegister(); break;
     case 'member-login': memberLogin(); break;
@@ -291,7 +294,7 @@ document.addEventListener('click', async ev => {
       App.render(); break;
     }
     case 'vote': { // حفظ فوري لكل سؤال على حدة، والتعديل بالضغط على خيار آخر
-      if (!Me.isReg()) break; const me = Me.data; const i = t.getAttribute('data-i');
+      if (!Me.canPost()) break; const me = Me.actor(); const i = t.getAttribute('data-i');
       DB.update('posts/' + exId + '/' + me.uid, { ['answers/' + i]: +t.getAttribute('data-v'), name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() });
       break;
     }
@@ -303,7 +306,7 @@ document.addEventListener('click', async ev => {
       const e = Content.ex(exId); const d = UIState.draft.sv || { ratings: {} };
       if (e.rates.some((_, i) => !d.ratings[i])) { UI.alert('قيّم كل البنود بالنجوم قبل الإرسال.'); break; }
       if (e.nps && d.nps == null) { UI.alert('اختر درجة التوصية من 0 إلى 10.'); break; }
-      const me = Me.data; await DB.set('posts/' + exId + '/' + me.uid, Object.assign({}, (Store.posts[exId] || {})[me.uid] || {}, { ratings: d.ratings, nps: d.nps, text: ($('#svText') || {}).value ? $('#svText').value.trim() : '', name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() }));
+      const me = Me.actor(); await DB.set('posts/' + exId + '/' + me.uid, Object.assign({}, (Store.posts[exId] || {})[me.uid] || {}, { ratings: d.ratings, nps: d.nps, text: ($('#svText') || {}).value ? $('#svText').value.trim() : '', name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() }));
       UIState.editing[exId] = false; delete UIState.draft.sv; UI.toast('✅ شكرًا لتقييمك'); App.render(); break;
     }
     case 'sim-step': { const e = Content.ex(exId); Sims.state(e).step = +t.getAttribute('data-i'); App.render(); break; }
@@ -365,7 +368,7 @@ document.addEventListener('click', async ev => {
       if (!Assess.isOpen(ph)) { UI.alert('التقييم مغلق الآن.'); break; }
       if (A.items.some((_, i) => d[i] === null || d[i] === undefined)) { UI.alert('أجب عن كل الأسئلة قبل الإرسال.'); break; }
       if (!(await UI.confirm('إرسال إجاباتك نهائيًا؟ لا يمكن تعديلها بعد الإرسال.', { ok: 'إرسال' }))) break;
-      const me = Me.data; await DB.set('assess/' + ph + '/' + me.uid, { answers: A.items.map((_, i) => d[i]), name: me.name, role: me.role || '', ts: DB.now(), done: true });
+      const me = Me.actor(); await DB.set('assess/' + ph + '/' + me.uid, { answers: A.items.map((_, i) => d[i]), name: me.name, role: me.role || '', ts: DB.now(), done: true });
       UI.toast('✅ تم إرسال ' + (ph === 'pre' ? 'التقييم القبلي' : 'التقييم البعدي')); App.render(); break;
     }
     // ----- لوحة الأدمن -----
@@ -626,7 +629,7 @@ function authInit() {
     if (SafeSS.get('ec_admin_redirect')) { SafeSS.del('ec_admin_redirect'); if (!ok && u && !u.isAnonymous) { UI.alert('الحساب ' + h(u.email || '') + ' غير مضاف إلى حسابات المدربين. أضف هذا الرقم في العقدة admins بقيمة true:<br><b class="num" dir="ltr" style="user-select:all">' + h(u.uid) + '</b>'); firebase.auth().signOut(); return; } }
     syncWatchers(); await ensureOwnership();
     if (ok) setTimeout(migrateSchema, 1500);
-    if (ok && SafeSS.get('ec_go_admin')) { SafeSS.del('ec_go_admin'); Router.go('admin'); return; }
+    if (ok && SafeSS.get('ec_go_admin')) { SafeSS.del('ec_go_admin'); LoginModal.close(); Router.go('home'); return; }
     App.render();
   });
 }
@@ -680,7 +683,7 @@ function adminLogin() {
   const finish = async user => {
     const ok = (await DB.get('admins/' + user.uid)) === true;
     if (!ok) { await firebase.auth().signOut(); err('الحساب ' + h(user.email || '') + ' غير مضاف إلى حسابات المدربين (العقدة admins في قاعدة البيانات).<br>انسخ هذا الرقم وأضفه هناك بقيمة true:<br><span class="num" dir="ltr" style="user-select:all;font-weight:700">' + h(user.uid) + '</span>'); return false; }
-    AUTH.user = user; AUTH.isAdmin = true; m.close(); SafeSS.del('ec_preview'); syncWatchers(); setTimeout(migrateSchema, 1500); Router.go('admin'); return true;
+    AUTH.user = user; AUTH.isAdmin = true; m.close(); LoginModal.close(); syncWatchers(); setTimeout(migrateSchema, 1500); Router.go('home'); window.scrollTo(0, 0); UI.toast('🛡️ دخلت بحساب الإدارة — «لوحة التحكم» في الشريط العلوي'); return true;
   };
   $('[data-google]', m.el).onclick = async () => {
     const btn = $('[data-google]', m.el); btn.disabled = true; err('');

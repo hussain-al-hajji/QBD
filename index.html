@@ -410,6 +410,13 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .login-form h1{font-size:26px;font-weight:800;margin-bottom:6px}
 .or-line{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-family:var(--f-ui);font-size:13px;margin:14px 0}
 .or-line::before,.or-line::after{content:"";height:1px;background:var(--line);flex:1}
+/* قفل دخول المدرب: باهت أسفل نافذة الدخول، يتضح عند المرور/التركيز */
+.trainer-lock-row{display:flex;justify-content:center;margin-top:14px}
+.trainer-lock{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;color:var(--ink-3);opacity:.28;transition:opacity .2s,border-color .2s}
+.trainer-lock:hover,.trainer-lock:focus-visible{opacity:1;border-color:var(--line);color:var(--ink)}
+.icon-btn .aa{font-family:var(--f-ui);font-size:14px;font-weight:800}
+.top-panel{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:560px){.top-panel .lbl{display:none}}
 @media (max-width:820px){.login{grid-template-columns:1fr}.login-art{max-height:260px;overflow:hidden}}
 
 /* ---------- Footer ---------- */
@@ -1499,6 +1506,8 @@ const FORCE_DEMO = (function () { try { return /[?&]demo=1/.test(location.search
 // فلا انتقال للتخزين المحلي أبدًا — حتى لو تعذر تحميل مكتبة Firebase أو تأخر الاتصال (يُعرض تنبيه وإعادة محاولة).
 const DEMO_MODE = FORCE_DEMO || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('PASTE') !== -1;
 
+// هوية المدرب داخل المنصة: في الذاكرة فقط (لا تُحفظ في التخزين المحلي ولا في users) — مشاركاته تُكتب بهذا المفتاح
+const ADMIN_ID = 'admin', ADMIN_NAME = 'الإدارة';
 const ADMIN_PASS = '3719'; // يُستخدم فقط في وضع المعاينة أو قبل تفعيل Firebase Authentication (عند غياب apiKey)
 const BADGE_THRESHOLD = 0.8;          // 80% لفتح الوسام وتهنئة الإنجاز
 const CONGRATS_DAYS_DEFAULT = 3;      // مدة بقاء التهنئة بعد انتهاء البرنامج
@@ -1770,7 +1779,10 @@ const ICONS = {
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
   award: '<circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 8 5-3 5 3-1.5-8"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
-  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  login: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/>',
+  languages: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>'
 };
 const AXIS_ICON_CHOICES = ['store','truck','box','wallet','globe','clipboard','calendar','award','grid','eye','route','alert','megaphone','target','gauge','layers','file','compass','card','shield','check','chart','radar','loop','sparkles','cart','phone','bag','bolt','users','bulb','trophy','rocket','heart','star'];
 AXIS_ICON_CHOICES.splice(0, AXIS_ICON_CHOICES.length, ...new Set(AXIS_ICON_CHOICES.filter(k => ICONS[k])));
@@ -2642,7 +2654,7 @@ const Assess = {
   isOpen(ph) { return Assess.cfg()[ph] === 'open'; },
   rec(ph, uid) { return ((Store.assess || {})[ph] || {})[uid] || null; },
   score(answers) { const A = Content.assess(); const a = ansList(answers, A.items.length); return A.items.reduce((n, it, i) => n + (a[i] != null && +a[i] === +it.answer ? 1 : 0), 0); },
-  list(ph) { const o = (Store.assess || {})[ph] || {}; return Object.keys(o).filter(u => o[u] && o[u].done).map(u => Object.assign({ uid: u }, o[u], { score: Assess.score(o[u].answers) })); },
+  list(ph) { const o = (Store.assess || {})[ph] || {}; return Object.keys(o).filter(u => u !== ADMIN_ID && o[u] && o[u].done).map(u => Object.assign({ uid: u }, o[u], { score: Assess.score(o[u].answers) })); },
   avg(ph) { const l = Assess.list(ph); const n = Content.assess().items.length || 1; return l.length ? l.reduce((s, x) => s + x.score, 0) / l.length / n * 100 : null; },
   perQuestion(ph) { const A = Content.assess(); const l = Assess.list(ph); return A.items.map((it, i) => { const ans = l.filter(x => { const a = ansList(x.answers, A.items.length); return a[i] != null; }); const ok = ans.filter(x => +ansList(x.answers, A.items.length)[i] === +it.answer).length; return l.length ? Math.round(ok / l.length * 100) : null; }); }
 };
@@ -2754,10 +2766,14 @@ const Me = {
     Router.syncHash();
   },
   setGuest() { Me.data = null; Me.guest = true; SafeLS.set('ec_guest', '1'); SafeSS.set('ec_guest', '1'); },
-  uid() { return Me.data ? Me.data.uid : null; },
-  isReg() { return !!(Me.data && Me.data.uid); },
-  group() { return Me.data && Me.data.group ? +Me.data.group : null; },
-  setGroup(n) { if (!Me.data) return; Me.data.group = n; Me.save(Me.data); DB.update('users/' + Me.data.uid, { group: n, gkey: 'g' + n }); }
+  // عند دخول المدرب تحلّ هوية «الإدارة» محل هوية المتدرب المحفوظة على الجهاز (وتعود هي بعد خروجه)
+  uid() { return Admin.ok() ? ADMIN_ID : (Me.data ? Me.data.uid : null); },
+  isReg() { return !Admin.ok() && !!(Me.data && Me.data.uid); },
+  // من يستطيع المشاركة في التمارين: المتدرب المسجل والمدرب (والزائر لا)
+  canPost() { return Admin.ok() || Me.isReg(); },
+  actor() { return Admin.ok() ? { uid: ADMIN_ID, name: ADMIN_NAME, role: '' } : Me.data; },
+  group() { return !Admin.ok() && Me.data && Me.data.group ? +Me.data.group : null; },
+  setGroup(n) { if (!Me.data || Admin.ok()) return; Me.data.group = n; Me.save(Me.data); DB.update('users/' + Me.data.uid, { group: n, gkey: 'g' + n }); }
 };
 
 // ---------- الإنجاز والأوسمة ----------
@@ -2793,7 +2809,7 @@ const Likes = {
   },
   btn(path, likesObj) {
     const l = Likes.count(path, likesObj); const n = Object.keys(l).length; const mine = Me.uid() && l[Me.uid()];
-    return '<button class="like-btn ' + (mine ? 'on' : '') + '" data-like="' + h(path) + '" ' + (Me.isReg() ? '' : 'disabled title="للمسجلين فقط"') + '>👍 <span class="num">' + n + '</span></button>';
+    return '<button class="like-btn ' + (mine ? 'on' : '') + '" data-like="' + h(path) + '" ' + (Me.canPost() ? '' : 'disabled title="للمسجلين فقط"') + '>👍 <span class="num">' + n + '</span></button>';
   }
 };
 
@@ -2875,8 +2891,8 @@ const UIState = { deck: {}, openAcc: new Set(), openDrop: new Set(), draft: {}, 
 const AUTH = { enabled: false, resolved: true, user: null, isAdmin: false };
 const Admin = {
   ok() { return AUTH.enabled ? AUTH.isAdmin : SafeSS.get('ec_admin') === '1'; },
-  preview() { return SafeSS.get('ec_preview') === '1'; },
-  ctl() { return Admin.ok() && !Admin.preview(); }
+  // أُلغي وضع «المعاينة كمتدرب»: المدرب يتصفح المنصة بحسابه ويشارك باسم «الإدارة»
+  ctl() { return Admin.ok(); }
 };
 
 const Router = {
@@ -2912,19 +2928,20 @@ window.addEventListener('popstate', e => { Router.cur = (e.state && e.state.view
 // ---------- الهيكل العام ----------
 const Layout = {
   topbar() {
-    const s = Content.site(); const me = Me.data;
+    const s = Content.site(); const admin = Admin.ok(), me = Me.isReg() ? Me.data : null;
+    // الأدوات المشتركة: ترجمة + إعدادات العرض (أيقونات بلا نص)
+    const tools = Translate.button() + '<button class="icon-btn notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض"><b class="aa">Aa</b></button>';
+    const out = act => '<button class="icon-btn" data-act="' + act + '" title="تسجيل الخروج" aria-label="تسجيل الخروج">' + iconSvg('logout', 18) + '</button>';
+    const enter = App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '';
+    let acts;
+    if (admin) acts = enter + '<button class="btn btn-primary btn-sm top-panel" data-act="admin-panel" title="لوحة التحكم">' + iconSvg('grid', 16, 'currentColor') + '<span class="lbl">لوحة التحكم</span></button>' + tools + out('admin-exit');
+    else if (me) acts = enter + '<button class="user-chip" data-go="account" title="حسابي — ' + h(me.name) + '"><span class="av">' + iconSvg('user', 16, '#fff') + '</span><span class="uc-txt"><span class="nm">' + h(String(me.name || '').trim().split(/\s+/)[0]) + '</span><span class="uc-sub">حسابي</span></span></button>' + tools + out('user-logout');
+    else if (Me.guest) acts = tools + '<button class="btn btn-primary btn-sm" data-act="guest-login" title="تسجيل الدخول">' + iconSvg('login', 16, 'currentColor') + '<span>تسجيل دخول</span></button>';
+    else acts = tools;
     return '<header class="topbar"><div class="wrap">' +
       // الشعار يقود دائمًا إلى الصفحة التعريفية؛ العنوان الكامل يظهر فيها فقط، وفي بقية الصفحات كلمة «الواجهة»
       '<div class="brand' + (App.onLanding ? '' : ' brand-min') + '" data-go="landing" title="الصفحة التعريفية بالبرنامج" role="link" tabindex="0"><div class="brand-logo">' + iconSvg('store', 22, '#fff', 2.2) + '</div><div class="brand-text">' + (App.onLanding ? '<div class="brand-title" id="brandTitle">' + h(s.headerTitle) + '</div><div class="brand-sub">' + h(s.headerSub) + '</div>' : '<div class="brand-title brand-short">الواجهة</div>') + '</div></div>' +
-      '<div class="top-actions">' +
-      (me ? '<button class="user-chip" data-go="account" title="حسابي — ' + h(me.name) + '"><span class="av">' + iconSvg('user', 16, '#fff') + '</span><span class="uc-txt"><span class="nm">' + h(String(me.name || '').trim().split(/\s+/)[0]) + '</span><span class="uc-sub">حسابي</span></span></button>' : (Me.guest ? '<span class="pill">👀 زائر</span>' : '')) +
-      (!me && !Me.guest ? (!App.onLanding ? '' : '<button class="btn btn-primary btn-sm top-cta" data-act="open-login"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">الدخول</span> <span class="lp-arrow">←</span></button>') :
-        (App.onLanding ? '<button class="btn btn-primary btn-sm top-cta" data-act="lp-enter"><span class="cta-l">الدخول للمنصة التعليمية</span><span class="cta-s">المنصة</span> <span class="lp-arrow">←</span></button>' : '') +
-        '<button class="btn btn-ghost btn-sm" data-act="switch-user" title="تسجيل مستخدم جديد (يعيدك إلى الصفحة التعريفية)">' + iconSvg('users', 16) + '<span class="lbl">مستخدم جديد</span></button>') +
-      '<button class="btn btn-ghost btn-sm notranslate" translate="no" data-act="prefs" title="إعدادات العرض: الوضع الليلي وحجم الخط والتباين" aria-label="إعدادات العرض">Aa</button>' +
-      Translate.button() +
-      '<button class="icon-btn" data-act="admin-enter" title="لوحة الإدارة">' + iconSvg('gear', 18) + '</button>' +
-      '</div></div></header>';
+      '<div class="top-actions">' + acts + '</div></div></header>';
   },
   banners() {
     let out = '';
@@ -2987,7 +3004,8 @@ try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change
 const Translate = {
   LANGS: [['en', 'English'], ['fr', 'Français'], ['ur', 'اردو'], ['hi', 'हिन्दी'], ['tl', 'Filipino'], ['ml', 'മലയാളം'], ['es', 'Español'], ['tr', 'Türkçe']],
   cur() { const m = (Cookie.get('googtrans') || '').match(/^\/ar\/([a-zA-Z-]+)$/); return m ? m[1] : 'ar'; },
-  button() { const c = Translate.cur(); return '<button class="btn btn-ghost btn-sm notranslate" translate="no" data-act="translate" title="ترجمة آلية للمحتوى عبر Google Translate">🌐<span class="lbl">' + (c === 'ar' ? 'ترجمة' : 'العربية') + '</span></button>'; },
+  // أيقونة بلا نص؛ الاسم في التلميح ولقارئ الشاشة
+  button() { const c = Translate.cur(), t = c === 'ar' ? 'ترجمة آلية للمحتوى عبر Google Translate' : 'العودة إلى العربية'; return '<button class="icon-btn notranslate" translate="no" data-act="translate" title="' + t + '" aria-label="' + t + '">' + iconSvg('languages', 18) + '</button>'; },
   load() {
     if (Translate._loaded) return; Translate._loaded = true;
     if (!document.getElementById('gt_el')) { const d = document.createElement('div'); d.id = 'gt_el'; d.style.display = 'none'; document.body.appendChild(d); }
@@ -3440,7 +3458,7 @@ Views.assess = {
       return out;
     }
     if (!Assess.isOpen(ph) && !Admin.ctl()) return out + '<div class="empty" style="margin-top:16px">🔒 ' + lbl + ' غير متاح الآن — سيفتحه المدرّب ' + (ph === 'pre' ? 'قبل بدء التدريب' : 'بعد انتهاء التدريب') + '.</div>';
-    if (!Me.isReg()) return out + '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
+    if (!Me.canPost()) return out + '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
     const key = 'as_' + ph; let d = UIState.draft[key]; if (!d) { d = A.items.map(() => null); UIState.draft[key] = d; }
     out += '<div class="answer-box"><div class="status-note" style="margin-bottom:6px">أجب عن كل الأسئلة ثم اضغط «إرسال». يمكنك تغيير اختيارك قبل الإرسال فقط، ولا تظهر النتائج إلا بعد أن يكشفها المدرّب.</div>' +
       seededOrder(n, Me.uid() + ph).map((i, pos) => { const it = A.items[i]; return '<div class="q-card"><div class="qt"><span class="qn num">' + (pos + 1) + '</span><span>' + h(it.q) + '</span></div><div class="opts">' + seededOrder(it.options.length, Me.uid() + ph + i).map((k, kp) => { const o = it.options[k]; const sel = d[i] !== null && +d[i] === k; return '<button class="opt ' + (sel ? 'sel' : '') + '" data-act="as-pick" data-ph="' + ph + '" data-i="' + i + '" data-v="' + k + '"><span class="mk">' + (sel ? '✓' : '') + '</span><span><b>' + LETTERS[kp] + ')</b> ' + h(o) + '</span></button>'; }).join('') + '</div></div>'; }).join('') +
@@ -3627,7 +3645,8 @@ const DEFAULT_STEPS = {
   text: ['اقرأ الموقف جيدًا.', 'اكتب إجابتك في الصندوق.', 'اضغط «حفظ» وتابع مشاركات زملائك مباشرة.']
 };
 function exColor(e) { const ax = Content.axisOfEx(e.id); const a = ax && Content.axis(ax); return a ? Content.color(a) : (e.kind === 'survey' ? '#C8702A' : '#C8702A'); }
-function postKey(e) { if (e.mode === 'group') { const g = Me.group(); return g ? 'g' + g : null; } return Me.uid(); }
+function postKey(e) { if (Admin.ok()) return ADMIN_ID; // المدرب يشارك دائمًا بمفتاح «الإدارة» ولا يمس إجابات المجموعات
+  if (e.mode === 'group') { const g = Me.group(); return g ? 'g' + g : null; } return Me.uid(); }
 function isRevealed(e) { return !!(Store.reveal && Store.reveal[e.id]); }
 function bankOf(e) { // بنك كلمات بترتيب ثابت مخلوط حسب معرّف التمرين
   const words = e.items.map(i => i.answer); let s = 0; for (const ch of e.id) s = (s * 33 + ch.charCodeAt(0)) % 100003;
@@ -3636,6 +3655,7 @@ function bankOf(e) { // بنك كلمات بترتيب ثابت مخلوط حس�
 const LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح'];
 
 function groupPickerHtml(e, o = {}) {
+  if (Admin.ok()) return '<div class="group-picker admin-note"><div class="ex-block-lbl" style="font-family:var(--f-display);font-weight:700">🛡️ تشارك باسم «الإدارة»</div><div class="muted" style="font-family:var(--f-ui);font-size:13px">المدرب لا يختار مجموعة ولا ينضم إليها؛ إجابتك تُحفظ باسم «الإدارة» منفصلة عن إجابات المجموعات ولا تغيّر شيئًا فيها.</div></div>';
   const my = Me.group(); const assigned = Me.uid() ? Groups.assignedOf(Me.uid()) : null;
   let out = '<div class="group-picker"><div class="ex-block-lbl" style="font-family:var(--f-display);font-weight:700">👥 اختر مجموعتك</div>' + (o.note ? '<div class="muted" style="font-family:var(--f-ui);font-size:13px">' + o.note + '</div>' : '');
   if (assigned) out += '<div class="assign-hint">📌 عيّنك المدرّب في <b>' + h(Groups.label(assigned)) + '</b> — اختر مجموعتك المخصّصة لتجنّب الخطأ.</div>';
@@ -3676,15 +3696,15 @@ function mcqStats(e) {
 }
 function mcqPollHtml(e) {
   const reveal = isRevealed(e); const st = mcqStats(e);
-  const mine = Me.isReg() ? ansList(((Store.posts[e.id] || {})[Me.uid()] || {}).answers, e.items.length) : [];
+  const mine = Me.canPost() ? ansList(((Store.posts[e.id] || {})[Me.uid()] || {}).answers, e.items.length) : [];
   return e.items.map((it, i) => {
     const my = mine[i]; const answered = my !== null && my !== undefined && my !== '';
-    const showPct = answered || !Me.isReg() || Admin.ctl();
+    const showPct = answered || !Me.canPost() || Admin.ctl();
     return '<div class="q-card"><div class="qt"><span class="qn num">' + (i + 1) + '</span><span>' + h(it.q) + '</span></div><div class="opts">' +
       it.options.map((o, k) => {
         const sel = answered && +my === k; const c = st[i].counts[k]; const pct = st[i].total ? Math.round(c / st[i].total * 100) : 0;
         let cls = sel ? 'sel' : ''; if (reveal) { if (k === +it.answer) cls = 'right'; else if (sel) cls = 'wrong'; }
-        return '<button class="opt poll ' + cls + '" data-act="vote" data-ex="' + h(e.id) + '" data-i="' + i + '" data-v="' + k + '" ' + (Me.isReg() ? '' : 'disabled') + '>' +
+        return '<button class="opt poll ' + cls + '" data-act="vote" data-ex="' + h(e.id) + '" data-i="' + i + '" data-v="' + k + '" ' + (Me.canPost() ? '' : 'disabled') + '>' +
           (showPct ? '<span class="poll-bar" style="width:' + pct + '%"></span>' : '') +
           '<span class="mk">' + (sel ? '✓' : '') + '</span><span class="grow"><b>' + LETTERS[k] + ')</b> ' + h(o) + '</span>' +
           (showPct ? '<span class="poll-pct num">' + pct + '%</span>' : '') + '</button>';
@@ -3729,8 +3749,8 @@ function interactiveHtml(e, post, canAct, editing) {
 
 function answerBoxHtml(e) {
   const col = exColor(e);
-  if (e.format === 'mcq') return '<div class="answer-box" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + (Me.isReg() ? '<div class="status-note" style="margin-bottom:4px">👆 اضغط أي خيار لحفظ إجابتك فورًا، ويمكنك تغييرها في أي وقت.</div>' : '<div class="locked-note">🔒 للمسجلين فقط — يمكنك مشاهدة نتائج التصويت دون المشاركة.</div>') + mcqPollHtml(e) + '</div>';
-  if (!Me.isReg()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط — صناديق الإجابة معطّلة في وضع التصفح كزائر.</div>' + (e.format !== 'text' ? '<div class="disabled-area">' + interactiveHtml(e, null, false, false) + '</div>' : '<textarea disabled placeholder="🔒 للمسجلين فقط"></textarea>') + '</div>';
+  if (e.format === 'mcq') return '<div class="answer-box" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + (Me.canPost() ? '<div class="status-note" style="margin-bottom:4px">👆 اضغط أي خيار لحفظ إجابتك فورًا، ويمكنك تغييرها في أي وقت.</div>' : '<div class="locked-note">🔒 للمسجلين فقط — يمكنك مشاهدة نتائج التصويت دون المشاركة.</div>') + mcqPollHtml(e) + '</div>';
+  if (!Me.canPost()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط — صناديق الإجابة معطّلة في وضع التصفح كزائر.</div>' + (e.format !== 'text' ? '<div class="disabled-area">' + interactiveHtml(e, null, false, false) + '</div>' : '<textarea disabled placeholder="🔒 للمسجلين فقط"></textarea>') + '</div>';
   const isGroup = e.mode === 'group'; const key = postKey(e);
   if (isGroup && !key) {
     return '<div class="answer-box">' + (e.format !== 'text' ? '<div class="locked-note">👆 اختر مجموعتك أولًا لتتمكن من الإجابة — الأسئلة معروضة للاطلاع.</div><div class="disabled-area">' + interactiveHtml(e, null, false, false) + '</div>' : '<div class="locked-note">👆 اختر مجموعتك أولًا لتتمكن من كتابة إجابة المجموعة.</div>') + '</div>';
@@ -3749,15 +3769,16 @@ function answerBoxHtml(e) {
 function feedHtml(e) {
   if (e.format === 'mcq') return ''; // نتائج التصويت تظهر داخل الخيارات نفسها
   const ps = Store.posts[e.id] || {}; const keys = Object.keys(ps).filter(k => ps[k]).sort((x, y) => (ps[y].ts || 0) - (ps[x].ts || 0));
-  const reveal = isRevealed(e); const myKey = Me.isReg() ? postKey(e) : null;
+  const reveal = isRevealed(e); const myKey = Me.canPost() ? postKey(e) : null;
   const del = k => Admin.ctl() ? '<button class="del-btn" data-act="del-post" data-ex="' + h(e.id) + '" data-k="' + h(k) + '" title="حذف هذه المشاركة">🗑 حذف</button>' : '';
   if (e.format !== 'text' && e.mode === 'group') {
-    const gkeys = keys.slice().sort((x, y) => (+x.slice(1)) - (+y.slice(1)));
+    // إجابة المدرب (المفتاح admin) تُعرض باسم «الإدارة» أولًا ومنفصلة عن المجموعات
+    const gkeys = keys.filter(k => k !== ADMIN_ID).sort((x, y) => (+x.slice(1)) - (+y.slice(1))); if (ps[ADMIN_ID]) gkeys.unshift(ADMIN_ID);
     return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>إجابات المجموعات</h3><span class="pill num">' + gkeys.length + '</span>' + (reveal ? '<span class="pill" style="background:#E6F7EE;color:#10573A">🔓 الإجابات مكشوفة</span>' : '') + '</div>' +
-      (gkeys.length ? '<div class="group-answers">' + gkeys.map(k => '<div class="ga-card ' + (k === myKey ? 'mine' : '') + '"><h4>' + (k === myKey ? '⭐ ' : '') + h(Groups.label(+k.slice(1))) + '<span class="grow"></span>' + del(k) + '</h4>' + answersSummary(e, ps[k].answers, reveal) + '<div class="post-foot" style="margin-top:6px"><span class="muted" style="font-family:var(--f-ui);font-size:12px">آخر حفظ: ' + h(ps[k].name || '') + ' · ' + ago(ps[k].ts || 0) + '</span>' + Likes.btn('posts/' + e.id + '/' + k, ps[k].likes) + '</div></div>').join('') + '</div>' : '<div class="empty">لم ترسل أي مجموعة إجاباتها بعد.</div>') + '</div>';
+      (gkeys.length ? '<div class="group-answers">' + gkeys.map(k => '<div class="ga-card ' + (k === myKey ? 'mine' : '') + '"><h4>' + (k === myKey ? '⭐ ' : '') + h(k === ADMIN_ID ? '🛡️ ' + ADMIN_NAME : Groups.label(+k.slice(1))) + '<span class="grow"></span>' + del(k) + '</h4>' + answersSummary(e, ps[k].answers, reveal) + '<div class="post-foot" style="margin-top:6px"><span class="muted" style="font-family:var(--f-ui);font-size:12px">آخر حفظ: ' + h(ps[k].name || '') + ' · ' + ago(ps[k].ts || 0) + '</span>' + Likes.btn('posts/' + e.id + '/' + k, ps[k].likes) + '</div></div>').join('') + '</div>' : '<div class="empty">لم ترسل أي مجموعة إجاباتها بعد.</div>') + '</div>';
   }
   return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>مشاركات الجميع مباشرة</h3><span class="pill num">' + keys.length + '</span>' + (reveal && e.format !== 'text' ? '<span class="pill" style="background:#E6F7EE;color:#10573A">🔓 الإجابات مكشوفة</span>' : '') + '</div>' +
-    (keys.length ? '<div class="posts">' + keys.map(k => { const p = ps[k]; const isG = k.charAt(0) === 'g' && e.mode === 'group'; const who = isG ? Groups.label(+k.slice(1)) : (p.name || 'مشارك'); const sub = isG ? 'كتبها: ' + (p.name || '') : (p.role || '');
+    (keys.length ? '<div class="posts">' + keys.map(k => { const p = ps[k]; const isG = k.charAt(0) === 'g' && e.mode === 'group'; const who = k === ADMIN_ID ? ADMIN_NAME : isG ? Groups.label(+k.slice(1)) : (p.name || 'مشارك'); const sub = isG ? 'كتبها: ' + (p.name || '') : (p.role || '');
       return '<div class="post ' + (k === myKey ? 'mine' : '') + '"><div class="post-head"><span class="av">' + h(isG ? '👥' : initials(who)) + '</span><div><div class="who">' + h(who) + '</div><div class="role">' + h(sub) + ' · ' + ago(p.ts || 0) + '</div></div></div>' +
         (e.format === 'text' ? '<div class="post-body">' + h(p.text || '') + '</div>' : '<div>' + answersSummary(e, p.answers, reveal) + '</div>') +
         '<div class="post-foot">' + Likes.btn('posts/' + e.id + '/' + k, p.likes) + del(k) + '</div></div>'; }).join('') + '</div>' : '<div class="empty">لا توجد مشاركات بعد — كن أول المشاركين ✨</div>') + '</div>';
@@ -3806,7 +3827,7 @@ Views.ex = {
 // ============ تقييم البرنامج (نجوم + توصية + رأي) ============
 function starsHtml(v, attrs, dis) { return '<span class="stars">' + [1, 2, 3, 4, 5].map(n => '<button class="star ' + (v >= n ? 'on' : '') + '" ' + attrs + ' data-v="' + n + '" ' + dis + ' title="' + n + '">★</button>').join('') + '</span>'; }
 function surveyFormHtml(e) {
-  if (!Me.isReg()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
+  if (!Me.canPost()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
   const post = (Store.posts[e.id] || {})[Me.uid()]; const editing = !!UIState.editing[e.id];
   if (post && !editing) return '<div class="answer-box"><div class="row" style="margin-bottom:8px"><b style="font-family:var(--f-display)">✅ شكرًا لتقييمك</b><span class="grow"></span><button class="btn btn-soft btn-sm" data-act="edit-ans" data-ex="' + h(e.id) + '">✏️ تعديل</button></div>' +
     e.rates.map((r, i) => '<div class="rate-row"><span>' + h(r) + '</span>' + starsHtml(+((post.ratings || {})[i]) || 0, '', 'disabled') + '</div>').join('') + (post.nps != null ? '<div class="rate-row"><span>التوصية</span><b class="num">' + post.nps + ' / 10</b></div>' : '') + (post.text ? '<div class="answer-view" style="margin-top:8px">' + h(post.text) + '</div>' : '') + '</div>';
@@ -3849,7 +3870,8 @@ Views.lab = {
     return L.stages.map((s, i) => {
       const openAt = i * Content.lab().minutes * 60000; const open = started && el >= openAt; const a = ans['s' + i]; const ek = 'lab' + i;
       let body = '';
-      if (!Me.isReg()) body = '<div class="locked-note">🔒 للمسجلين فقط</div>';
+      if (Admin.ok()) body = '<div class="lock-note">🛡️ المختبر نشاط للمجموعات؛ تتابع مخرجاتها أدناه.</div>';
+      else if (!Me.isReg()) body = '<div class="locked-note">🔒 للمسجلين فقط</div>';
       else if (!g) body = '<div class="lock-note">👆 اختر مجموعتك أولًا</div>';
       else if (!started) body = '<div class="lock-note">🔒 تُتاح بعد الضغط على «ابدأ الوقت»' + (i ? ' ومرور ' + (i * Content.lab().minutes) + ' دقيقة' : '') + '</div>';
       else if (!open) body = '<div class="lock-note" data-lock-at="' + openAt + '">🔒 باقي <span class="num">' + mmss(openAt - el) + '</span> على إتاحتها</div>';
@@ -4151,9 +4173,9 @@ const Sims = {
   },
   html(e) {
     const S = Sims.of(e); const col = exColor(e);
-    const can = Me.isReg() && (e.mode !== 'group' || Me.group()); const dis = can ? '' : 'disabled';
+    const can = Me.canPost() && (e.mode !== 'group' || Me.group() || Admin.ok()); const dis = can ? '' : 'disabled';
     const s = Sims.state(e); const key = postKey(e); const post = key ? (Store.posts[e.id] || {})[key] : null;
-    return '<div class="answer-box sim-box" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + (!Me.isReg() ? '<div class="locked-note">🔒 للمسجلين فقط — يمكنك التجربة بعد التسجيل.</div>' : e.mode === 'group' && !Me.group() ? '<div class="locked-note">👆 اختر مجموعتك أولًا.</div>' : '') +
+    return '<div class="answer-box sim-box" style="--ac:' + col + ';--acg:' + tint(col, .1) + '">' + (!Me.canPost() ? '<div class="locked-note">🔒 للمسجلين فقط — يمكنك التجربة بعد التسجيل.</div>' : e.mode === 'group' && !Me.group() && !Admin.ok() ? '<div class="locked-note">👆 اختر مجموعتك أولًا.</div>' : '') +
       (post ? '<div class="status-note" style="margin-bottom:6px">✅ آخر حفظ: ' + h(post.name || '') + ' · ' + ago(post.ts || 0) + ' — يمكنك التعديل والحفظ مجددًا.</div>' : '') +
       '<div class="sim-grid"><div class="sim-form">' + S.form(s, e.id, dis) + '</div><div id="simLive-' + h(e.id) + '">' + S.live(s) + '</div></div>' +
       '<div class="save-row"><button class="btn btn-primary" data-act="sim-save" data-ex="' + h(e.id) + '" ' + dis + '>💾 حفظ النتيجة' + (e.mode === 'group' ? ' للمجموعة' : '') + '</button><button class="btn btn-ghost btn-sm" data-act="sim-reset" data-ex="' + h(e.id) + '" ' + dis + '>↺ البدء من جديد</button></div></div>';
@@ -4172,7 +4194,7 @@ const Sims = {
     Sims.refresh(exId);
   },
   feed(e) {
-    const S = Sims.of(e); const ps = Store.posts[e.id] || {}; const myKey = Me.isReg() ? postKey(e) : null;
+    const S = Sims.of(e); const ps = Store.posts[e.id] || {}; const myKey = Me.canPost() ? postKey(e) : null;
     const keys = Object.keys(ps).filter(k => ps[k] && ps[k].state).sort((a, b) => (S.metric(ps[b].state) - S.metric(ps[a].state)));
     const del = k => Admin.ctl() ? '<button class="del-btn" data-act="del-post" data-ex="' + h(e.id) + '" data-k="' + h(k) + '">🗑</button>' : '';
     if (!keys.length) return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>' + (e.mode === 'group' ? 'مقارنة المجموعات' : 'نتائج الجميع') + '</h3></div><div class="empty">لا توجد نتائج محفوظة بعد.</div></div>';
@@ -4184,10 +4206,10 @@ const Sims = {
       return '<div class="post ' + (k === myKey ? 'mine' : '') + '"><div class="post-head"><span class="av">' + h(initials(p.name)) + '</span><div><div class="who">' + h(p.name || '') + '</div><div class="role">' + h(p.role || '') + ' · ' + ago(p.ts || 0) + '</div></div><span class="grow"></span><span class="sim-badge num">' + S.metric(p.state) + '%</span></div><div class="post-body">' + h(S.summary(p.state)) + '</div><div class="post-foot">' + Likes.btn('posts/' + e.id + '/' + k, p.likes) + del(k) + '</div></div>'; }).join('') + '</div></div>';
   },
   async save(exId) {
-    const e = Content.ex(exId); const key = postKey(e); if (!key || !Me.isReg()) return; const S = Sims.of(e); const s = Sims.state(e); const me = Me.data;
+    const e = Content.ex(exId); const key = postKey(e); if (!key || !Me.canPost()) return; const S = Sims.of(e); const s = Sims.state(e); const me = Me.actor();
     if (e.sim === 'budget' && BudgetSim.spent(s) < BUDGET_TOTAL * 0.9) { if (!(await UI.confirm('لم توزعوا إلا ' + QAR(BudgetSim.spent(s)) + ' ر.ق من الميزانية. حفظ النتيجة رغم ذلك؟', { ok: 'حفظ' }))) return; }
     const upd = { state: JSON.parse(JSON.stringify(s)), metric: S.metric(s), summary: S.summary(s), name: me.name, role: me.role || '', ts: DB.now() };
-    if (e.mode === 'group') { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid;
+    if (e.mode === 'group' && !Admin.ok()) { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid;
     await DB.update('posts/' + exId + '/' + key, upd); UI.toast('✅ حُفظت النتيجة'); App.render();
   }
 };
@@ -4294,7 +4316,7 @@ const Points = {
     const users = Store.users || {}; const P = {}; Object.keys(users).forEach(u => { P[u] = { uid: u, pts: 0, ex: 0, likes: 0, first: 0, att: 0, as: 0 }; });
     const exs = Content.allExercises().map(x => x.e).filter(Boolean);
     exs.forEach(e => { const ps = Store.posts[e.id] || {}; let firstK = null, firstTs = Infinity;
-      Object.keys(ps).forEach(k => { const p = ps[k]; if (!p) return; const who = e.mode === 'group' ? Object.keys(p.members || {}) : [k]; const lk = Object.keys(p.likes || {}).length;
+      Object.keys(ps).forEach(k => { const p = ps[k]; if (!p || k === ADMIN_ID) return; const who = e.mode === 'group' ? Object.keys(p.members || {}) : [k]; const lk = Object.keys(p.likes || {}).length;
         who.forEach(u => { if (!P[u]) return; P[u].ex++; P[u].pts += e.format === 'sim' ? 15 : 10; P[u].likes += lk; P[u].pts += lk * 2; });
         if ((p.ts || Infinity) < firstTs && e.mode !== 'group') { firstTs = p.ts; firstK = k; } });
       if (firstK && P[firstK]) { P[firstK].first++; P[firstK].pts += 5; } });
@@ -4467,7 +4489,7 @@ const Landing = {
   objectivesText() { return Content.guide().objectives.join('\n'); }
 };
 function lpHead(s, light) { return '<div class="lp-head rv">' + (s.kicker ? '<span class="lp-kicker">' + h(s.kicker) + '</span>' : '') + '<h2 class="lp-h2' + (light ? ' light' : '') + '">' + h(s.title || '') + '</h2>' + (s.sub ? '<p class="lp-sub">' + h(s.sub) + '</p>' : '') + '</div>'; }
-function lpCta(label, cls) { return '<button class="lp-btn ' + (cls || '') + '" data-act="' + (Me.isReg() || Me.guest ? 'lp-enter' : 'open-login') + '"><span>' + h(label || 'الدخول للمنصة التعليمية') + '</span><span class="lp-arrow">←</span></button>'; }
+function lpCta(label, cls) { return '<button class="lp-btn ' + (cls || '') + '" data-act="' + (Me.isReg() || Me.guest || Admin.ok() ? 'lp-enter' : 'open-login') + '"><span>' + h(label || 'الدخول للمنصة التعليمية') + '</span><span class="lp-arrow">←</span></button>'; }
 const LandingSections = {
   hero(s) {
     const axes = Content.axes(); const units = Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length;
@@ -4575,7 +4597,9 @@ function loginFormHtml() {
     '<label class="consent"><input type="checkbox" id="regFollow"> <span>' + h(pv.followup) + ' <span class="muted">(اختياري)</span></span></label>' +
     '<button class="btn btn-primary btn-block" data-act="register">ابدأ 🚀</button>' +
     '<button class="btn btn-mint btn-block" style="margin-top:10px" data-act="member-login">مسجّل مسبقًا؟ الدخول برقم العضوية</button>' +
-    '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button></div>';
+    '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button>' +
+    // دخول المدرب: قفل صغير باهت في الأسفل (يتضح عند المرور أو التركيز)
+    '<div class="trainer-lock-row"><button class="trainer-lock" data-act="admin-enter" title="دخول المدرب" aria-label="دخول المدرب">' + iconSvg('lock', 14) + '</button></div></div>';
 }
 const LoginModal = {
   m: null,
@@ -4613,7 +4637,7 @@ const Bell = {
   }
 };
 function adminHeader(title) {
-  return '<div class="admin-top"><h1>' + h(title) + '</h1>' + Bell.html() + '<button class="btn btn-primary btn-sm" data-go="present">🎤 وضع العرض</button><button class="btn btn-ghost btn-sm" data-go="home">🌐 عرض الموقع</button><button class="btn btn-danger btn-sm" data-act="admin-exit">خروج من الإدارة</button></div>';
+  return '<div class="admin-top"><h1>' + h(title) + '</h1>' + Bell.html() + '<button class="btn btn-primary btn-sm" data-go="present">🎤 وضع العرض</button><button class="btn btn-ghost btn-sm" data-go="home">🌐 عرض المنصة</button><button class="btn btn-danger btn-sm" data-act="admin-exit">خروج من الإدارة</button></div>';
 }
 function band(title, color, extra = '') { return '<div class="admin-band" style="--bc:' + color + '"><span class="bar"></span><h2>' + h(title) + '</h2><span class="grow"></span>' + extra + '</div>'; }
 function tool(key, icon, color, title, body, foot, cls = '') {
@@ -4658,8 +4682,6 @@ Views.admin = {
     out += drop('users', '<div class="field"><input data-keep="users-search" data-filter=".person" placeholder="🔍 بحث بالاسم…"></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><span class="muted">' + h(users[u].role || '') + '</span><span class="pill num">#' + pad4(users[u].member || 0) + '</span>' + ((Store.secrets || {})[u] ? '<span class="pill num notranslate" translate="no" dir="ltr" title="رمز الدخول الشخصي" style="user-select:all">🔑 ' + h(Store.secrets[u]) + '</span>' : '<span class="pill" title="لا يوجد رمز دخول بعد">🔑 —</span>') + '<button class="btn btn-ghost btn-xs" data-act="code-copy" data-uid="' + h(u) + '" title="نسخ رسالة فيها رقم العضوية والرمز لإرسالها للمتدرب">📋</button><button class="btn btn-ghost btn-xs" data-act="code-new" data-uid="' + h(u) + '" title="توليد رمز جديد وإلغاء ربط الأجهزة الأخرى">🔄 رمز جديد</button><span class="muted">' + fmtDate(users[u].ts) + '</span></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
     B('groups');
     out += tool('groups', '🧩', '#138A5E', 'إدارة المجموعات', '<div class="row"><input type="number" min="2" max="30" id="grpCount" data-keep="grp-count" value="' + Groups.count() + '" style="width:80px;border:1px solid var(--line);border-radius:10px;padding:6px 8px"><button class="btn btn-soft btn-xs" data-act="save-groups">حفظ العدد</button></div><div style="margin-top:6px">عدد المجموعات (2–30). التوزيع اليدوي إرشادي لا إلزامي.</div>', '<button class="btn btn-primary btn-xs" data-act="assign-open">🧭 توزيع</button>');
-    B('preview');
-    out += tool('preview', '👀', '#1F3A5F', 'معاينة كمتدرب', 'اعرض الصفحة الرئيسية تمامًا كما يراها المتدرب، مع زر عائم للعودة.', '<button class="btn btn-soft btn-xs" data-act="preview">فتح المعاينة</button>');
     B('congrats');
     out += tool('congrats', '🏆', '#C8702A', 'تهنئة الإنجاز', '<div class="bigno num">' + ach.length + '</div>متدرب بلغ <span class="num">80%</span> إجمالًا', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="ach">الأسماء</button><button class="btn btn-soft btn-xs" data-act="congrats-preview" data-kind="congrats">معاينة</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="congEdit">تعديل المحتوى</button>');
     out += drop('ach', ach.length ? '<div class="people-list">' + ach.map(u => '<div class="person"><span class="nm">🏆 ' + h(u.name) + '</span><span class="muted">' + h(u.role || '') + '</span></div>').join('') + '</div>' : '<div class="empty">لم يبلغ أحد 80% بعد.</div>');
@@ -5236,7 +5258,7 @@ Views.storyEdit = {
 // ونقل أي أداة من عنوان إلى آخر بالسحب (أو بقائمة «نقل إلى» على الجوال) — تُحفظ في site/adminNav
 // ---------------------------------------------------------------------
 const ADMIN_BLOCKS = {
-  users: { icon: '👥', title: 'المسجّلون' }, groups: { icon: '🧩', title: 'إدارة المجموعات' }, preview: { icon: '👀', title: 'معاينة كمتدرب' },
+  users: { icon: '👥', title: 'المسجّلون' }, groups: { icon: '🧩', title: 'إدارة المجموعات' },
   congrats: { icon: '🏆', title: 'تهنئة الإنجاز' }, regform: { icon: '📝', title: 'نموذج التسجيل والخصوصية' }, attend: { icon: '📍', title: 'الحضور وشهادة المشاركة' },
   assess: { icon: '📋', title: 'التقييم القبلي والبعدي' }, broadcast: { icon: '📣', title: 'بث رسالة مباشرة' },
   monitor: { icon: '👁', title: 'رابط متابعة للمشرف' }, leads: { icon: '🤝', title: 'المهتمون ببرامج البنك' }, followup: { icon: '📈', title: 'المتابعة بعد البرنامج' },
@@ -5250,7 +5272,7 @@ const ADMIN_BLOCKS = {
   acts: { icon: '⚡', title: 'قسم «أنشطة»', wide: true }, survey: { icon: '🎓', title: 'ختام البرنامج (الاستطلاع)', wide: true }, lab: { icon: '🧪', title: 'المختبر الختامي', wide: true }
 };
 const ADMIN_GROUPS_DEF = [
-  { id: 'g_users', icon: '👥', title: 'إدارة المسجلين', blocks: ['users', 'groups', 'preview', 'congrats', 'regform', 'attend', 'assess', 'broadcast'] },
+  { id: 'g_users', icon: '👥', title: 'إدارة المسجلين', blocks: ['users', 'groups', 'congrats', 'regform', 'attend', 'assess', 'broadcast'] },
   { id: 'g_sponsor', icon: '🤝', title: 'الجهة الراعية والدفعات', blocks: ['monitor', 'leads', 'followup', 'gamify', 'tplTool', 'cohorts'] },
   { id: 'g_export', icon: '📤', title: 'التصدير والنسخ', blocks: ['pdf', 'guide', 'report', 'csv', 'person', 'backup', 'autobk', 'reset'] },
   { id: 'g_home', icon: '🏠', title: 'واجهة الصفحة الرئيسية', blocks: ['homeUi', 'landing', 'homeSecs'] },
@@ -5294,7 +5316,7 @@ Views.admin.shell = function (blocks) {
       (cur.blocks.length ? cur.blocks.map(b => '<div class="adm-card" draggable="true" data-adm-blk="' + b + '"><span class="drag-handle">⠿</span><span class="adm-ico">' + ADMIN_BLOCKS[b].icon + '</span><b class="grow">' + h(AdminNav.blockTitle(b)) + '</b><select data-adm-to="' + b + '" aria-label="نقل إلى"><option value="">نقل إلى…</option>' + gs.filter(g => g.id !== cur.id).map(g => '<option value="' + h(g.id) + '">' + h(g.icon + ' ' + g.title) + '</option>').join('') + '</select></div>').join('') : '<div class="empty">لا توجد أدوات تحت هذا العنوان — اسحب إليه أدوات من عناوين أخرى.</div>') + '</div>';
   } else {
     let grid = []; const flush = () => { if (grid.length) { pane += '<div class="tools-grid">' + grid.join('') + '</div>'; grid = []; } };
-    cur.blocks.forEach(b => { const html = blocks[b] || ''; if (ADMIN_BLOCKS[b].wide) { flush(); pane += '<div class="adm-wide" data-blk="' + b + '">' + html + '</div>'; } else grid.push(html); });
+    cur.blocks.filter(b => ADMIN_BLOCKS[b]).forEach(b => { const html = blocks[b] || ''; if (ADMIN_BLOCKS[b].wide) { flush(); pane += '<div class="adm-wide" data-blk="' + b + '">' + html + '</div>'; } else grid.push(html); });
     flush();
     if (!cur.blocks.length) pane += '<div class="empty">لا توجد أدوات تحت هذا العنوان. اضغط «✏️ تخصيص» لنقل أدوات إليه.</div>';
   }
@@ -5847,8 +5869,7 @@ const App = {
     if (App.onLanding && !App._wasLanding) { Views.landing._played = false; Views.landing._seen = new Set(); Views.landing._counted = false; } App._wasLanding = App.onLanding;
     let body = '';
     try { body = view.html(); } catch (e) { console.error(e); body = '<div class="empty" style="margin-top:24px">حدث خطأ في عرض هذه الصفحة. <button class="btn btn-soft btn-sm" data-go="home">المنصة التعليمية</button></div>'; }
-    const html = (v === 'present' && view === Views.present) || (v === 'show' && view === Views.show) ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer() +
-      (Admin.ok() && Admin.preview() ? '<button class="float-badge" data-act="preview-exit">↩ العودة للوحة الإدارة</button>' : '');
+    const html = (v === 'present' && view === Views.present) || (v === 'show' && view === Views.show) ? body : Layout.banners() + Layout.topbar() + '<main class="wrap">' + body + '</main>' + Layout.footer();
     // صفحة الهبوط: لا نعيد رسمها إن لم يتغير شيء حتى لا تتكرر الحركات مع كل تحديث للبيانات
     if (App.onLanding && html === App._lastLanding && root.firstChild) return;
     App._lastLanding = App.onLanding ? html : null;
@@ -5999,8 +6020,8 @@ async function saveText(exId) {
   const e = Content.ex(exId); const ta = $('#ans-' + CSS.escape(exId)); const text = ta ? ta.value.trim() : '';
   if (!text) { UI.alert('اكتب إجابتك أولًا.'); return; }
   const key = postKey(e); if (!key) return;
-  const me = Me.data; const upd = { text, name: me.name, role: me.role || '', ts: DB.now() };
-  if (e.mode === 'group') { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid;
+  const me = Me.actor(); const upd = { text, name: me.name, role: me.role || '', ts: DB.now() };
+  if (e.mode === 'group' && !Admin.ok()) { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid; // المدرب: بلا مجموعة ولا أعضاء
   await DB.update('posts/' + exId + '/' + key, upd);
   if (ta) ta.value = ''; UIState.editing[exId] = false; UI.toast('✅ تم الحفظ'); App.render();
 }
@@ -6008,9 +6029,9 @@ async function saveInter(exId) {
   const e = Content.ex(exId); const d = UIState.draft[exId] || [];
   const missing = e.items.some((_, i) => d[i] === null || d[i] === undefined || d[i] === '');
   if (missing) { UI.alert(e.format === 'fillblank' ? 'املأ كل الفراغات قبل الإرسال.' : 'أجب عن كل الأسئلة قبل الحفظ.'); return; }
-  const key = postKey(e); if (!key) return; const me = Me.data;
+  const key = postKey(e); if (!key) return; const me = Me.actor();
   const upd = { answers: e.items.map((_, i) => d[i]), name: me.name, role: me.role || '', ts: DB.now() };
-  if (e.mode === 'group') { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid;
+  if (e.mode === 'group' && !Admin.ok()) { upd.group = Me.group(); upd.by = me.uid; upd['members/' + me.uid] = true; } else upd.uid = me.uid; // المدرب: بلا مجموعة ولا أعضاء
   await DB.update('posts/' + exId + '/' + key, upd);
   UIState.editing[exId] = false; UIState.draft[exId] = upd.answers.slice(); UI.toast(e.mode === 'group' ? '📤 أُرسلت إجابات المجموعة' : '✅ تم حفظ إجاباتك'); App.render();
 }
@@ -6085,22 +6106,26 @@ document.addEventListener('click', async ev => {
   const root = document.getElementById('app');
   switch (act) {
     // ----- عام -----
-    case 'switch-user': { const ok = await UI.confirm('سيُمسح تسجيلك من هذا الجهاز فقط (لن يُحذف أي شيء من السيرفر)، وستعود إلى الصفحة التعريفية للبرنامج لتسجيل مستخدم جديد أو الدخول برقم العضوية.', { ok: 'تسجيل مستخدم جديد' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; syncWatchers(); Router.go('home'); window.scrollTo(0, 0); } break; }
+    case 'switch-user': case 'user-logout': { const ok = await UI.confirm('تسجيل الخروج من هذا الجهاز؟ لن يُحذف أي شيء من بياناتك، وللعودة ستحتاج رقم عضويتك ورمز الدخول.', { ok: 'تسجيل الخروج', title: 'تسجيل الخروج' }); if (ok) { Me.clear(); UIState.draft = {}; UIState.editing = {}; syncWatchers(); Router.go('home'); window.scrollTo(0, 0); } break; }
     case 'open-login': LoginModal.open(); break;
+    // الزائر: «تسجيل دخول» يعيده إلى صفحة الدخول
+    case 'guest-login': Me.guest = false; SafeLS.del('ec_guest'); SafeSS.del('ec_guest'); Router.go('home'); window.scrollTo(0, 0); setTimeout(() => LoginModal.open(), 50); break;
+    case 'admin-panel': Router.go('admin'); window.scrollTo(0, 0); break;
     case 'icon-pick': IconPick.open(t); break;
     case 'lp-enter': Router.go('home'); window.scrollTo(0, 0); break;
     case 'lp-scroll': { const n = document.querySelector('.lp-hero'); const nx = n && n.nextElementSibling; if (nx) window.scrollTo({ top: nx.getBoundingClientRect().top + window.scrollY - 70, behavior: document.documentElement.getAttribute('data-motion') === 'reduce' ? 'auto' : 'smooth' }); break; }
     case 'lp-unit': { UIState.lpUnit = +t.getAttribute('data-i'); const old = document.querySelector('.lp-content'); if (old) { const tmp = document.createElement('div'); tmp.innerHTML = LandingSections.content(Landing.sec('content')); const nw = tmp.firstChild; $$('.rv', nw).forEach(e => e.classList.add('in')); old.replaceWith(nw); App._lastLanding = null; } break; }
+    // قفل «دخول المدرب» أسفل نافذة الدخول
     case 'admin-enter': {
-      if (Admin.ok()) { SafeSS.del('ec_preview'); Router.go('admin'); break; }
+      LoginModal.close();
+      if (Admin.ok()) { Router.go('home'); break; }
       if (AUTH.enabled) { adminLogin(); break; }
-      const v = await UI.prompt('أدخل الرمز السري للوحة الإدارة', { title: '🔐 لوحة الإدارة', type: 'password', inputmode: 'numeric', ok: 'دخول' });
-      if (v == null) break; if (v.trim() === ADMIN_PASS) { SafeSS.set('ec_admin', '1'); SafeSS.del('ec_preview'); Router.go('admin'); } else UI.alert('الرمز غير صحيح.');
+      const v = await UI.prompt('أدخل الرمز السري للوحة الإدارة', { title: '🔐 دخول المدرب', type: 'password', inputmode: 'numeric', ok: 'دخول' });
+      if (v == null) break; if (v.trim() === ADMIN_PASS) { SafeSS.set('ec_admin', '1'); Router.go('home'); window.scrollTo(0, 0); } else UI.alert('الرمز غير صحيح.');
       break;
     }
-    case 'admin-exit': SafeSS.del('ec_admin'); SafeSS.del('ec_preview'); if (AUTH.enabled) { AUTH.isAdmin = false; try { await firebase.auth().signOut(); } catch (e) {} } Router.go('home'); break;
-    case 'preview': SafeSS.set('ec_preview', '1'); Router.go('home'); break;
-    case 'preview-exit': SafeSS.del('ec_preview'); Router.go('admin'); break;
+    // خروج المدرب: تعود هوية المتدرب المحفوظة على الجهاز (إن وُجدت)
+    case 'admin-exit': SafeSS.del('ec_admin'); if (AUTH.enabled) { AUTH.isAdmin = false; try { await firebase.auth().signOut(); } catch (e) {} } Router.go('home'); window.scrollTo(0, 0); break;
     case 'bc-close': SafeLS.set('ec_bc_closed', t.getAttribute('data-id')); App.render(); break;
     case 'register': doRegister(); break;
     case 'member-login': memberLogin(); break;
@@ -6118,7 +6143,7 @@ document.addEventListener('click', async ev => {
       App.render(); break;
     }
     case 'vote': { // حفظ فوري لكل سؤال على حدة، والتعديل بالضغط على خيار آخر
-      if (!Me.isReg()) break; const me = Me.data; const i = t.getAttribute('data-i');
+      if (!Me.canPost()) break; const me = Me.actor(); const i = t.getAttribute('data-i');
       DB.update('posts/' + exId + '/' + me.uid, { ['answers/' + i]: +t.getAttribute('data-v'), name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() });
       break;
     }
@@ -6130,7 +6155,7 @@ document.addEventListener('click', async ev => {
       const e = Content.ex(exId); const d = UIState.draft.sv || { ratings: {} };
       if (e.rates.some((_, i) => !d.ratings[i])) { UI.alert('قيّم كل البنود بالنجوم قبل الإرسال.'); break; }
       if (e.nps && d.nps == null) { UI.alert('اختر درجة التوصية من 0 إلى 10.'); break; }
-      const me = Me.data; await DB.set('posts/' + exId + '/' + me.uid, Object.assign({}, (Store.posts[exId] || {})[me.uid] || {}, { ratings: d.ratings, nps: d.nps, text: ($('#svText') || {}).value ? $('#svText').value.trim() : '', name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() }));
+      const me = Me.actor(); await DB.set('posts/' + exId + '/' + me.uid, Object.assign({}, (Store.posts[exId] || {})[me.uid] || {}, { ratings: d.ratings, nps: d.nps, text: ($('#svText') || {}).value ? $('#svText').value.trim() : '', name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() }));
       UIState.editing[exId] = false; delete UIState.draft.sv; UI.toast('✅ شكرًا لتقييمك'); App.render(); break;
     }
     case 'sim-step': { const e = Content.ex(exId); Sims.state(e).step = +t.getAttribute('data-i'); App.render(); break; }
@@ -6192,7 +6217,7 @@ document.addEventListener('click', async ev => {
       if (!Assess.isOpen(ph)) { UI.alert('التقييم مغلق الآن.'); break; }
       if (A.items.some((_, i) => d[i] === null || d[i] === undefined)) { UI.alert('أجب عن كل الأسئلة قبل الإرسال.'); break; }
       if (!(await UI.confirm('إرسال إجاباتك نهائيًا؟ لا يمكن تعديلها بعد الإرسال.', { ok: 'إرسال' }))) break;
-      const me = Me.data; await DB.set('assess/' + ph + '/' + me.uid, { answers: A.items.map((_, i) => d[i]), name: me.name, role: me.role || '', ts: DB.now(), done: true });
+      const me = Me.actor(); await DB.set('assess/' + ph + '/' + me.uid, { answers: A.items.map((_, i) => d[i]), name: me.name, role: me.role || '', ts: DB.now(), done: true });
       UI.toast('✅ تم إرسال ' + (ph === 'pre' ? 'التقييم القبلي' : 'التقييم البعدي')); App.render(); break;
     }
     // ----- لوحة الأدمن -----
@@ -6453,7 +6478,7 @@ function authInit() {
     if (SafeSS.get('ec_admin_redirect')) { SafeSS.del('ec_admin_redirect'); if (!ok && u && !u.isAnonymous) { UI.alert('الحساب ' + h(u.email || '') + ' غير مضاف إلى حسابات المدربين. أضف هذا الرقم في العقدة admins بقيمة true:<br><b class="num" dir="ltr" style="user-select:all">' + h(u.uid) + '</b>'); firebase.auth().signOut(); return; } }
     syncWatchers(); await ensureOwnership();
     if (ok) setTimeout(migrateSchema, 1500);
-    if (ok && SafeSS.get('ec_go_admin')) { SafeSS.del('ec_go_admin'); Router.go('admin'); return; }
+    if (ok && SafeSS.get('ec_go_admin')) { SafeSS.del('ec_go_admin'); LoginModal.close(); Router.go('home'); return; }
     App.render();
   });
 }
@@ -6507,7 +6532,7 @@ function adminLogin() {
   const finish = async user => {
     const ok = (await DB.get('admins/' + user.uid)) === true;
     if (!ok) { await firebase.auth().signOut(); err('الحساب ' + h(user.email || '') + ' غير مضاف إلى حسابات المدربين (العقدة admins في قاعدة البيانات).<br>انسخ هذا الرقم وأضفه هناك بقيمة true:<br><span class="num" dir="ltr" style="user-select:all;font-weight:700">' + h(user.uid) + '</span>'); return false; }
-    AUTH.user = user; AUTH.isAdmin = true; m.close(); SafeSS.del('ec_preview'); syncWatchers(); setTimeout(migrateSchema, 1500); Router.go('admin'); return true;
+    AUTH.user = user; AUTH.isAdmin = true; m.close(); LoginModal.close(); syncWatchers(); setTimeout(migrateSchema, 1500); Router.go('home'); window.scrollTo(0, 0); UI.toast('🛡️ دخلت بحساب الإدارة — «لوحة التحكم» في الشريط العلوي'); return true;
   };
   $('[data-google]', m.el).onclick = async () => {
     const btn = $('[data-google]', m.el); btn.disabled = true; err('');

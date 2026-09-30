@@ -43,7 +43,7 @@ const H = 3600 * 1000;
   }
   { // المدرب
     const { ctx, p, net, errs } = await open({ googleUser: { uid: 'adm1', email: 't@x' } });
-    await p.click('[data-act="admin-enter"]'); await p.waitForTimeout(300); await p.click('[data-google]'); await p.waitForTimeout(800);
+    await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(300); await p.click('[data-google]'); await p.waitForTimeout(800);
     R.trainer = { loggedIn: await state(p) };
     await reloadAged(p, 70); R.trainer.after70h = await state(p);
     await reloadAged(p, 80); R.trainer.after80h = await state(p); R.trainer.realNet = net.real; R.trainer.errs = errs; await ctx.close();

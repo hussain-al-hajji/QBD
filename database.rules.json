@@ -138,7 +138,7 @@
         ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && !newData.exists()",
         "$aid": {
           ".read": "auth != null && auth.uid === $aid",
-          ".write": "auth != null && auth.uid === $aid && newData.exists() && (newData.val() === root.child('secrets').child($uid).val() || (!root.child('devices').child($uid).exists() && !root.child('secrets').child($uid).exists() && (!root.child('users').child($uid).exists() || root.child('meta').child('legacyClaims').val() !== false)))",
+          ".write": "auth != null && auth.uid === $aid && $uid !== 'admin' && newData.exists() && (newData.val() === root.child('secrets').child($uid).val() || (!root.child('devices').child($uid).exists() && !root.child('secrets').child($uid).exists() && (!root.child('users').child($uid).exists() || root.child('meta').child('legacyClaims').val() !== false)))",
           ".validate": "newData.isString() && newData.val().length <= 12"
         }
       }

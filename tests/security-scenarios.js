@@ -90,9 +90,9 @@ async function register(p, name) { await p.click('[data-act="open-login"]'); awa
   R.legacy = { stillLoggedIn: await L.p.evaluate(() => Me.uid()) === 'uL', gotCode: !!(await L.p.evaluate(() => Me.data && Me.data.code)), secretSet: !!at(t, 'secrets/uL'), canEditOwn: await tryW(L.p, `() => DB.set('users/uL/role', 'x')`) };
   // ---------- المدرب: ترحيل البيانات، القراءة الكاملة، لوحة المشرف ----------
   const T = await visitor({ cfg: { googleUser: { uid: 'adm1', email: 't@gmail.com' } } });
-  await T.p.click('[data-act="admin-enter"]'); await T.p.waitForTimeout(200); await T.p.click('[data-google]'); await T.p.waitForTimeout(2600);
+  await T.p.evaluate(() => LoginModal.open()); await T.p.click('.trainer-lock'); await T.p.waitForTimeout(200); await T.p.click('[data-google]'); await T.p.waitForTimeout(2600);
   t = await server(T.p);
-  R.admin = { inAdmin: await T.p.evaluate(() => Router.cur.view === 'admin' && Admin.ok()), migrated: at(t, 'meta/schema') === 3, legacyPIIMoved: !at(t, 'users/uL/f') && at(t, 'private/uL/f/email') === 'legacy@x.com', codeMovedToSecure: at(t, 'secure/attcodes/d1/code') === '4321' && at(t, 'settings/attendance/codes/d1/code') == null, monitorMoved: at(t, 'secure/monitor/token') === 'oldtok' && !at(t, 'settings/monitor'), readsLeads: await tryR(T.p, 'leads'), readsPrivate: await tryR(T.p, 'private') };
+  R.admin = { inAdmin: await T.p.evaluate(() => { const home = Router.cur.view === 'home'; Router.go('admin'); return home && Admin.ok(); }), migrated: at(t, 'meta/schema') === 3, legacyPIIMoved: !at(t, 'users/uL/f') && at(t, 'private/uL/f/email') === 'legacy@x.com', codeMovedToSecure: at(t, 'secure/attcodes/d1/code') === '4321' && at(t, 'settings/attendance/codes/d1/code') == null, monitorMoved: at(t, 'secure/monitor/token') === 'oldtok' && !at(t, 'settings/monitor'), readsLeads: await tryR(T.p, 'leads'), readsPrivate: await tryR(T.p, 'private') };
   // استعادة رمز الدخول من لوحة المدرب: يرى الرموز، ويولّد رمزًا جديدًا يلغي الأجهزة المرتبطة
   R.codeRecovery = { seesBcode: await T.p.evaluate(b => (Store.secrets || {})[b], meB.uid) === meB.code };
   await T.p.evaluate(() => { UIState.adminGrp = 'g_users'; UIState.openDrop.add('users'); App.render(); });

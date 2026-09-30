@@ -26,6 +26,8 @@ const FORCE_DEMO = (function () { try { return /[?&]demo=1/.test(location.search
 // فلا انتقال للتخزين المحلي أبدًا — حتى لو تعذر تحميل مكتبة Firebase أو تأخر الاتصال (يُعرض تنبيه وإعادة محاولة).
 const DEMO_MODE = FORCE_DEMO || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('PASTE') !== -1;
 
+// هوية المدرب داخل المنصة: في الذاكرة فقط (لا تُحفظ في التخزين المحلي ولا في users) — مشاركاته تُكتب بهذا المفتاح
+const ADMIN_ID = 'admin', ADMIN_NAME = 'الإدارة';
 const ADMIN_PASS = '3719'; // يُستخدم فقط في وضع المعاينة أو قبل تفعيل Firebase Authentication (عند غياب apiKey)
 const BADGE_THRESHOLD = 0.8;          // 80% لفتح الوسام وتهنئة الإنجاز
 const CONGRATS_DAYS_DEFAULT = 3;      // مدة بقاء التهنئة بعد انتهاء البرنامج

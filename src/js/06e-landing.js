@@ -35,7 +35,7 @@ const Landing = {
   objectivesText() { return Content.guide().objectives.join('\n'); }
 };
 function lpHead(s, light) { return '<div class="lp-head rv">' + (s.kicker ? '<span class="lp-kicker">' + h(s.kicker) + '</span>' : '') + '<h2 class="lp-h2' + (light ? ' light' : '') + '">' + h(s.title || '') + '</h2>' + (s.sub ? '<p class="lp-sub">' + h(s.sub) + '</p>' : '') + '</div>'; }
-function lpCta(label, cls) { return '<button class="lp-btn ' + (cls || '') + '" data-act="' + (Me.isReg() || Me.guest ? 'lp-enter' : 'open-login') + '"><span>' + h(label || 'الدخول للمنصة التعليمية') + '</span><span class="lp-arrow">←</span></button>'; }
+function lpCta(label, cls) { return '<button class="lp-btn ' + (cls || '') + '" data-act="' + (Me.isReg() || Me.guest || Admin.ok() ? 'lp-enter' : 'open-login') + '"><span>' + h(label || 'الدخول للمنصة التعليمية') + '</span><span class="lp-arrow">←</span></button>'; }
 const LandingSections = {
   hero(s) {
     const axes = Content.axes(); const units = Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length;
@@ -143,7 +143,9 @@ function loginFormHtml() {
     '<label class="consent"><input type="checkbox" id="regFollow"> <span>' + h(pv.followup) + ' <span class="muted">(اختياري)</span></span></label>' +
     '<button class="btn btn-primary btn-block" data-act="register">ابدأ 🚀</button>' +
     '<button class="btn btn-mint btn-block" style="margin-top:10px" data-act="member-login">مسجّل مسبقًا؟ الدخول برقم العضوية</button>' +
-    '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button></div>';
+    '<div class="or-line">أو</div><button class="btn btn-ghost btn-block" data-act="guest">👀 تصفح كزائر (مشاهدة فقط)</button>' +
+    // دخول المدرب: قفل صغير باهت في الأسفل (يتضح عند المرور أو التركيز)
+    '<div class="trainer-lock-row"><button class="trainer-lock" data-act="admin-enter" title="دخول المدرب" aria-label="دخول المدرب">' + iconSvg('lock', 14) + '</button></div></div>';
 }
 const LoginModal = {
   m: null,
