@@ -92,6 +92,7 @@ const Content = {
   mergeAxis(id) {
     const def = DEF_AXIS[id], added = Store.addedAxes[id];
     if (!def && !added) return null;
+    if (def && (Store.removedAxes || {})[id]) return null; // محور أصلي في سلة المحذوفات
     let a;
     if (def) {
       const ov = Store.contentAxes[id];
@@ -116,6 +117,8 @@ const Content = {
   mergeEx(id) {
     const def = DEF_EX[id], added = Store.addedEx[id];
     if (!def && !added) return null;
+    if ((Store.removedEx || {})[id]) return null; // تمرين أصلي في سلة المحذوفات
+    const ax = Content.axisOfEx(id); if (ax && DEF_AXIS[ax] && (Store.removedAxes || {})[ax]) return null; // تمارين المحور المحذوف تختفي معه
     let e;
     if (def) { const ov = Store.contentEx[id]; e = Object.assign({}, def, ov || {}, { id, _modified: !!ov, _added: false }); }
     else e = Object.assign({ format: 'text', mode: 'individual', steps: [] }, added, { id, _added: true, _modified: false });
@@ -136,13 +139,13 @@ const Content = {
     const ids = COURSE.activities.map(a => a.id).concat(Object.keys(Store.addedEx || {}).filter(k => Store.addedEx[k].kind === 'activity').sort((x, y) => (Store.addedEx[x].ts || 0) - (Store.addedEx[y].ts || 0)));
     return Content.applyOrder(ids, '_acts').map(Content.mergeEx).filter(e => e && (o.all || !e._hidden));
   },
-  survey(o = {}) { const s = Content.mergeEx(SURVEY_ID); return (o.all || !s._hidden) ? s : null; },
+  survey(o = {}) { const s = Content.mergeEx(SURVEY_ID); return s && (o.all || !s._hidden) ? s : null; },
   axisOfEx(id) { const e = DEF_EX[id]; if (e && e.axis) return e.axis; const a = Store.addedEx[id]; return a && a.axis ? a.axis : null; },
   allExercises() { // كل التمارين في مكان واحد (للتصدير والإشعارات)
     const list = [];
     Content.axes({ all: true }).forEach(a => Content.exercisesOf(a.id, { all: true }).forEach(e => list.push({ e, a, section: a.title })));
     Content.activities({ all: true }).forEach(e => list.push({ e, a: null, section: 'أنشطة' }));
-    list.push({ e: Content.survey({ all: true }), a: null, section: 'ختام البرنامج' });
+    const sv = Content.survey({ all: true }); if (sv) list.push({ e: sv, a: null, section: 'ختام البرنامج' });
     return list;
   },
   exTitle(id) { const e = Content.ex(id); return e ? e.title : id; }

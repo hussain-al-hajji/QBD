@@ -389,6 +389,12 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .or-line{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-family:var(--f-ui);font-size:13px;margin:14px 0}
 .or-line::before,.or-line::after{content:"";height:1px;background:var(--line);flex:1}
 /* قفل دخول المدرب: باهت أسفل نافذة الدخول، يتضح عند المرور/التركيز */
+/* سلة المحذوفات وحذف المتدرب */
+.trash-list{display:grid;gap:8px;margin:10px 0}
+.trash-it{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:12px;background:var(--surface-2);font-family:var(--f-ui);font-size:14px}
+.trash-it .grow{flex:1;min-width:140px}
+.person .del-user{color:#C62F35}
+html[data-theme="dark"] .person .del-user{color:#FF8A8F}
 /* عداد الحضور الحي ودعوة المدرب */
 .live-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 4px}
 .live-bar.sm{margin:8px 0 0}

@@ -61,7 +61,7 @@ function watchDefs() {
     'site': v => { Store.site = v || {}; },
     'settings': v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; },
     'assign': v => { Store.assign = v || {}; },
-    'users': v => { Store.usersPub = v || {}; mergeUsers(); },
+    'users': v => { Store.usersPub = v || {}; mergeUsers(); setTimeout(checkSelfDeleted, 0); },
     'posts': v => { Store.posts = v || {}; },
     'reveal': v => { Store.reveal = v || {}; },
     'lab': v => { v = v || {}; Store.labTimers = v.timers || {}; Store.labAnswers = v.answers || {}; },
@@ -139,15 +139,42 @@ async function doRegister() {
 }
 function privacyModal() { const pv = Content.privacy(); const m = UI.modal('<h3>🔒 إشعار الخصوصية</h3><div style="line-height:1.9">' + richHtml(pv.text) + '</div><div class="actions"><button class="btn btn-primary" data-x>حسنًا</button></div>', { wide: true }); $('[data-x]', m.el).onclick = () => m.close(); }
 // حذف كل بيانات المتدرب من السيرفر (حق المستخدم في حذف بياناته)
-async function deleteMyData() {
-  const ok = await UI.confirm('سيُحذف نهائيًا من السيرفر: بياناتك، ومشاركاتك الفردية، ونتائج تقييماتك، وسجل حضورك، واهتماماتك، ومتابعاتك، وإعجاباتك. إجابات المجموعات تبقى باسم المجموعة مع إزالة اسمك منها. لا يمكن التراجع، ولن تتمكن من الحصول على الشهادة.', { danger: true, ok: 'احذف بياناتي نهائيًا', title: 'حذف بياناتي' });
-  if (!ok) return; const uid = Me.uid(); const upd = {};
+// مسارات حذف كل بيانات متدرب (مشتركة بين «احذف بياناتي» وحذف المدرب له): إجابات المجموعات تبقى مع إزالة اسمه منها
+function userDataPaths(uid) {
+  const upd = {};
   upd['users/' + uid] = null; upd['assess/pre/' + uid] = null; upd['assess/post/' + uid] = null; upd['attendance/' + uid] = null; upd['assign/' + uid] = null; upd['leads/' + uid] = null;
   ['30', '60', '90'].forEach(n => { upd['followups/d' + n + '/' + uid] = null; });
   upd['private/' + uid] = null; upd['secrets/' + uid] = null; upd['devices/' + uid] = null; Attend.days().forEach(d => { upd['checkins/d' + d + '/' + uid] = null; });
   Object.keys(Store.posts || {}).forEach(ex => { const ps = Store.posts[ex] || {}; Object.keys(ps).forEach(k => { const p = ps[k] || {}; if (k === uid) upd['posts/' + ex + '/' + k] = null; else { if (p.members && p.members[uid]) upd['posts/' + ex + '/' + k + '/members/' + uid] = null; if (p.likes && p.likes[uid]) upd['posts/' + ex + '/' + k + '/likes/' + uid] = null; if (p.by === uid) upd['posts/' + ex + '/' + k + '/name'] = ''; } }); });
   Object.keys(Store.storyLikes || {}).forEach(st => { if (((Store.storyLikes[st] || {}).likes || {})[uid]) upd['storyLikes/' + st + '/likes/' + uid] = null; });
-  await DB.update('', upd); DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1));
+  return upd;
+}
+// حذف المدرب لمتدرب من قائمة المسجلين
+async function adminDeleteUser(uid) {
+  const u = (Store.users || {})[uid]; if (!u) return;
+  const ok = await UI.confirm('سيُحذف نهائيًا من السيرفر كل ما يخص <b>' + h(u.name || '') + '</b>: سجله، ومشاركاته الفردية، وتقييماته، وحضوره، واهتماماته، ومتابعاته، وإعجاباته، ورمز دخوله وأجهزته. إجابات المجموعات تبقى مع إزالة اسمه منها. <b>لا يمكن التراجع.</b>', { danger: true, ok: 'حذف المتدرب نهائيًا', title: 'حذف متدرب' });
+  if (!ok) return;
+  try { await DB.update('', userDataPaths(uid)); } catch (e) { return; }
+  DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1)).catch(() => {});
+  UI.toast('🗑 حُذف ' + (u.name || 'المتدرب') + ' وكل بياناته');
+}
+// جهاز المتدرب المحذوف: بعد تأكيد الخادم (ثانية ونصف) يُسجَّل خروجه ويُنبَّه
+function checkSelfDeleted() {
+  if (!Me.isReg() || !App.dataReady) return; const uid = Me.data.uid;
+  if ((Store.usersPub || {})[uid]) { Me._seenOnServer = uid; return; }
+  if (Me._seenOnServer !== uid || Me._delCheck) return;
+  Me._delCheck = setTimeout(async () => {
+    Me._delCheck = null; if (!Me.isReg() || Me.data.uid !== uid) return;
+    let v; try { v = await DB.get('users/' + uid); } catch (e) { return; }
+    if (v || !Me.isReg() || Me.data.uid !== uid) return;
+    Me._seenOnServer = null; Me.clear(); UIState.draft = {}; UIState.editing = {}; syncWatchers(); Router.go('home');
+    UI.alert('حذف المدرب حسابك وبياناتك من المنصة. يمكنك التسجيل من جديد متى شئت.', 'تم حذف حسابك');
+  }, 1500);
+}
+async function deleteMyData() {
+  const ok = await UI.confirm('سيُحذف نهائيًا من السيرفر: بياناتك، ومشاركاتك الفردية، ونتائج تقييماتك، وسجل حضورك، واهتماماتك، ومتابعاتك، وإعجاباتك. إجابات المجموعات تبقى باسم المجموعة مع إزالة اسمك منها. لا يمكن التراجع، ولن تتمكن من الحصول على الشهادة.', { danger: true, ok: 'احذف بياناتي نهائيًا', title: 'حذف بياناتي' });
+  if (!ok) return; const uid = Me.uid();
+  await DB.update('', userDataPaths(uid)); DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1));
   Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); UI.toast('تم حذف بياناتك نهائيًا');
 }
 function welcomeModal(me) {
@@ -534,13 +561,11 @@ document.addEventListener('click', async ev => {
     case 'copy-ex': copyEx(id); break;
     case 'reset-axis': { if (await UI.confirm('استرجاع المحتوى الأصلي لهذا المحور؟ سيُحذف التراكب فقط (حالة الإظهار والتفعيل لا تتأثر).', { ok: 'استرجاع الافتراضي' })) DB.remove('content/axes/' + id); break; }
     case 'reset-ex': { if (await UI.confirm('استرجاع المحتوى الأصلي لهذا التمرين؟', { ok: 'استرجاع الافتراضي' })) DB.remove('content/ex/' + id); break; }
-    case 'delete-axis': {
-      if (!(await UI.confirm('حذف نهائي لهذا المحور المُضاف وكل تمارينه المُضافة التابعة له؟ <b>لا رجعة في هذا الحذف.</b>', { danger: true, ok: 'حذف نهائي' }))) break;
-      const upd = { ['added/axes/' + id]: null, ['visibility/' + id]: null, ['enabled/' + id]: null };
-      Object.keys(Store.addedEx || {}).forEach(k => { if (Store.addedEx[k].axis === id) { upd['added/ex/' + k] = null; upd['posts/' + k] = null; upd['visibility/' + k] = null; } });
-      await DB.update('', upd); DB.set('order/axes', arr(Store.order).filter(x => x !== id)); UI.toast('تم الحذف'); break;
-    }
-    case 'delete-ex': { if (await UI.confirm('حذف نهائي لهذا العنصر المُضاف ومشاركاته؟ <b>لا رجعة في هذا الحذف.</b>', { danger: true, ok: 'حذف نهائي' })) DB.update('', { ['added/ex/' + id]: null, ['posts/' + id]: null, ['visibility/' + id]: null, ['reveal/' + id]: null }); break; }
+    case 'delete-axis': deleteAxis(id); break;
+    case 'delete-ex': deleteEx(id); break;
+    case 'trash': Trash.open(); break;
+    case 'restore-axis': case 'restore-ex': Trash.restore(act === 'restore-axis' ? 'axes' : 'ex', id); break;
+    case 'user-del': adminDeleteUser(t.getAttribute('data-uid')); break;
     case 'clear-posts': { if (await UI.confirm('مسح كل مشاركات «' + h(Content.exTitle(id)) + '»؟', { danger: true, ok: 'مسح المشاركات' })) DB.remove('posts/' + id); break; }
     case 'reveal': { const cur = await DB.get('reveal/' + id); await DB.set('reveal/' + id, cur ? null : true); UI.toast(cur ? '🔒 أُخفيت الإجابات' : '🔓 كُشفت الإجابات الصحيحة لكل المتدربين'); break; } // قراءة الحالة الفعلية من القاعدة قبل التبديل
     case 'global-reset': globalReset(); break;

@@ -48,7 +48,8 @@ function exRow(e, o = {}) {
     '<button class="btn btn-soft btn-xs" data-go="' + (o.kind === 'activity' || o.kind === 'survey' ? 'actEdit' : 'exEdit') + '" data-id="' + h(e.id) + '"' + (o.axis ? ' data-axis="' + h(o.axis) + '"' : '') + '>✏️ تعديل</button>' +
     '<button class="btn btn-ghost btn-xs" data-act="toggle-vis" data-id="' + h(e.id) + '">' + (e._hidden ? '👁 إظهار' : '🙈 إخفاء') + '</button>' +
     (o.kind !== 'survey' ? '<button class="btn btn-ghost btn-xs" data-act="copy-ex" data-id="' + h(e.id) + '">🧬 نسخ</button>' : '') +
-    (isDef ? (e._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-ex" data-id="' + h(e.id) + '">↺ استرجاع الافتراضي</button>' : '') : '<button class="btn btn-danger btn-xs" data-act="delete-ex" data-id="' + h(e.id) + '">🗑 حذف نهائي</button>') +
+    (isDef && e._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-ex" data-id="' + h(e.id) + '">↺ استرجاع الافتراضي</button>' : '') +
+    (o.kind !== 'survey' ? '<button class="btn btn-danger btn-xs" data-act="delete-ex" data-id="' + h(e.id) + '" title="' + (isDef ? 'ينتقل إلى «المحذوفات» ويمكن استرجاعه' : 'حذف نهائي') + '">🗑 حذف</button>' : '') +
     '<button class="btn btn-danger btn-xs" data-act="clear-posts" data-id="' + h(e.id) + '">🧹 مسح المشاركات</button>' +
     (e.format !== 'text' && e.format !== 'sim' ? '<button class="btn btn-mint btn-xs" data-act="reveal" data-id="' + h(e.id) + '">' + (isRevealed(e) ? '🔒 إخفاء الإجابات' : '🔓 كشف الإجابات الصحيحة') + '</button>' : '') +
     '</div>' + (o.kind !== 'survey' ? '<div class="live-bar sm">' + Presence.badge(e.id) + Invite.btn(e.id) + '</div>' : '') + exSummary(e) + '</div>';
@@ -61,7 +62,7 @@ Views.admin = {
     let out = ''; const blocks = {}; let curId = null; const B = id => { if (curId) blocks[curId] = (blocks[curId] || '') + out; out = ''; curId = id; };
     B('users');
     out += tool('users', '👥', '#8A1538', 'المسجّلون', '<div class="bigno num">' + uids.length + '</div>اسم مسجّل في قاعدة البيانات', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="users">' + (UIState.openDrop.has('users') ? 'إخفاء' : 'عرض') + ' القائمة</button><button class="btn btn-danger btn-xs" data-act="clear-names">مسح أسماء المسجّلين فقط</button>');
-    out += drop('users', '<div class="field"><input data-keep="users-search" data-filter=".person" placeholder="🔍 بحث بالاسم…"></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><span class="muted">' + h(users[u].role || '') + '</span><span class="pill num">#' + pad4(users[u].member || 0) + '</span>' + ((Store.secrets || {})[u] ? '<span class="pill num notranslate" translate="no" dir="ltr" title="رمز الدخول الشخصي" style="user-select:all">🔑 ' + h(Store.secrets[u]) + '</span>' : '<span class="pill" title="لا يوجد رمز دخول بعد">🔑 —</span>') + '<button class="btn btn-ghost btn-xs" data-act="code-copy" data-uid="' + h(u) + '" title="نسخ رسالة فيها رقم العضوية والرمز لإرسالها للمتدرب">📋</button><button class="btn btn-ghost btn-xs" data-act="code-new" data-uid="' + h(u) + '" title="توليد رمز جديد وإلغاء ربط الأجهزة الأخرى">🔄 رمز جديد</button><span class="muted">' + fmtDate(users[u].ts) + '</span></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
+    out += drop('users', '<div class="field"><input data-keep="users-search" data-filter=".person" placeholder="🔍 بحث بالاسم…"></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><span class="muted">' + h(users[u].role || '') + '</span><span class="pill num">#' + pad4(users[u].member || 0) + '</span>' + ((Store.secrets || {})[u] ? '<span class="pill num notranslate" translate="no" dir="ltr" title="رمز الدخول الشخصي" style="user-select:all">🔑 ' + h(Store.secrets[u]) + '</span>' : '<span class="pill" title="لا يوجد رمز دخول بعد">🔑 —</span>') + '<button class="btn btn-ghost btn-xs" data-act="code-copy" data-uid="' + h(u) + '" title="نسخ رسالة فيها رقم العضوية والرمز لإرسالها للمتدرب">📋</button><button class="btn btn-ghost btn-xs" data-act="code-new" data-uid="' + h(u) + '" title="توليد رمز جديد وإلغاء ربط الأجهزة الأخرى">🔄 رمز جديد</button><button class="btn btn-ghost btn-xs del-user" data-act="user-del" data-uid="' + h(u) + '" title="حذف المتدرب وكل بياناته" aria-label="حذف المتدرب">🗑</button><span class="muted">' + fmtDate(users[u].ts) + '</span></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
     B('groups');
     out += tool('groups', '🧩', '#138A5E', 'إدارة المجموعات', '<div class="row"><input type="number" min="2" max="30" id="grpCount" data-keep="grp-count" value="' + Groups.count() + '" style="width:80px;border:1px solid var(--line);border-radius:10px;padding:6px 8px"><button class="btn btn-soft btn-xs" data-act="save-groups">حفظ العدد</button></div><div style="margin-top:6px">عدد المجموعات (2–30). التوزيع اليدوي إرشادي لا إلزامي.</div>', '<button class="btn btn-primary btn-xs" data-act="assign-open">🧭 توزيع</button>');
     B('congrats');
@@ -149,7 +150,7 @@ Views.admin = {
     out += '<div class="acc ' + (accSt ? 'open' : '') + '" style="--ac:#9A7412;--acg:' + tint('#9A7412', .08) + '"><div class="acc-head" data-act="acc" data-k="storiesAcc"><span class="aico">🌟</span><h3>قصص النجاح الحقيقية <span class="muted num" style="font-size:12.5px">(' + sts.length + ')</span></h3><span class="arrow">◀</span></div><div class="acc-body">' + (accSt ? sts.map((st, i) => '<div class="ex-row"><div class="top"><span style="font-size:18px">' + h(st.flag || '🌟') + '</span><span class="nm">' + h(st.title) + ' ' + tags(st) + '<span class="tag fmt"><span class="num">' + st.sources.length + '</span> مصادر · 👏 <span class="num">' + Object.keys((Store.storyLikes[st.id] || {}).likes || {}).length + '</span></span></span>' +
       '<button class="btn btn-ghost btn-xs" data-act="story-move" data-d="-1" data-id="' + h(st.id) + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button class="btn btn-ghost btn-xs" data-act="story-move" data-d="1" data-id="' + h(st.id) + '" ' + (i === sts.length - 1 ? 'disabled' : '') + '>↓</button><button class="btn btn-soft btn-xs" data-go="storyEdit" data-id="' + h(st.id) + '">✏️ تعديل</button><button class="btn btn-ghost btn-xs" data-act="toggle-vis" data-id="' + h(st.id) + '">' + (st._hidden ? '👁 إظهار' : '🙈 إخفاء') + '</button><button class="btn btn-ghost btn-xs" data-go="story" data-id="' + h(st.id) + '">👀 عرض</button>' +
       (st._added ? '<button class="btn btn-danger btn-xs" data-act="story-delete" data-id="' + h(st.id) + '">🗑 حذف نهائي</button>' : (st._modified ? '<button class="btn btn-ghost btn-xs" data-act="story-reset" data-id="' + h(st.id) + '">↺ استرجاع الافتراضي</button>' : '')) + '</div></div>').join('') : '') + '</div></div>';
-    const axBtns = '<button class="btn btn-primary btn-sm" data-go="axisEdit" data-id="new">➕ إضافة محور جديد</button><button class="btn btn-soft btn-sm" data-go="actEdit" data-id="new">➕ إضافة نشاط جديد</button>'; B('units');
+    const axBtns = '<button class="btn btn-primary btn-sm" data-go="axisEdit" data-id="new">➕ إضافة محور جديد</button><button class="btn btn-soft btn-sm" data-go="actEdit" data-id="new">➕ إضافة نشاط جديد</button>' + Trash.btn(); B('units');
     const accU = UIState.openAcc.has('units');
     out += '<div class="acc ' + (accU ? 'open' : '') + '" style="--ac:#1F3A5F;--acg:' + tint('#1F3A5F', .08) + '"><div class="acc-head" data-act="acc" data-k="units"><span class="aico">' + iconSvg('layers', 20, '#fff') + '</span><h3>أسماء الوحدات (العناوين الجانبية فوق المحاور)</h3><span class="arrow">◀</span></div><div class="acc-body">' + (accU ? Views.admin.unitsEditor() : '') + '</div></div>';
     B('axes'); out += '<div class="row blk-actions">' + axBtns + '</div>';
@@ -159,7 +160,7 @@ Views.admin = {
       const exs = Content.exercisesOf(a.id, { all: true });
       out += '<div class="acc ' + (open ? 'open' : '') + '" draggable="true" data-axis-drag="' + h(a.id) + '" style="--ac:' + col + ';--acg:' + tint(col, .08) + '"><div class="acc-head" data-act="acc" data-k="' + h(a.id) + '"><span class="drag-handle" title="اسحب لإعادة الترتيب">⠿</span><span class="aico">' + iconSvg(a.icon || 'star', 20, '#fff') + '</span><h3>' + h(a.title) + ' <span class="muted" style="font-weight:500;font-size:12.5px">· ' + h(Content.unitName(a.unit) || 'بدون وحدة') + ' · <span class="num">' + exs.length + '</span> تمرين</span> ' + tags(a) + '</h3>' +
         '<div class="acc-actions"><button class="btn btn-ghost btn-xs" data-act="axis-move" data-d="-1" data-id="' + h(a.id) + '" title="تحريك لأعلى">↑</button><button class="btn btn-ghost btn-xs" data-act="axis-move" data-d="1" data-id="' + h(a.id) + '" title="تحريك لأسفل">↓</button><button class="btn btn-soft btn-xs" data-go="axisEdit" data-id="' + h(a.id) + '">✏️ تعديل</button><button class="btn btn-ghost btn-xs" data-act="toggle-vis" data-id="' + h(a.id) + '">' + (a._hidden ? '👁 إظهار' : '🙈 إخفاء') + '</button><button class="btn btn-ghost btn-xs" data-act="toggle-en" data-id="' + h(a.id) + '">' + (a._disabled ? '⏸ معطّل ⇄ تفعيل' : '✅ مفعّل ⇄ تعطيل') + '</button><button class="btn btn-ghost btn-xs" data-act="copy-axis" data-id="' + h(a.id) + '">🧬 نسخ</button>' +
-        (isDef ? (a._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-axis" data-id="' + h(a.id) + '">↺ استرجاع الافتراضي</button>' : '') : '<button class="btn btn-danger btn-xs" data-act="delete-axis" data-id="' + h(a.id) + '">🗑 حذف نهائي</button>') + '</div><span class="arrow">◀</span></div>' +
+        (isDef && a._modified ? '<button class="btn btn-ghost btn-xs" data-act="reset-axis" data-id="' + h(a.id) + '">↺ استرجاع الافتراضي</button>' : '') + '<button class="btn btn-danger btn-xs" data-act="delete-axis" data-id="' + h(a.id) + '" title="' + (isDef ? 'ينتقل إلى «المحذوفات» ويمكن استرجاعه' : 'حذف نهائي') + '">🗑 حذف</button>' + '</div><span class="arrow">◀</span></div>' +
         '<div class="acc-body">' + (open ? (exs.length ? exs.map(e => exRow(e, { axis: a.id })).join('') : '<div class="empty">لا توجد تمارين.</div>') + '<div style="margin-top:10px"><button class="btn btn-soft btn-sm" data-go="exEdit" data-id="new" data-axis="' + h(a.id) + '">➕ أضف تمرينًا لهذا المحور</button></div>' : '') + '</div></div>';
     });
     out += '</div>';
@@ -630,5 +631,57 @@ Views.storyEdit = {
     else if (COURSE.stories.some(x => x.id === id)) await DB.set('content/stories/' + id, data);
     else await DB.set('added/stories/' + id, Object.assign({}, Store.addedStories[id] || {}, data));
     UI.toast('✅ حُفظت القصة ونُشرت حيًا'); UIState.openAcc.add('storiesAcc'); Router.go('admin');
+  }
+};
+
+// ---------- حذف المحاور والتمارين (الأصلي إلى «المحذوفات»، والمضاف نهائيًا) ----------
+// ما يُنظَّف مع كل تمرين محذوف: المشاركات، الإظهار، التفعيل، التعديلات، الكشف
+function exCleanup(id, upd) { ['posts/', 'visibility/', 'enabled/', 'content/ex/', 'reveal/'].forEach(p => { upd[p + id] = null; }); }
+// الحضور الحي والدعوة: كتابات منفصلة حتى لا تُفشل قواعدٌ قديمة عملية الحذف نفسها
+function liveCleanup(ids) {
+  ids.forEach(x => DB.remove('presence/' + x, { quiet: true }).catch(() => {}));
+  const inv = Store.invite; if (inv && ids.indexOf(inv.ex) > -1) DB.remove('invite', { quiet: true }).catch(() => {});
+}
+function orderWithout(key, id, upd) { const cur = arr((Store.exOrder || {})[key]); if (cur.indexOf(id) > -1) upd['order/ex/' + key] = cur.filter(x => x !== id); }
+async function deleteEx(id) {
+  const e = Content.ex(id); if (!e) return; const isDef = !!DEF_EX[id]; const n = Object.keys((Store.posts || {})[id] || {}).length;
+  const ok = await UI.confirm('حذف «<b>' + h(e.title) + '</b>» مع مشاركاته (<span class="num">' + n + '</span>)؟ ' + (isDef ? 'ينتقل التمرين الأصلي إلى «🗑 المحذوفات» ويمكن استرجاعه لاحقًا (دون المشاركات).' : '<b>حذف نهائي لا رجعة فيه.</b>'), { danger: true, ok: isDef ? 'حذف' : 'حذف نهائي', title: 'حذف تمرين' });
+  if (!ok) return;
+  const upd = {}; if (isDef) upd['removed/ex/' + id] = DB.now(); else upd['added/ex/' + id] = null;
+  exCleanup(id, upd); orderWithout(Content.axisOfEx(id) || '_acts', id, upd);
+  try { await DB.update('', upd); } catch (er) { return; }
+  liveCleanup([id]); UI.toast(isDef ? '🗑 نُقل إلى «المحذوفات»' : '🗑 حُذف نهائيًا');
+}
+async function deleteAxis(id) {
+  const a = Content.axis(id); if (!a) return; const isDef = !!DEF_AXIS[id]; const exIds = Content.exIdsOf(id);
+  const n = exIds.reduce((s, x) => s + Object.keys((Store.posts || {})[x] || {}).length, 0);
+  const ok = await UI.confirm('حذف المحور «<b>' + h(a.title) + '</b>» وتمارينه (<span class="num">' + exIds.length + '</span>) مع كل مشاركاتها (<span class="num">' + n + '</span>)؟ ' + (isDef ? 'ينتقل المحور الأصلي إلى «🗑 المحذوفات» ويمكن استرجاعه لاحقًا (دون المشاركات).' : '<b>حذف نهائي لا رجعة فيه.</b>'), { danger: true, ok: isDef ? 'حذف' : 'حذف نهائي', title: 'حذف محور' });
+  if (!ok) return;
+  const upd = {}; if (isDef) upd['removed/axes/' + id] = DB.now(); else upd['added/axes/' + id] = null;
+  ['visibility/', 'enabled/', 'content/axes/', 'order/ex/'].forEach(p => { upd[p + id] = null; });
+  exIds.forEach(x => { exCleanup(x, upd); if (!isDef && !DEF_EX[x]) upd['added/ex/' + x] = null; });
+  if (arr(Store.order).indexOf(id) > -1) upd['order/axes'] = arr(Store.order).filter(x => x !== id);
+  try { await DB.update('', upd); } catch (er) { return; }
+  liveCleanup(exIds); UI.toast(isDef ? '🗑 نُقل المحور إلى «المحذوفات»' : '🗑 حُذف المحور نهائيًا');
+}
+const Trash = {
+  m: null,
+  list() {
+    const ax = Object.keys(Store.removedAxes || {}).filter(id => DEF_AXIS[id]).map(id => ({ kind: 'axes', id, title: DEF_AXIS[id].title, ts: +Store.removedAxes[id] || 0 }));
+    const ex = Object.keys(Store.removedEx || {}).filter(id => DEF_EX[id]).map(id => { const ax = Content.axisOfEx(id); return { kind: 'ex', id, title: DEF_EX[id].title, ts: +Store.removedEx[id] || 0, note: ax && (Store.removedAxes || {})[ax] ? 'محوره محذوف أيضًا' : '' }; });
+    return ax.concat(ex).sort((x, y) => y.ts - x.ts);
+  },
+  btn() { const n = Trash.list().length; return '<button class="btn btn-ghost btn-sm" data-act="trash">🗑 المحذوفات' + (n ? ' <span class="pill num">' + n + '</span>' : '') + '</button>'; },
+  body() {
+    const l = Trash.list();
+    return '<h3>🗑 المحذوفات</h3><p class="muted" style="font-family:var(--f-ui);font-size:13px;margin-top:0">المحاور والتمارين الأصلية المحذوفة. الاسترجاع يعيد المحتوى الأصلي دون المشاركات السابقة.</p>' +
+      (l.length ? '<div class="trash-list">' + l.map(x => '<div class="trash-it"><span class="tag">' + (x.kind === 'axes' ? 'محور' : 'تمرين') + '</span><b class="grow">' + h(x.title) + (x.note ? ' <span class="muted">(' + h(x.note) + ')</span>' : '') + '</b><span class="muted">' + fmtDate(x.ts) + '</span><button class="btn btn-soft btn-xs" data-act="restore-' + (x.kind === 'axes' ? 'axis' : 'ex') + '" data-id="' + h(x.id) + '">↺ استرجاع</button></div>').join('') + '</div>' : '<div class="empty">لا توجد محذوفات.</div>') +
+      '<div class="actions"><button class="btn btn-ghost" data-x>إغلاق</button></div>';
+  },
+  open() { if (Trash.m) Trash.m.close(); const m = Trash.m = UI.modal(Trash.body(), { onClose: () => { Trash.m = null; } }); $('[data-x]', m.el).onclick = () => m.close(); },
+  refresh() { if (!Trash.m) return; const m = Trash.m; m.el.innerHTML = Trash.body(); $('[data-x]', m.el).onclick = () => m.close(); },
+  async restore(kind, id) {
+    try { await DB.remove('removed/' + kind + '/' + id); } catch (e) { return; }
+    UI.toast('↺ استُرجع «' + ((kind === 'axes' ? DEF_AXIS[id] : DEF_EX[id]) || {}).title + '»'); Trash.refresh(); App.render();
   }
 };
