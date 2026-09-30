@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------
 const Store = {
   contentAxes: {}, contentEx: {}, addedAxes: {}, addedEx: {}, visibility: {}, enabled: {}, order: [],
-  site: {}, groupCount: DEFAULT_GROUPS, groupNames: {}, assign: {}, users: {}, posts: {}, reveal: {}, presence: {}, presenceDenied: false, invite: null, removedAxes: {}, removedEx: {},
+  site: {}, groupCount: DEFAULT_GROUPS, groupsOff: false, groupNames: {}, assign: {}, users: {}, posts: {}, reveal: {}, presence: {}, presenceDenied: false, invite: null, removedAxes: {}, removedEx: {},
   labTimers: {}, labAnswers: {}, broadcast: null, resetStamp: 0, registered: 0, ready: false,
   contentLab: null, contentAssess: null, contentStories: {}, addedStories: {}, storyOrder: [], storyLikes: {}, exOrder: {}, assess: {}, assessCfg: {}, attendance: {}, attCfg: {}
 };
@@ -124,6 +124,8 @@ const Content = {
     else e = Object.assign({ format: 'text', mode: 'individual', steps: [] }, added, { id, _added: true, _modified: false });
     e.steps = arr(e.steps); e.rates = arr(e.rates); e.items = arr(e.items).map(it => Object.assign({}, it, it.options ? { options: arr(it.options) } : {}));
     if (FORMAT_MODE[e.format]) e.mode = FORMAT_MODE[e.format];
+    e._mode0 = e.mode; // النوع المخزَّن (للمحرر)؛ عند تعطيل المجموعات يُعامل الجماعي كفردي دون تغيير المخزَّن
+    if (e.mode === 'group' && !Groups.on()) e.mode = 'individual';
     e._hidden = Content.isHidden(id);
     return e;
   },
@@ -248,6 +250,8 @@ const DEFAULT_PRIVACY = {
 
 // ---------- المجموعات ----------
 const Groups = {
+  // وضع المجموعات عام: الأصل مفعّل، وعند تعطيله تصير تمارين المجموعات فردية (لا اختيار مجموعة)
+  on() { return !Store.groupsOff; },
   count() { const n = parseInt(Store.groupCount, 10); return isFinite(n) && n >= 2 ? Math.min(30, n) : DEFAULT_GROUPS; },
   list() { const out = []; for (let i = 1; i <= Groups.count(); i++) out.push(i); return out; },
   label(n) { const nm = Store.groupNames && Store.groupNames[n]; return nm ? 'مجموعة ' + n + ' · ' + nm : 'مجموعة ' + n; },
@@ -308,9 +312,10 @@ const Me = {
 const Progress = {
   exDone(e, uid) {
     const ps = Store.posts[e.id]; if (!ps || !uid) return false;
-    if (e.mode === 'group') return Object.keys(ps).some(k => ps[k] && ps[k].members && ps[k].members[uid]);
-    if (e.format === 'mcq') { const a = ansList(ps[uid] && ps[uid].answers, e.items.length); return !!ps[uid] && a.every(v => v !== null && v !== ''); }
-    return !!ps[uid];
+    const inGroup = Object.keys(ps).some(k => ps[k] && ps[k].members && ps[k].members[uid]); // إجابات جماعية سابقة تُحتسب لأعضائها
+    if (e.mode === 'group') return inGroup;
+    if (e.format === 'mcq' && ps[uid]) { const a = ansList(ps[uid].answers, e.items.length); return a.every(v => v !== null && v !== '') || inGroup; }
+    return !!ps[uid] || inGroup;
   },
   // يستثني تمامًا: المحاور المخفية، المحاور المعطلة، والتمارين المخفية
   forUser(uid) {

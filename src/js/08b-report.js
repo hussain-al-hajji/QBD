@@ -23,7 +23,7 @@ function reportData(snap) {
     const cfg = Attend.cfg(); const attAvg = uids.length ? Math.round(uids.reduce((s, u) => s + Attend.pct(u), 0) / uids.length) : 0;
     const perDay = Attend.days().map(d => uids.filter(u => Attend.hoursOf(u, d) > 0).length);
     const leads = Leads.list(); const byProg = Leads.byProgram(leads);
-    const budget = (() => { const e = Content.allExercises().map(x => x.e).find(e => e && e.sim === 'budget'); if (!e) return []; const ps = Store.posts[e.id] || {}; return Object.keys(ps).filter(k => ps[k] && ps[k].state && /^g\d+$/.test(k)).map(k => ({ g: +k.slice(1), r: BudgetSim.calc(ps[k].state) })).sort((a, b) => b.r.score - a.r.score); })();
+    const budget = (() => { const e = Content.allExercises().map(x => x.e).find(e => e && e.sim === 'budget'); if (!e) return []; const ps = Store.posts[e.id] || {}; return Object.keys(ps).filter(k => ps[k] && ps[k].state && k !== ADMIN_ID).map(k => ({ g: /^g\d+$/.test(k) ? +k.slice(1) : 0, name: ps[k].name || '', r: BudgetSim.calc(ps[k].state) })).sort((a, b) => b.r.score - a.r.score); })();
     const fu = {}; ['30', '60', '90'].forEach(k => { fu[k] = Object.keys((Store.followups || {})['d' + k] || {}).length; });
     const d = { cohort: Cohort.cur(), uids, n: A.items.length, A, pre, post, paired, gain, preAvg: Assess.avg('pre'), postAvg: Assess.avg('post'), pq: Assess.perQuestion('pre'), qq: Assess.perQuestion('post'), axes, survey, attAvg, perDay, cfg,
       certs: Attend.holders().length, attOn: Attend.on(), certOn: Attend.certOn(), achievers: Progress.achievers().length, labGroups: Object.keys(Store.labAnswers || {}).length, leads, byProg, budget, fu,
@@ -96,7 +96,7 @@ async function buildReportPdf(lang = 'ar', snap, cohortName) {
     // 5) المشاركة في المحاور والمحاكاة
     page(L('التفاعل والمشاركة', 'Engagement'), box(L('نسبة المشاركين في تمارين كل محور', 'Share of participants engaging with each module'), pdfBars(d.axes.map(x => ({ l: E ? (EN.axes[x.a.id] || x.a.title) : x.a.title, v: Math.round(x.rate * 100), t: Math.round(x.rate * 100) + '%' })), { max: 100, color: '#1F3A5F', lw: '46%' })) +
       box(L('مؤشرات إضافية', 'Other indicators'), '<div style="display:flex;flex-wrap:wrap;gap:8px">' + card(L('إجمالي المشاركات', 'Total submissions'), d.axes.reduce((s, x) => s + x.posts, 0)) + card(L('أنجزوا 80% من التمارين', 'Completed ≥ 80%'), d.achievers) + card(L('مجموعات المختبر', 'Lab groups'), d.labGroups) + '</div>') +
-      (d.budget.length ? box(L('لعبة ميزانية التسويق: ترتيب المجموعات', 'Marketing budget simulation: group ranking'), pdfBars(d.budget.map(x => ({ l: Groups.label(x.g), v: Math.max(0, Math.round(x.r.score)), t: QAR(x.r.score) + ' · ROAS ' + x.r.roas.toFixed(1) })), { color: '#D07A32' })) : ''));
+      (d.budget.length ? box(L('لعبة ميزانية التسويق: الترتيب', 'Marketing budget simulation: ranking'), pdfBars(d.budget.map(x => ({ l: x.g ? Groups.label(x.g) : (x.name || 'مشارك'), v: Math.max(0, Math.round(x.r.score)), t: QAR(x.r.score) + ' · ROAS ' + x.r.roas.toFixed(1) })), { color: '#D07A32' })) : ''));
     // 6) الرضا
     const sv = d.survey;
     page(L('تقييم المشاركين للبرنامج', 'Participant satisfaction'), box(L('متوسط كل بند (من 5)', 'Average rating per item (out of 5)'), sv.rates.length ? pdfBars(sv.rates.map((r, i) => ({ l: E ? (EN.rates[i] || r) : r, v: sv.avgs[i] || 0, t: sv.avgs[i] ? sv.avgs[i].toFixed(2) : '—' })), { max: 5, color: '#E0A526', lw: '46%' }) : '—') +

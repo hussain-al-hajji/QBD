@@ -300,6 +300,8 @@ ul,ol{margin:.3em 0;padding-inline-start:1.3em}
 .cmp-opt.compact{padding:6px 10px;min-height:0;font-size:13.5px;line-height:1.6;border-radius:10px}
 .cmp-opt.right{border-color:var(--ok);background:var(--ok-bg)}
 .cmp-opt.wrong{border-color:var(--danger);background:var(--bad-bg)}
+.q-answer{margin-top:10px;padding:8px 12px;border-radius:12px;background:var(--ok-bg);color:#10573A;font-family:var(--f-ui);font-size:14px;border:1px solid #8FD1AE}
+html[data-theme="dark"] .q-answer{color:#7FE0B0;border-color:#2E7A55}
 .correct-note{font-family:var(--f-ui);font-size:12.5px;color:#10573A;margin-top:4px}
 .save-row{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
 .status-note{font-family:var(--f-ui);font-size:13px;color:var(--ink-3)}
@@ -2609,7 +2611,7 @@ const Scenes = (function () {
 // ---------------------------------------------------------------------
 const Store = {
   contentAxes: {}, contentEx: {}, addedAxes: {}, addedEx: {}, visibility: {}, enabled: {}, order: [],
-  site: {}, groupCount: DEFAULT_GROUPS, groupNames: {}, assign: {}, users: {}, posts: {}, reveal: {}, presence: {}, presenceDenied: false, invite: null, removedAxes: {}, removedEx: {},
+  site: {}, groupCount: DEFAULT_GROUPS, groupsOff: false, groupNames: {}, assign: {}, users: {}, posts: {}, reveal: {}, presence: {}, presenceDenied: false, invite: null, removedAxes: {}, removedEx: {},
   labTimers: {}, labAnswers: {}, broadcast: null, resetStamp: 0, registered: 0, ready: false,
   contentLab: null, contentAssess: null, contentStories: {}, addedStories: {}, storyOrder: [], storyLikes: {}, exOrder: {}, assess: {}, assessCfg: {}, attendance: {}, attCfg: {}
 };
@@ -2729,6 +2731,8 @@ const Content = {
     else e = Object.assign({ format: 'text', mode: 'individual', steps: [] }, added, { id, _added: true, _modified: false });
     e.steps = arr(e.steps); e.rates = arr(e.rates); e.items = arr(e.items).map(it => Object.assign({}, it, it.options ? { options: arr(it.options) } : {}));
     if (FORMAT_MODE[e.format]) e.mode = FORMAT_MODE[e.format];
+    e._mode0 = e.mode; // النوع المخزَّن (للمحرر)؛ عند تعطيل المجموعات يُعامل الجماعي كفردي دون تغيير المخزَّن
+    if (e.mode === 'group' && !Groups.on()) e.mode = 'individual';
     e._hidden = Content.isHidden(id);
     return e;
   },
@@ -2853,6 +2857,8 @@ const DEFAULT_PRIVACY = {
 
 // ---------- المجموعات ----------
 const Groups = {
+  // وضع المجموعات عام: الأصل مفعّل، وعند تعطيله تصير تمارين المجموعات فردية (لا اختيار مجموعة)
+  on() { return !Store.groupsOff; },
   count() { const n = parseInt(Store.groupCount, 10); return isFinite(n) && n >= 2 ? Math.min(30, n) : DEFAULT_GROUPS; },
   list() { const out = []; for (let i = 1; i <= Groups.count(); i++) out.push(i); return out; },
   label(n) { const nm = Store.groupNames && Store.groupNames[n]; return nm ? 'مجموعة ' + n + ' · ' + nm : 'مجموعة ' + n; },
@@ -2913,9 +2919,10 @@ const Me = {
 const Progress = {
   exDone(e, uid) {
     const ps = Store.posts[e.id]; if (!ps || !uid) return false;
-    if (e.mode === 'group') return Object.keys(ps).some(k => ps[k] && ps[k].members && ps[k].members[uid]);
-    if (e.format === 'mcq') { const a = ansList(ps[uid] && ps[uid].answers, e.items.length); return !!ps[uid] && a.every(v => v !== null && v !== ''); }
-    return !!ps[uid];
+    const inGroup = Object.keys(ps).some(k => ps[k] && ps[k].members && ps[k].members[uid]); // إجابات جماعية سابقة تُحتسب لأعضائها
+    if (e.mode === 'group') return inGroup;
+    if (e.format === 'mcq' && ps[uid]) { const a = ansList(ps[uid].answers, e.items.length); return a.every(v => v !== null && v !== '') || inGroup; }
+    return !!ps[uid] || inGroup;
   },
   // يستثني تمامًا: المحاور المخفية، المحاور المعطلة، والتمارين المخفية
   forUser(uid) {
@@ -3802,6 +3809,15 @@ function groupPickerHtml(e, o = {}) {
 }
 
 // ---- عرض الإجابات التفاعلية (للخلاصة والتغذية الحية) ----
+// الإجابة الصحيحة لبند (بعد كشف المدرب) تظهر مع السؤال نفسه لكل من دخل الصفحة، إضافة إلى ظهورها في إجابات المشاركين
+function correctText(e, it) {
+  if (e.format === 'mcq') return LETTERS[it.answer] + ') ' + (it.options[it.answer] || '');
+  if (e.format === 'truefalse') return it.answer ? 'صح' : 'خطأ';
+  if (e.format === 'fillblank') return it.answer;
+  if (e.format === 'comparePairs') return '(' + (it.answer === 'a' ? 'أ' : 'ب') + ') ' + (it[it.answer] || '');
+  return '';
+}
+function revealNoteHtml(e, it) { return isRevealed(e) ? '<div class="q-answer" role="note">✅ الإجابة الصحيحة: <b>' + h(correctText(e, it)) + '</b></div>' : ''; }
 function answersSummary(e, answers, reveal, compact) {
   answers = ansList(answers, e.items.length);
   if (e.format === 'mcq' || e.format === 'truefalse') {
@@ -3844,7 +3860,7 @@ function mcqPollHtml(e) {
           (showPct ? '<span class="poll-bar" style="width:' + pct + '%"></span>' : '') +
           '<span class="mk">' + (sel ? '✓' : '') + '</span><span class="grow"><b>' + LETTERS[k] + ')</b> ' + h(o) + '</span>' +
           (showPct ? '<span class="poll-pct num">' + pct + '%</span>' : '') + '</button>';
-      }).join('') + '</div>' + (showPct ? '<div class="poll-total">👥 <span class="num">' + st[i].total + '</span> ' + (st[i].total === 1 ? 'مشاركة' : 'مشاركات') + (reveal ? ' · 🔓 الإجابة الصحيحة: ' + LETTERS[it.answer] + ')' : '') + '</div>' : '') + '</div>';
+      }).join('') + '</div>' + (showPct ? '<div class="poll-total">👥 <span class="num">' + st[i].total + '</span> ' + (st[i].total === 1 ? 'مشاركة' : 'مشاركات') + '</div>' : '') + revealNoteHtml(e, it) + '</div>';
   }).join('');
 }
 
@@ -3863,9 +3879,9 @@ function interactiveHtml(e, post, canAct, editing) {
         opts.map(([v, label], k) => {
           const sel = show[i] !== null && show[i] !== undefined && String(show[i]) === String(v);
           let cls = sel ? 'sel' : '';
-          if (reveal && !active && post) { const correct = e.format === 'mcq' ? k === +it.answer : v === !!it.answer; if (correct) cls = 'right'; else if (sel) cls = 'wrong'; }
+          if (reveal) { const correct = e.format === 'mcq' ? k === +it.answer : v === !!it.answer; if (correct) cls = 'right'; else if (sel && !active && post) cls = 'wrong'; }
           return '<button class="opt ' + cls + '" data-act="pick-opt" data-ex="' + h(e.id) + '" data-i="' + i + '" data-v="' + h(String(v)) + '" ' + (active ? '' : 'disabled') + '><span class="mk">' + (sel ? '✓' : '') + '</span><span>' + (e.format === 'mcq' ? '<b>' + LETTERS[k] + ')</b> ' : '') + h(label) + '</span></button>';
-        }).join('') + '</div></div>';
+        }).join('') + '</div>' + revealNoteHtml(e, it) + '</div>';
     }).join('');
   } else if (e.format === 'fillblank') {
     const bank = bankOf(e); const used = {}; show.forEach(w => { if (w) used[w] = (used[w] || 0) + 1; }); const selW = UIState.fbSel[e.id];
@@ -3874,11 +3890,11 @@ function interactiveHtml(e, post, canAct, editing) {
     out += e.items.map((it, i) => {
       const w = show[i]; let cls = w ? 'filled' : ''; if (reveal && !active && post && w) cls += w === it.answer ? ' right' : ' wrong';
       const blank = '<button class="blank ' + cls + '" data-act="fb-blank" data-ex="' + h(e.id) + '" data-i="' + i + '" ' + (active ? '' : 'disabled') + '>' + (w ? h(w) : '&nbsp;…&nbsp;') + '</button>';
-      return '<div class="q-card"><div class="qt"><span class="qn num">' + (i + 1) + '</span><span>' + h(it.text).replace('___', blank) + '</span></div>' + (reveal && !active && post && w && w !== it.answer ? '<div class="correct-note">الصحيح: ' + h(it.answer) + '</div>' : '') + '</div>';
+      return '<div class="q-card"><div class="qt"><span class="qn num">' + (i + 1) + '</span><span>' + h(it.text).replace('___', blank) + '</span></div>' + revealNoteHtml(e, it) + '</div>';
     }).join('');
   } else if (e.format === 'comparePairs') {
     out += e.items.map((it, i) => '<div class="q-card"><div class="qt"><span class="qn num">' + (i + 1) + '</span><span>أي العبارتين أدق؟</span></div><div class="cmp-row">' +
-      ['a', 'b'].map(k => { const sel = show[i] === k; let cls = sel ? 'sel' : ''; if (reveal && !active && post) { if (k === it.answer) cls = 'right'; else if (sel) cls = 'wrong'; } return '<button class="cmp-opt ' + cls + '" data-act="pick-cmp" data-ex="' + h(e.id) + '" data-i="' + i + '" data-v="' + k + '" ' + (active ? '' : 'disabled') + '><b>(' + (k === 'a' ? 'أ' : 'ب') + ')</b>' + h(it[k]) + '</button>'; }).join('') + '</div></div>').join('');
+      ['a', 'b'].map(k => { const sel = show[i] === k; let cls = sel ? 'sel' : ''; if (reveal) { if (k === it.answer) cls = 'right'; else if (sel && !active && post) cls = 'wrong'; } return '<button class="cmp-opt ' + cls + '" data-act="pick-cmp" data-ex="' + h(e.id) + '" data-i="' + i + '" data-v="' + k + '" ' + (active ? '' : 'disabled') + '><b>(' + (k === 'a' ? 'أ' : 'ب') + ')</b>' + h(it[k]) + '</button>'; }).join('') + '</div>' + revealNoteHtml(e, it) + '</div>').join('');
   }
   return out;
 }
@@ -3945,7 +3961,8 @@ Views.ex = {
     if (e.scenario || e.chart) out += '<div class="ex-block scenario"><div class="lbl">🎬 الموقف</div>' + richHtml(e.scenario) + (e.chart ? '<div style="margin-top:12px">' + Charts.render(e.chart, col) + '</div>' : '') + '</div>';
     if (a) out += '<div class="ex-block extract"><div class="lbl">🧭 قبل أن تبدأ: مستخلص المحور</div><div style="font-family:var(--f-ui);font-weight:700">' + h(a.title) + (a.classic ? ' — <span class="muted">' + h(a.classic) + '</span>' : '') + '</div>' + (a.highlights.length ? '<ul style="margin-top:6px">' + a.highlights.map(x => '<li>' + h(x) + '</li>').join('') + '</ul>' : '') + '</div>';
     if (e.principle) out += '<div class="ex-block principle"><div class="lbl">🔬 المبدأ العلمي باختصار</div>' + richHtml(e.principle) + '</div>';
-    const steps = e.steps && e.steps.length ? e.steps : (DEFAULT_STEPS[e.format] || DEFAULT_STEPS.text);
+    let steps = e.steps && e.steps.length ? e.steps : (DEFAULT_STEPS[e.format] || DEFAULT_STEPS.text);
+    if (e._mode0 === 'group' && e.mode !== 'group') steps = steps.filter(x => !/اختر(وا)?\s+مجموعت|مجموعتكم|مجموعتك/.test(x)); // وضع المجموعات معطّل: لا خطوة لاختيار المجموعة
     out += '<div class="ex-block"><div class="lbl">🛠 كيف تنجز التمرين؟</div><ol class="steps-list">' + steps.map((s, i) => '<li><span class="n num">' + (i + 1) + '</span><span>' + h(s) + '</span></li>').join('') + '</ol></div>';
     if (e.mode === 'group') out += '<div id="groupZone">' + groupPickerHtml(e) + '</div>';
     if (e.format === 'text' || !e.hint || (e.format === 'sim' && e.task)) out += '<div class="ex-block task"><div class="lbl">📝 المطلوب منك</div>' + richHtml(e.task || 'اكتب إجابتك.') + '</div>';
@@ -4367,8 +4384,8 @@ const Sims = {
     const del = k => Admin.ctl() && !o.public ? '<button class="del-btn" data-act="del-post" data-ex="' + h(e.id) + '" data-k="' + h(k) + '">🗑</button>' : '';
     if (!keys.length) return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>' + (e.mode === 'group' ? 'مقارنة المجموعات' : 'نتائج الجميع') + '</h3></div><div class="empty">لا توجد نتائج محفوظة بعد.</div></div>';
     if (e.sim === 'budget') {
-      return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>🏆 لوحة مقارنة المجموعات</h3><span class="pill num">' + keys.length + '</span></div><div class="table-wrap"><table class="att-table bud-table"><thead><tr><th>#</th><th>المجموعة</th><th>الطلبات</th><th>العائد</th><th>تكلفة الاستحواذ</th><th>الربح</th><th>النقاط</th><th></th></tr></thead><tbody>' +
-        keys.map((k, i) => { const r = BudgetSim.calc(ps[k].state); return '<tr class="' + (k === myKey ? 'mine' : '') + '"><td class="num">' + (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1) + '</td><td><b>' + h(k === ADMIN_ID ? ADMIN_NAME : Groups.label(+k.slice(1))) + '</b><div class="muted" style="font-size:11.5px">' + CHANNELS.filter(c => +ps[k].state.alloc[c.k]).map(c => c.n.split(' ')[0] + ' ' + QAR(ps[k].state.alloc[c.k])).join(' · ') + '</div></td><td class="num">' + Math.round(r.orders) + '</td><td class="num">' + r.roas.toFixed(2) + '</td><td class="num">' + (r.cac ? QAR(r.cac) : '—') + '</td><td class="num">' + QAR(r.gross) + '</td><td class="num"><b>' + QAR(r.score) + '</b></td><td>' + Likes.btn('posts/' + e.id + '/' + k, ps[k].likes) + del(k) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+      return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>🏆 لوحة مقارنة المجموعات</h3><span class="pill num">' + keys.length + '</span></div><div class="table-wrap"><table class="att-table bud-table"><thead><tr><th>#</th><th>' + (e.mode === 'group' ? 'المجموعة' : 'المشارك') + '</th><th>الطلبات</th><th>العائد</th><th>تكلفة الاستحواذ</th><th>الربح</th><th>النقاط</th><th></th></tr></thead><tbody>' +
+        keys.map((k, i) => { const r = BudgetSim.calc(ps[k].state); return '<tr class="' + (k === myKey ? 'mine' : '') + '"><td class="num">' + (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1) + '</td><td><b>' + h(k === ADMIN_ID ? ADMIN_NAME : /^g\d+$/.test(k) ? Groups.label(+k.slice(1)) : (ps[k].name || 'مشارك')) + '</b><div class="muted" style="font-size:11.5px">' + CHANNELS.filter(c => +ps[k].state.alloc[c.k]).map(c => c.n.split(' ')[0] + ' ' + QAR(ps[k].state.alloc[c.k])).join(' · ') + '</div></td><td class="num">' + Math.round(r.orders) + '</td><td class="num">' + r.roas.toFixed(2) + '</td><td class="num">' + (r.cac ? QAR(r.cac) : '—') + '</td><td class="num">' + QAR(r.gross) + '</td><td class="num"><b>' + QAR(r.score) + '</b></td><td>' + Likes.btn('posts/' + e.id + '/' + k, ps[k].likes) + del(k) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
     }
     return '<div class="feed"><div class="feed-head"><span class="live-dot"></span><h3>نتائج الجميع</h3><span class="pill num">' + keys.length + '</span>' + (S.kind === 'classify' && !showScore ? '<span class="pill">🔒 النتائج بعد الكشف</span>' : '') + '</div><div class="posts">' + keys.map(k => { const p = ps[k]; const isG = e.mode === 'group' && k.charAt(0) === 'g'; const who = k === ADMIN_ID ? ADMIN_NAME : isG ? Groups.label(+k.slice(1)) : (p.name || '');
       return '<div class="post ' + (k === myKey ? 'mine' : '') + '"><div class="post-head"><span class="av">' + h(isG ? '👥' : initials(who)) + '</span><div><div class="who">' + h(who) + '</div><div class="role">' + h(isG ? 'كتبها: ' + (p.name || '') : (p.role || '')) + ' · ' + ago(p.ts || 0) + '</div></div><span class="grow"></span>' + (showScore ? '<span class="sim-badge num">' + h(Sims.fmt(S, S.metric(p.state))) + '</span>' : '') + '</div><div class="post-body">' + h(S.summary(p.state)) + '</div><div class="post-foot">' + Likes.btn('posts/' + e.id + '/' + k, p.likes) + del(k) + '</div></div>'; }).join('') + '</div></div>';
@@ -4486,7 +4503,7 @@ const Points = {
     const users = Store.users || {}; const P = {}; Object.keys(users).forEach(u => { P[u] = { uid: u, pts: 0, ex: 0, likes: 0, first: 0, att: 0, as: 0 }; });
     const exs = Content.allExercises().map(x => x.e).filter(Boolean);
     exs.forEach(e => { const ps = Store.posts[e.id] || {}; let firstK = null, firstTs = Infinity;
-      Object.keys(ps).forEach(k => { const p = ps[k]; if (!p || k === ADMIN_ID) return; const who = e.mode === 'group' ? Object.keys(p.members || {}) : [k]; const lk = Object.keys(p.likes || {}).length;
+      Object.keys(ps).forEach(k => { const p = ps[k]; if (!p || k === ADMIN_ID) return; const who = (e.mode === 'group' || (p.members && /^g\d+$/.test(k))) ? Object.keys(p.members || {}) : [k]; const lk = Object.keys(p.likes || {}).length;
         who.forEach(u => { if (!P[u]) return; P[u].ex++; P[u].pts += e.format === 'sim' ? 15 : 10; P[u].likes += lk; P[u].pts += lk * 2; });
         if ((p.ts || Infinity) < firstTs && e.mode !== 'group') { firstTs = p.ts; firstK = k; } });
       if (firstK && P[firstK]) { P[firstK].first++; P[firstK].pts += 5; } });
@@ -4506,7 +4523,7 @@ function leaderboardHtml(limit = 10) {
   const c = Points.cfg(); const t = Points.table(); const gs = Points.groups(); const me = Me.uid();
   const ind = t.list.filter(x => x.pts).slice(0, limit);
   return '<div class="lb-grid"><div class="card pad"><h3>🏆 المتصدرون</h3>' + (ind.length ? ind.map((x, i) => '<div class="lb-row ' + (x.uid === me ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + (c.names || x.uid === me ? h((Store.users[x.uid] || {}).name || '') : 'مشارك ' + (i + 1)) + '</span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">لا نقاط بعد — شارك في التمارين لتظهر هنا.</div>') + '</div>' +
-    '<div class="card pad"><h3>👥 المجموعات</h3>' + (gs.length ? gs.map((x, i) => '<div class="lb-row ' + (Me.group() === x.g ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + h(Groups.label(x.g)) + ' <span class="muted num">(' + x.n + ')</span></span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">تظهر عند اختيار المتدربين مجموعاتهم.</div>') + '</div></div>' +
+    (!Groups.on() ? '' : '<div class="card pad"><h3>👥 المجموعات</h3>' + (gs.length ? gs.map((x, i) => '<div class="lb-row ' + (Me.group() === x.g ? 'mine' : '') + '"><span class="lb-rank num">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span class="grow">' + h(Groups.label(x.g)) + ' <span class="muted num">(' + x.n + ')</span></span><b class="num">' + x.pts + '</b></div>').join('') : '<div class="muted">تظهر عند اختيار المتدربين مجموعاتهم.</div>') + '</div>') + '</div>' +
     '<div class="muted" style="font-family:var(--f-ui);font-size:12.5px;margin-top:8px">النقاط: 10 لكل تمرين · 15 لكل محاكاة · 2 لكل إعجاب تتلقاه · 5 لأول مشارك في تمرين ' + (Attend.on() ? '· 20 لكل يوم حضور ' : '') + '· 15 لكل تقييم (قبلي/بعدي)</div>';
 }
 
@@ -5417,7 +5434,7 @@ Views.admin = {
     out += tool('users', '👥', '#8A1538', 'المسجّلون', '<div class="bigno num">' + uids.length + '</div>اسم مسجّل في قاعدة البيانات', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="users">' + (UIState.openDrop.has('users') ? 'إخفاء' : 'عرض') + ' القائمة</button><button class="btn btn-danger btn-xs" data-act="clear-names">مسح أسماء المسجّلين فقط</button>');
     out += drop('users', '<div class="field"><input data-keep="users-search" data-filter=".person" placeholder="🔍 بحث بالاسم…"></div><div class="people-list">' + (uids.length ? uids.map(u => '<div class="person" data-name="' + h((users[u].name || '').toLowerCase()) + '"><span class="nm">' + h(users[u].name) + '</span><span class="muted">' + h(users[u].role || '') + '</span><span class="pill num">#' + pad4(users[u].member || 0) + '</span>' + ((Store.secrets || {})[u] ? '<span class="pill num notranslate" translate="no" dir="ltr" title="رمز الدخول الشخصي" style="user-select:all">🔑 ' + h(Store.secrets[u]) + '</span>' : '<span class="pill" title="لا يوجد رمز دخول بعد">🔑 —</span>') + '<button class="btn btn-ghost btn-xs" data-act="code-copy" data-uid="' + h(u) + '" title="نسخ رسالة فيها رقم العضوية والرمز لإرسالها للمتدرب">📋</button><button class="btn btn-ghost btn-xs" data-act="code-new" data-uid="' + h(u) + '" title="توليد رمز جديد وإلغاء ربط الأجهزة الأخرى">🔄 رمز جديد</button><button class="btn btn-ghost btn-xs del-user" data-act="user-del" data-uid="' + h(u) + '" title="حذف المتدرب وكل بياناته" aria-label="حذف المتدرب">🗑</button><span class="muted">' + fmtDate(users[u].ts) + '</span></div>').join('') : '<div class="empty">لا يوجد مسجّلون.</div>') + '</div>');
     B('groups');
-    out += tool('groups', '🧩', '#138A5E', 'إدارة المجموعات', '<div class="row"><input type="number" min="2" max="30" id="grpCount" data-keep="grp-count" value="' + Groups.count() + '" style="width:80px;border:1px solid var(--line);border-radius:10px;padding:6px 8px"><button class="btn btn-soft btn-xs" data-act="save-groups">حفظ العدد</button></div><div style="margin-top:6px">عدد المجموعات (2–30). التوزيع اليدوي إرشادي لا إلزامي.</div>', '<button class="btn btn-primary btn-xs" data-act="assign-open">🧭 توزيع</button>');
+    out += tool('groups', '🧩', '#138A5E', 'إدارة المجموعات', '<div class="feat-sws" style="margin-bottom:8px"><button class="feat-sw' + (Groups.on() ? ' on' : '') + '" data-act="groups-toggle" role="switch" aria-checked="' + Groups.on() + '"><i></i><span>وضع المجموعات</span></button></div>' + (Groups.on() ? '' : '<div style="margin-bottom:8px">⏸ معطّل: تمارين المجموعات تعمل الآن كتمارين فردية ولا يُطلب اختيار مجموعة. المختبر الختامي يبقى بالمجموعات.</div>') + '<div class="row"><input type="number" min="2" max="30" id="grpCount" data-keep="grp-count" value="' + Groups.count() + '" style="width:80px;border:1px solid var(--line);border-radius:10px;padding:6px 8px"><button class="btn btn-soft btn-xs" data-act="save-groups">حفظ العدد</button></div><div style="margin-top:6px">عدد المجموعات (2–30). التوزيع اليدوي إرشادي لا إلزامي.</div>', '<button class="btn btn-primary btn-xs" data-act="assign-open">🧭 توزيع</button>');
     B('congrats');
     out += tool('congrats', '🏆', '#C8702A', 'تهنئة الإنجاز', '<div class="bigno num">' + ach.length + '</div>متدرب بلغ <span class="num">80%</span> إجمالًا', '<button class="btn btn-soft btn-xs" data-act="drop" data-k="ach">الأسماء</button><button class="btn btn-soft btn-xs" data-act="congrats-preview" data-kind="congrats">معاينة</button><button class="btn btn-ghost btn-xs" data-act="drop" data-k="congEdit">تعديل المحتوى</button>');
     out += drop('ach', ach.length ? '<div class="people-list">' + ach.map(u => '<div class="person"><span class="nm">🏆 ' + h(u.name) + '</span><span class="muted">' + h(u.role || '') + '</span></div>').join('') + '</div>' : '<div class="empty">لم يبلغ أحد 80% بعد.</div>');
@@ -5771,7 +5788,7 @@ function collectItems(root, fmt) {
 }
 function exFormHtml(kind) {
   const id = Router.cur.id; const isNew = id === 'new';
-  const e = isNew ? { title: '', icon: kind === 'activity' ? '⚡' : '✍️', mode: 'individual', format: 'text', scenario: '', principle: '', steps: [], task: '', hint: '', why: '', model: '', items: [] } : Content.ex(id);
+  const e = isNew ? { title: '', icon: kind === 'activity' ? '⚡' : '✍️', mode: 'individual', format: 'text', scenario: '', principle: '', steps: [], task: '', hint: '', why: '', model: '', items: [] } : Object.assign({}, Content.ex(id), { mode: (Content.ex(id) || {})._mode0 || (Content.ex(id) || {}).mode });
   if (!e) return adminHeader('تعديل') + '<div class="empty">غير موجود.</div>';
   const isSurvey = e.kind === 'survey'; const isAct = kind === 'activity' || e.kind === 'activity';
   if (FormState.exId !== id) { FormState.exId = id; FormState.format = e.format || 'text'; FormState.items = arr(e.items).map(x => Object.assign({}, x)); }
@@ -6499,7 +6516,7 @@ function reportData(snap) {
     const cfg = Attend.cfg(); const attAvg = uids.length ? Math.round(uids.reduce((s, u) => s + Attend.pct(u), 0) / uids.length) : 0;
     const perDay = Attend.days().map(d => uids.filter(u => Attend.hoursOf(u, d) > 0).length);
     const leads = Leads.list(); const byProg = Leads.byProgram(leads);
-    const budget = (() => { const e = Content.allExercises().map(x => x.e).find(e => e && e.sim === 'budget'); if (!e) return []; const ps = Store.posts[e.id] || {}; return Object.keys(ps).filter(k => ps[k] && ps[k].state && /^g\d+$/.test(k)).map(k => ({ g: +k.slice(1), r: BudgetSim.calc(ps[k].state) })).sort((a, b) => b.r.score - a.r.score); })();
+    const budget = (() => { const e = Content.allExercises().map(x => x.e).find(e => e && e.sim === 'budget'); if (!e) return []; const ps = Store.posts[e.id] || {}; return Object.keys(ps).filter(k => ps[k] && ps[k].state && k !== ADMIN_ID).map(k => ({ g: /^g\d+$/.test(k) ? +k.slice(1) : 0, name: ps[k].name || '', r: BudgetSim.calc(ps[k].state) })).sort((a, b) => b.r.score - a.r.score); })();
     const fu = {}; ['30', '60', '90'].forEach(k => { fu[k] = Object.keys((Store.followups || {})['d' + k] || {}).length; });
     const d = { cohort: Cohort.cur(), uids, n: A.items.length, A, pre, post, paired, gain, preAvg: Assess.avg('pre'), postAvg: Assess.avg('post'), pq: Assess.perQuestion('pre'), qq: Assess.perQuestion('post'), axes, survey, attAvg, perDay, cfg,
       certs: Attend.holders().length, attOn: Attend.on(), certOn: Attend.certOn(), achievers: Progress.achievers().length, labGroups: Object.keys(Store.labAnswers || {}).length, leads, byProg, budget, fu,
@@ -6572,7 +6589,7 @@ async function buildReportPdf(lang = 'ar', snap, cohortName) {
     // 5) المشاركة في المحاور والمحاكاة
     page(L('التفاعل والمشاركة', 'Engagement'), box(L('نسبة المشاركين في تمارين كل محور', 'Share of participants engaging with each module'), pdfBars(d.axes.map(x => ({ l: E ? (EN.axes[x.a.id] || x.a.title) : x.a.title, v: Math.round(x.rate * 100), t: Math.round(x.rate * 100) + '%' })), { max: 100, color: '#1F3A5F', lw: '46%' })) +
       box(L('مؤشرات إضافية', 'Other indicators'), '<div style="display:flex;flex-wrap:wrap;gap:8px">' + card(L('إجمالي المشاركات', 'Total submissions'), d.axes.reduce((s, x) => s + x.posts, 0)) + card(L('أنجزوا 80% من التمارين', 'Completed ≥ 80%'), d.achievers) + card(L('مجموعات المختبر', 'Lab groups'), d.labGroups) + '</div>') +
-      (d.budget.length ? box(L('لعبة ميزانية التسويق: ترتيب المجموعات', 'Marketing budget simulation: group ranking'), pdfBars(d.budget.map(x => ({ l: Groups.label(x.g), v: Math.max(0, Math.round(x.r.score)), t: QAR(x.r.score) + ' · ROAS ' + x.r.roas.toFixed(1) })), { color: '#D07A32' })) : ''));
+      (d.budget.length ? box(L('لعبة ميزانية التسويق: الترتيب', 'Marketing budget simulation: ranking'), pdfBars(d.budget.map(x => ({ l: x.g ? Groups.label(x.g) : (x.name || 'مشارك'), v: Math.max(0, Math.round(x.r.score)), t: QAR(x.r.score) + ' · ROAS ' + x.r.roas.toFixed(1) })), { color: '#D07A32' })) : ''));
     // 6) الرضا
     const sv = d.survey;
     page(L('تقييم المشاركين للبرنامج', 'Participant satisfaction'), box(L('متوسط كل بند (من 5)', 'Average rating per item (out of 5)'), sv.rates.length ? pdfBars(sv.rates.map((r, i) => ({ l: E ? (EN.rates[i] || r) : r, v: sv.avgs[i] || 0, t: sv.avgs[i] ? sv.avgs[i].toFixed(2) : '—' })), { max: 5, color: '#E0A526', lw: '46%' }) : '—') +
@@ -6696,7 +6713,7 @@ function watchDefs() {
     'attendance': v => { Store.attendance = v || {}; },
     'checkins': v => { Store.checkins = v || {}; },
     'site': v => { Store.site = v || {}; },
-    'settings': v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; },
+    'settings': v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupsOff = !!(v.groups && v.groups.enabled === false); Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; },
     'assign': v => { Store.assign = v || {}; },
     'users': v => { Store.usersPub = v || {}; mergeUsers(); setTimeout(checkSelfDeleted, 0); },
     'posts': v => { Store.posts = v || {}; },
@@ -7074,6 +7091,7 @@ document.addEventListener('click', async ev => {
     case 'drop': { const k = t.getAttribute('data-k'); if (k === 'regEdit') UIState.regDraft = null; UIState.openDrop.has(k) ? UIState.openDrop.delete(k) : UIState.openDrop.add(k); App.render(); break; }
     case 'acc': { if (ev.target.closest('.acc-actions') || ev.target.closest('.drag-handle')) break; const k = t.getAttribute('data-k'); UIState.openAcc.has(k) ? UIState.openAcc.delete(k) : UIState.openAcc.add(k); App.render(); break; }
     case 'clear-names': { if (await UI.confirm('مسح أسماء المسجّلين فقط من السيرفر؟ لن تتأثر الإجابات أو المؤقتات، ولن يُطلب من أي متدرب حالي إعادة التسجيل.', { danger: true, ok: 'مسح الأسماء' })) { await DB.remove('users'); UI.toast('تم مسح قائمة الأسماء'); } break; }
+    case 'groups-toggle': { const on = Groups.on(); await DB.set('settings/groups/enabled', on ? false : null); UI.toast(on ? '⏸ عُطّل وضع المجموعات: صارت التمارين الجماعية فردية' : '✅ فُعّل وضع المجموعات'); break; }
     case 'save-groups': { const n = parseInt($('#grpCount').value, 10); if (!(n >= 2 && n <= 30)) { UI.alert('اختر عددًا بين 2 و30.'); break; } await DB.set('settings/groups/count', n); UI.toast('✅ عدد المجموعات: ' + n); break; }
     case 'assign-open': Assign.show(); break;
     case 'assign-close': if (Assign.modal) Assign.modal.close(); break;

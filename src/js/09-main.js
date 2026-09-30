@@ -59,7 +59,7 @@ function watchDefs() {
     'attendance': v => { Store.attendance = v || {}; },
     'checkins': v => { Store.checkins = v || {}; },
     'site': v => { Store.site = v || {}; },
-    'settings': v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; },
+    'settings': v => { v = v || {}; Store.groupCount = v.groups && v.groups.count ? v.groups.count : DEFAULT_GROUPS; Store.groupsOff = !!(v.groups && v.groups.enabled === false); Store.groupNames = v.groupNames || {}; Store.assessCfg = v.assess || {}; Store.attCfg = v.attendance || {}; Store.cohortCfg = v.cohort || {}; Store.presentCfg = v.present || {}; },
     'assign': v => { Store.assign = v || {}; },
     'users': v => { Store.usersPub = v || {}; mergeUsers(); setTimeout(checkSelfDeleted, 0); },
     'posts': v => { Store.posts = v || {}; },
@@ -437,6 +437,7 @@ document.addEventListener('click', async ev => {
     case 'drop': { const k = t.getAttribute('data-k'); if (k === 'regEdit') UIState.regDraft = null; UIState.openDrop.has(k) ? UIState.openDrop.delete(k) : UIState.openDrop.add(k); App.render(); break; }
     case 'acc': { if (ev.target.closest('.acc-actions') || ev.target.closest('.drag-handle')) break; const k = t.getAttribute('data-k'); UIState.openAcc.has(k) ? UIState.openAcc.delete(k) : UIState.openAcc.add(k); App.render(); break; }
     case 'clear-names': { if (await UI.confirm('مسح أسماء المسجّلين فقط من السيرفر؟ لن تتأثر الإجابات أو المؤقتات، ولن يُطلب من أي متدرب حالي إعادة التسجيل.', { danger: true, ok: 'مسح الأسماء' })) { await DB.remove('users'); UI.toast('تم مسح قائمة الأسماء'); } break; }
+    case 'groups-toggle': { const on = Groups.on(); await DB.set('settings/groups/enabled', on ? false : null); UI.toast(on ? '⏸ عُطّل وضع المجموعات: صارت التمارين الجماعية فردية' : '✅ فُعّل وضع المجموعات'); break; }
     case 'save-groups': { const n = parseInt($('#grpCount').value, 10); if (!(n >= 2 && n <= 30)) { UI.alert('اختر عددًا بين 2 و30.'); break; } await DB.set('settings/groups/count', n); UI.toast('✅ عدد المجموعات: ' + n); break; }
     case 'assign-open': Assign.show(); break;
     case 'assign-close': if (Assign.modal) Assign.modal.close(); break;
