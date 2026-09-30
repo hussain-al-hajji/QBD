@@ -55,6 +55,7 @@ Views.home = {
     let out = '<section class="hero"><div class="hero-cover">' + (s.heroImage ? '<img src=\"' + imgSrc(s.heroImage) + '\" alt="">' : Scenes.render('hero')) + '</div><div class="hero-body">' +
       '<h1>' + h(s.heroTitle) + '</h1><div class="hero-desc">' + richHtml(s.heroDesc) + '</div>' +
       '<div class="stats"><div class="stat"><b class="num">' + Content.eligibleAxes().map(a => a.unit).filter((u, i, x) => u && u !== 7 && x.indexOf(u) === i).length + '</b><span>وحدات</span></div><div class="stat"><b class="num">' + axes.length + '</b><span>محور</span></div><div class="stat"><b class="num">' + exCount + '</b><span>تمرين تفاعلي</span></div><div class="stat"><b class="num">' + (Number(Store.registered) || 0) + '</b><span>مسجّل حتى الآن</span></div></div></div></section>';
+    out += Search.html(); // البحث تحت الواجهة الأولى وقبل قائمة الأقسام
     const fu = followupCardsHtml(); if (fu) out += '<section class="section">' + fu + '</section>';
     if (HomeNav.layout() === 'sidebar') return out.replace('<section class="hero">', '<section class="hero hero-compact">') + HomeNav.html();
     Content.homeSections().forEach(sec => { try { out += homeSectionHtml(sec); } catch (e) { console.error(e); } });

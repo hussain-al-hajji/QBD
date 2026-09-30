@@ -295,6 +295,7 @@ document.addEventListener('click', async ev => {
     case 'open-login': LoginModal.open(); break;
     // الزائر: «تسجيل دخول» يعيده إلى صفحة الدخول
     case 'guest-login': Me.guest = false; SafeLS.del('ec_guest'); SafeSS.del('ec_guest'); Router.go('home'); window.scrollTo(0, 0); setTimeout(() => LoginModal.open(), 50); break;
+    case 'search-clear': Search.clear(); break;
     case 'presence-show': Presence.show(t.getAttribute('data-ex')); break;
     case 'invite': Invite.send(t.getAttribute('data-ex')); break;
     case 'invite-cancel': Invite.cancel(); break;
