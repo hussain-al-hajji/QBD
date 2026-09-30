@@ -44,8 +44,8 @@ const fails = []; const ok = (k, v) => { if (!v) fails.push(k); return v; };
   const allErrs = []; let realNet = 0;
 
   { // 1) مفاتيح التخزين بادئة المشروع: هوية مشروع آخر على النطاق نفسه لا تُقرأ، ولا كوكي للهوية
-    const other = JSON.stringify({ uid: 'uPhone', name: 'متدرب الجوال', member: 9, ts: 1 });
-    const { ctx, p, errs, net } = await open({ raw: { ec_me: other, 'phone:ec_me': other }, cfg: {} });
+    const other = JSON.stringify({ uid: 'uOther', name: 'متدرب موقع آخر', member: 9, ts: 1 });
+    const { ctx, p, errs, net } = await open({ raw: { ec_me: other, 'other:ec_me': other }, cfg: {} });
     R.ns = await p.evaluate(() => ({ me: Me.data, cookie: /ec_me=/.test(document.cookie), onLanding: App.onLanding }));
     ok('هوية مشروع آخر لا تُعدّ دخولًا', !R.ns.me && R.ns.onLanding);
     await p.evaluate(() => Me.save({ uid: 'uX', name: 'س', member: 1, ts: 1 }));
