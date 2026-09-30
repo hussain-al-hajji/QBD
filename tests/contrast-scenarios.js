@@ -20,7 +20,7 @@ const SEED = { admins: { adm1: true }, users: { u1: { name: 'سارة أحمد',
     await c.route(/firebaseio\.com|identitytoolkit|securetoken|fonts\.|cdnjs|translate\.google/, r => r.abort());
     await c.route(/firebase-app-compat\.js/, r => r.fulfill({ body: MOCK, contentType: 'application/javascript' }));
     await c.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
-    await p.addInitScript(([d, rules, me, admin, theme]) => { window.__MOCKCFG = { data: d, rules, delayFirst: 50, googleUser: admin ? { uid: 'adm1', email: 't@x' } : null }; window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' }; localStorage.setItem('ec_prefs', JSON.stringify({ theme })); localStorage.setItem('ec_inv_seen', 'i1'); if (me) { localStorage.setItem('ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [SEED, RULES, me, admin, THEME]);
+    await p.addInitScript(([d, rules, me, admin, theme]) => { window.__MOCKCFG = { data: d, rules, delayFirst: 50, googleUser: admin ? { uid: 'adm1', email: 't@x' } : null }; window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' }; localStorage.setItem('qbd:ec_prefs', JSON.stringify({ theme })); localStorage.setItem('qbd:ec_inv_seen', 'i1'); if (me) { localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [SEED, RULES, me, admin, THEME]);
     await p.goto(U); await p.waitForTimeout(900);
     if (admin) { await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(200); await p.click('[data-google]'); await p.waitForTimeout(900); }
     return { c, p, errs };
@@ -69,7 +69,7 @@ const SEED = { admins: { adm1: true }, users: { u1: { name: 'سارة أحمد',
   await go(p, 'account'); for (const k of await p.$$eval('.hn-item', e => e.map(x => x.getAttribute('data-k')))) { await p.click('.hn-item[data-k="' + k + '"]'); await p.waitForTimeout(200); await check(p, 'account:' + k); }
   await go(p, 'home'); await p.fill('#homeSearch', 'الدفع'); await p.waitForTimeout(150); await check(p, 'home:search');
   for (const k of await p.$$eval('.hn-item', e => e.map(x => x.getAttribute('data-k')))) { await p.click('.hn-item[data-k="' + k + '"]'); await p.waitForTimeout(200); await check(p, 'home:' + k); }
-  await p.evaluate(() => { localStorage.removeItem('ec_inv_seen'); Invite.check(); }); await p.waitForTimeout(200); await check(p, 'trainee:inviteModal');
+  await p.evaluate(() => { localStorage.removeItem('qbd:ec_inv_seen'); Invite.check(); }); await p.waitForTimeout(200); await check(p, 'trainee:inviteModal');
   allErrs.push(...errs); await c.close();
   // ---------- الزائر: الصفحة التعريفية ونافذة الدخول ----------
   ({ c, p, errs } = await ctx(null, false)); await p.evaluate(() => window.scrollTo(0, 99999)); await p.waitForTimeout(500); await check(p, 'visitor:landing');

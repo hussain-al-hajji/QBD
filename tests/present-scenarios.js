@@ -7,7 +7,7 @@ const fails = []; const ok = (k, v) => { if (!v) fails.push(k); return v; };
   const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1280, height: 860 } }); const p = await c.newPage(); const errs = []; const net = { real: 0 };
   p.on('pageerror', e => errs.push(e.message));
   await c.route(/firebaseio\.com|identitytoolkit|securetoken/, r => { net.real++; return r.abort(); }); await c.route(/gstatic|fonts\.|cdnjs|translate\.google/, r => r.abort());
-  await p.addInitScript(() => localStorage.setItem('ec_me', JSON.stringify({ uid: 'ud', name: 'تجربة', member: 1, ts: Date.now() })));
+  await p.addInitScript(() => localStorage.setItem('qbd:ec_me', JSON.stringify({ uid: 'ud', name: 'تجربة', member: 1, ts: Date.now() })));
   await p.goto(U + '#/home'); await p.waitForTimeout(900);
   await p.evaluate(() => Router.go('axis', { id: 'a1' })); await p.waitForTimeout(500);
   const idx = () => p.evaluate(() => UIState.deck.a1 || 0); const R = { keys: {} };

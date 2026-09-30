@@ -372,7 +372,7 @@ function answersSummary(e, answers, reveal, compact) {
 // ---- الاختيار من متعدد بأسلوب التصويت: الضغط على الخيار يحفظه فورًا وتظهر نسب الاختيار ----
 function mcqStats(e) {
   const ps = Store.posts[e.id] || {}; const st = e.items.map(it => ({ total: 0, counts: it.options.map(() => 0) }));
-  Object.keys(ps).forEach(k => { const a = ansList(ps[k] && ps[k].answers, e.items.length); a.forEach((v, i) => { if (v === null || v === '' || !st[i]) return; const n = +v; if (n >= 0 && n < st[i].counts.length) { st[i].counts[n]++; st[i].total++; } }); });
+  Object.keys(ps).forEach(k => { if (k === ADMIN_ID) return; const a = ansList(ps[k] && ps[k].answers, e.items.length); a.forEach((v, i) => { if (v === null || v === '' || !st[i]) return; const n = +v; if (n >= 0 && n < st[i].counts.length) { st[i].counts[n]++; st[i].total++; } }); });
   return st;
 }
 function mcqPollHtml(e) {
@@ -509,6 +509,7 @@ Views.ex = {
 // ============ تقييم البرنامج (نجوم + توصية + رأي) ============
 function starsHtml(v, attrs, dis) { return '<span class="stars">' + [1, 2, 3, 4, 5].map(n => '<button class="star ' + (v >= n ? 'on' : '') + '" ' + attrs + ' data-v="' + n + '" ' + dis + ' title="' + n + '">★</button>').join('') + '</span>'; }
 function surveyFormHtml(e) {
+  if (Admin.ok()) return '<div class="answer-box"><div class="locked-note">🛡️ تقييم البرنامج للمتدربين فقط؛ تتابع نتائجه أدناه.</div></div>';
   if (!Me.canPost()) return '<div class="answer-box"><div class="locked-note">🔒 للمسجلين فقط</div></div>';
   const post = (Store.posts[e.id] || {})[Me.uid()]; const editing = !!UIState.editing[e.id];
   if (post && !editing) return '<div class="answer-box"><div class="row" style="margin-bottom:8px"><b style="font-family:var(--f-display)">✅ شكرًا لتقييمك</b><span class="grow"></span><button class="btn btn-soft btn-sm" data-act="edit-ans" data-ex="' + h(e.id) + '">✏️ تعديل</button></div>' +

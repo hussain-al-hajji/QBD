@@ -36,7 +36,7 @@ async function dev(o = {}) {
   await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
   await p.addInitScript(([d, r, x, me]) => { window.__MOCKCFG = Object.assign({ data: d, rules: r, delayFirst: 80 }, x || {}); window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };
-    if (me && !sessionStorage.getItem('__seeded')) { sessionStorage.setItem('__seeded', '1'); localStorage.setItem('ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [master.tree || SEED(), o.rules || RULES, o.cfg, o.me]);
+    if (me && !sessionStorage.getItem('__seeded')) { sessionStorage.setItem('__seeded', '1'); localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [master.tree || SEED(), o.rules || RULES, o.cfg, o.me]);
   await p.goto(U + (o.hash || '')); await p.waitForTimeout(900);
   if (o.admin) { await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(200); await p.click('[data-google]'); await p.waitForTimeout(900); }
   return { ctx, p, net, errs };
@@ -61,7 +61,7 @@ const adminGrp = (p, g, acc) => p.evaluate(([g, acc]) => { Router.go('admin'); U
   R.user.othersKept = !!at('users/u2') && !!at('posts/a1e3/u2') && at('storyLikes/st1/likes/u2') === true; ok('بيانات الآخرين سليمة', R.user.othersKept);
   R.user.stats = at('stats/registered'); ok('تقليل عدد المسجلين', R.user.stats === 1);
   await A.p.waitForTimeout(2200);
-  R.user.traineeDevice = await A.p.evaluate(() => ({ me: !!Me.data, stored: !!localStorage.getItem('ec_me'), alert: (document.querySelector('.modal') || {}).innerText || '' }));
+  R.user.traineeDevice = await A.p.evaluate(() => ({ me: !!Me.data, stored: !!localStorage.getItem('qbd:ec_me'), alert: (document.querySelector('.modal') || {}).innerText || '' }));
   ok('جهاز المتدرب المحذوف: خروج وتنبيه', !R.user.traineeDevice.me && !R.user.traineeDevice.stored && /حذف المدرب حسابك/.test(R.user.traineeDevice.alert));
   // ---------- 2) حذف تمرين أصلي ثم استرجاعه ----------
   await adminGrp(T.p, 'g_axes', ['a1']); await T.p.waitForTimeout(300);

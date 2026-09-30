@@ -22,7 +22,7 @@ async function dev(o = {}) {
   await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
   await p.addInitScript(([d, r, x, me]) => { window.__MOCKCFG = Object.assign({ data: d, rules: r, delayFirst: 80 }, x || {}); window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };
-    if (me && !sessionStorage.getItem('__seeded')) { sessionStorage.setItem('__seeded', '1'); localStorage.setItem('ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [master.tree || o.data || SEED, o.rules || RULES, o.cfg, o.me]);
+    if (me && !sessionStorage.getItem('__seeded')) { sessionStorage.setItem('__seeded', '1'); localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [master.tree || o.data || SEED, o.rules || RULES, o.cfg, o.me]);
   await p.goto(U + (o.hash || '')); await p.waitForTimeout(900);
   if (o.admin) { await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(200); await p.click('[data-google]'); await p.waitForTimeout(900); }
   return { ctx, p, net, errs };
@@ -40,8 +40,10 @@ const count = async p => { const el = await p.$('.ex-head ~ .live-bar .live-coun
   // 1) المتدرب والزائر على صفحة التمرين
   await go(A.p, 'ex', 'a1e3'); await go(G.p, 'ex', 'a1e3'); await A.p.waitForTimeout(600);
   const srv = await S(T.p, 'presence/a1e3');
-  R.presence.server = Object.keys(srv || {}).length; R.presence.traineeRec = srv && srv.u1 && { n: srv.u1.n, u: srv.u1.u, g: srv.u1.g };
-  ok('تسجيل المتدرب بمعرّف جلسته', srv && srv.u1 && srv.u1.n === 'سارة أحمد' && srv.u1.g === 2);
+  // معرّف الجلسة = رقم جلسة الدخول + «-» + معرّف التبويب
+  const k1 = Object.keys(srv || {}).find(k => k.indexOf('u1-') === 0); const r1 = k1 && srv[k1];
+  R.presence.server = Object.keys(srv || {}).length; R.presence.traineeRec = r1 && { key: k1, n: r1.n, u: r1.u, g: r1.g };
+  ok('تسجيل المتدرب بمعرّف جلسته', r1 && r1.n === 'سارة أحمد' && r1.g === 2);
   await go(T.p, 'ex', 'a1e3'); await T.p.waitForTimeout(400);
   R.presence.adminCount = await count(T.p); ok('المدرب يرى 2 (ويتجاهل الأقدم من 6 ساعات)', /^2 /.test(R.presence.adminCount || ''));
   R.presence.adminNotRegistered = !Object.keys(srv || {}).some(k => k === 'adm1'); ok('المدرب لا يُسجَّل', R.presence.adminNotRegistered);
@@ -60,19 +62,29 @@ const count = async p => { const el = await p.$('.ex-head ~ .live-bar .live-coun
   R.presence.afterDrop = Object.keys((await S(T.p, 'presence/a1e3')) || {}).filter(k => k !== 'stale1').length; ok('onDisconnect يحذف عند الانقطاع', R.presence.afterDrop === 0);
   await G.p.evaluate(() => __mock.setConnected(true)); await G.p.waitForTimeout(600);
   R.presence.afterReconnect = Object.keys((await S(T.p, 'presence/a1e3')) || {}).filter(k => k !== 'stale1').length; ok('إعادة التسجيل عند عودة الاتصال', R.presence.afterReconnect === 1);
+  // 2ب) تبويب ثانٍ للمتدرب نفسه: تسجيل ثانٍ بمعرّف جلسته نفسها وتبويب آخر
+  await go(A.p, 'ex', 'a1e3'); await A.p.waitForTimeout(400);
+  R.presence.secondTab = await tryW(A.p, "() => DB.set('presence/a1e3/' + authUid() + '-t2', { n: 'سارة أحمد', u: 'u1', g: 2, ts: DB.now() }, { quiet: true })");
+  await T.p.waitForTimeout(300); await go(T.p, 'ex', 'a1e3'); await T.p.waitForTimeout(300);
+  const tabs = Object.keys((await S(T.p, 'presence/a1e3')) || {}).filter(k => k.indexOf('u1-') === 0).length; const cnt2 = await count(T.p);
+  R.presence.twoTabs = { entries: tabs, shown: cnt2 }; ok('تبويبان: تسجيلان يُحسبان شخصًا واحدًا', R.presence.secondTab === 'allowed' && tabs === 2 && /^2 /.test(cnt2 || '')); // سارة + الزائر
+  await A.p.evaluate(() => DB.remove('presence/a1e3/' + authUid() + '-t2', { quiet: true })); await A.p.waitForTimeout(200);
+  R.presence.firstTabKept = Object.keys((await S(T.p, 'presence/a1e3')) || {}).filter(k => k.indexOf('u1-') === 0).length === 1; ok('إغلاق تبويب لا يُسقط الآخر', R.presence.firstTabKept);
+  await go(A.p, 'home'); await A.p.waitForTimeout(400);
   // 3) القواعد
   R.rules = {
     traineeRead: await tryR(A.p, 'presence'),
+    lookalikeSid: await tryW(A.p, "() => DB.set('presence/a1e3/u1x-tt', { n: 'x', u: '', g: 0, ts: DB.now() }, { quiet: true })"),
     otherSid: await tryW(A.p, "() => DB.set('presence/a1e3/zzz', { n: 'x', u: '', g: 0, ts: DB.now() }, { quiet: true })"),
-    badField: await tryW(A.p, "() => DB.set('presence/a1e3/u1', { n: 'x', u: '', g: 0, ts: DB.now(), evil: 1 }, { quiet: true })"),
-    longName: await tryW(A.p, "() => DB.set('presence/a1e3/u1', { n: 'x'.repeat(200), u: '', g: 0, ts: DB.now() }, { quiet: true })"),
-    spoofUid: await tryW(A.p, "() => DB.set('presence/a1e3/u1', { n: 'x', u: 'u2', g: 0, ts: DB.now() }, { quiet: true })"),
-    own: await tryW(A.p, "() => DB.set('presence/a1e3/u1', { n: 'سارة', u: 'u1', g: 2, ts: DB.now() }, { quiet: true })"),
+    badField: await tryW(A.p, "() => DB.set('presence/a1e3/u1-tt', { n: 'x', u: '', g: 0, ts: DB.now(), evil: 1 }, { quiet: true })"),
+    longName: await tryW(A.p, "() => DB.set('presence/a1e3/u1-tt', { n: 'x'.repeat(200), u: '', g: 0, ts: DB.now() }, { quiet: true })"),
+    spoofUid: await tryW(A.p, "() => DB.set('presence/a1e3/u1-tt', { n: 'x', u: 'u2', g: 0, ts: DB.now() }, { quiet: true })"),
+    own: await tryW(A.p, "() => DB.set('presence/a1e3/u1-tt', { n: 'سارة', u: 'u1', g: 2, ts: DB.now() }, { quiet: true })"),
     traineeInvite: await tryW(A.p, "() => DB.set('invite', { id: 'x', ex: 'a1e3', title: 't', ts: DB.now() }, { quiet: true })"),
     adminInviteBad: await tryW(T.p, "() => DB.set('invite', { id: 'x', ex: 'a1e3', ts: DB.now(), evil: 1 }, { quiet: true })")
   };
-  await A.p.evaluate(() => DB.remove('presence/a1e3/u1', { quiet: true }));
-  ok('قواعد الحضور والدعوة', R.rules.traineeRead === 'denied' && R.rules.otherSid === 'denied' && R.rules.badField === 'denied' && R.rules.longName === 'denied' && R.rules.spoofUid === 'denied' && R.rules.own === 'allowed' && R.rules.traineeInvite === 'denied' && R.rules.adminInviteBad === 'denied');
+  await A.p.evaluate(() => DB.remove('presence/a1e3/u1-tt', { quiet: true }));
+  ok('قواعد الحضور والدعوة', R.rules.traineeRead === 'denied' && R.rules.otherSid === 'denied' && R.rules.lookalikeSid === 'denied' && R.rules.badField === 'denied' && R.rules.longName === 'denied' && R.rules.spoofUid === 'denied' && R.rules.own === 'allowed' && R.rules.traineeInvite === 'denied' && R.rules.adminInviteBad === 'denied');
   // 4) الدعوة
   const B = await dev({ me: ME2, hash: '#/home' }); await go(B.p, 'ex', 'a1e3'); await B.p.waitForTimeout(400); // على صفحة التمرين نفسه
   await go(T.p, 'ex', 'a1e3'); await T.p.waitForTimeout(300);
@@ -113,7 +125,7 @@ const count = async p => { const el = await p.$('.ex-head ~ .live-bar .live-coun
     await ctx.route(/firebaseio\.com|identitytoolkit|securetoken|gstatic/, r => { net.real++; return r.abort(); }); await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
     await p.goto(U + '?demo=1#/home'); await p.waitForTimeout(800);
     await p.evaluate(() => { Me.save({ uid: 'ud', name: 'تجربة', member: 1, ts: Date.now() }); Router.go('ex', { id: 'a1e3' }); }); await p.waitForTimeout(400);
-    R.demo.local = await p.evaluate(() => { const t = JSON.parse(localStorage.getItem('qdb_ecom_demo_db') || '{}'); return Object.keys(((t.presence || {}).a1e3) || {}).length; });
+    R.demo.local = await p.evaluate(() => { const t = JSON.parse(localStorage.getItem('qbd:qdb_ecom_demo_db') || '{}'); return Object.keys(((t.presence || {}).a1e3) || {}).length; });
     R.demo.errs = errs; ok('الوضع المحلي يعمل', R.demo.local === 1 && !errs.length); await ctx.close(); }
   R.fails = fails; console.log(JSON.stringify(R, null, 1)); await browser.close(); process.exit(fails.length ? 1 : 0);
 })();

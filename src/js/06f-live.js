@@ -12,7 +12,9 @@ const PRESENCE_TTL = 6 * 3600 * 1000; // تُتجاهل التسجيلات ال�
 const Presence = {
   cur: null, key: '', sid: null, _conn: false,
   // معرّف الجلسة: رقم جلسة الدخول في Firebase (تفرضه القواعد)، أو معرّف عشوائي في الوضع المحلي
-  sessionId() { if (AUTH.enabled) return authUid(); return Presence.sid || (Presence.sid = genId('s')); },
+  // لكل تبويب معرّف مستقل (تبويبان للمتدرب نفسه لا يحذف أحدهما تسجيل الآخر عند إغلاقه)
+  tab: genId('t'),
+  sessionId() { if (AUTH.enabled) { const a = authUid(); return a ? a + '-' + Presence.tab : null; } return Presence.sid || (Presence.sid = genId('s')); },
   payload() { const reg = Me.isReg(); return { n: reg ? String(Me.data.name || '').slice(0, 80) : '', u: reg ? String(Me.data.uid) : '', g: reg ? (Me.group() || 0) : 0, ts: DB.now() }; },
   // يُستدعى بعد كل رسم: يطابق التسجيل مع الصفحة الحالية والهوية الحالية
   sync() {
@@ -28,7 +30,8 @@ const Presence = {
   leave() { const path = Presence.cur; Presence.cur = null; Presence.key = ''; if (!path) return; DB.cancelDisconnect(path); DB.remove(path, { quiet: true, beforeReady: true }).catch(() => {}); },
   // عند عودة الاتصال يكون الخادم قد حذف التسجيل: نعيده
   onStatus(st) { if (st.connected && !Presence._conn && Presence.cur) Presence.write(); Presence._conn = !!st.connected; },
-  list(ex) { const o = (Store.presence || {})[ex] || {}; const now = DB.now(); return Object.keys(o).map(k => o[k]).filter(x => x && now - (+x.ts || 0) < PRESENCE_TTL); },
+  // شخص واحد بعدة تبويبات يُحسب مرة واحدة (بمعرّف جلسته قبل «-»)
+  list(ex) { const o = (Store.presence || {})[ex] || {}; const now = DB.now(); const seen = {}; Object.keys(o).forEach(k => { const x = o[k]; if (!x || now - (+x.ts || 0) >= PRESENCE_TTL) return; const p = k.split('-')[0]; if (!seen[p] || (+x.ts || 0) > (+seen[p].ts || 0)) seen[p] = x; }); return Object.keys(seen).map(p => seen[p]); },
   // عداد المدرب (صفحة التمرين وصف التمرين في لوحة التحكم)
   badge(ex) {
     if (!Admin.ok()) return '';

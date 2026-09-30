@@ -18,7 +18,7 @@ const fails = []; const ok = (k, v) => { if (!v) fails.push(k); return v; };
     await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
     await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
     await p.addInitScript(([d, r, me, dark]) => { window.__MOCKCFG = { data: d, rules: r, delayFirst: 80 }; window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };
-      localStorage.setItem('ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); if (dark) localStorage.setItem('ec_prefs', JSON.stringify({ theme: 'dark' })); }, [SEED, RULES, ME, !!o.dark]);
+      localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); if (dark) localStorage.setItem('qbd:ec_prefs', JSON.stringify({ theme: 'dark' })); }, [SEED, RULES, ME, !!o.dark]);
     await p.goto(U + '#/home'); await p.waitForTimeout(900); return { ctx, p, net, errs };
   }
   const { ctx, p, net, errs } = await open();

@@ -19,7 +19,7 @@ const H = 3600 * 1000;
     await p.goto(U); await p.waitForTimeout(800); return { ctx, p, net, errs };
   }
   // يعيد التحميل مع الإبقاء على حالة الخادم المحاكى وضبط وقت آخر استخدام
-  const reloadAged = async (p, hours) => { await p.evaluate(h => { sessionStorage.setItem('__mock_server_boot', JSON.stringify(window.__mock.server)); localStorage.setItem('ec_last', String(Date.now() - h * 3600000)); }, hours); await p.reload(); await p.waitForTimeout(1000); };
+  const reloadAged = async (p, hours) => { await p.evaluate(h => { sessionStorage.setItem('__mock_server_boot', JSON.stringify(window.__mock.server)); localStorage.setItem('qbd:ec_last', String(Date.now() - h * 3600000)); }, hours); await p.reload(); await p.waitForTimeout(1000); };
   const state = p => p.evaluate(() => ({ reg: Me.isReg(), view: Router.cur.view, landing: !!document.querySelector('.lp-hero'), authUid: (AUTH.user || {}).uid || null, admin: Admin.ok() }));
   { // المتدرب
     const { ctx, p, net, errs } = await open();

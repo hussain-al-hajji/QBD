@@ -74,7 +74,7 @@
       }
     },
     "users": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())",
@@ -138,33 +138,35 @@
         ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && !newData.exists()",
         "$aid": {
           ".read": "auth != null && auth.uid === $aid",
-          ".write": "auth != null && auth.uid === $aid && $uid !== 'admin' && newData.exists() && (newData.val() === root.child('secrets').child($uid).val() || (!root.child('devices').child($uid).exists() && !root.child('secrets').child($uid).exists() && (!root.child('users').child($uid).exists() || root.child('meta').child('legacyClaims').val() !== false)))",
+          ".write": "auth != null && auth.uid === $aid && $uid !== 'admin' && newData.exists() && (newData.val() === root.child('secrets').child($uid).val() || (!root.child('devices').child($uid).exists() && !root.child('secrets').child($uid).exists() && !root.child('users').child($uid).exists()))",
           ".validate": "newData.isString() && newData.val().length <= 12"
         }
       }
     },
     "posts": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$ex": {
         "$key": {
           ".write": "auth != null && (auth.uid === $key || root.child('devices').child($key).child(auth.uid).exists() || ($key.beginsWith('g') && newData.exists() && newData.child('by').isString() && (auth.uid === newData.child('by').val() || root.child('devices').child(newData.child('by').val()).child(auth.uid).exists()) && root.child('users').child(newData.child('by').val()).child('gkey').val() === $key))",
           "likes": {
             "$liker": {
-              ".write": "auth != null && (auth.uid === $liker || root.child('devices').child($liker).child(auth.uid).exists())"
+              ".write": "auth != null && (auth.uid === $liker || root.child('devices').child($liker).child(auth.uid).exists())",
+              ".validate": "newData.isBoolean() && auth != null && (auth.uid === $liker || root.child('devices').child($liker).child(auth.uid).exists() || root.child('admins').child(auth.uid).val() === true)"
             }
           },
           "members": {
             "$m": {
               ".write": "auth != null && (auth.uid === $m || root.child('devices').child($m).child(auth.uid).exists()) && !newData.exists()",
-              ".validate": "newData.isBoolean()"
+              ".validate": "newData.isBoolean() && auth != null && (auth.uid === $m || root.child('devices').child($m).child(auth.uid).exists() || root.child('admins').child(auth.uid).val() === true)"
             }
           },
           "text": {
             ".validate": "newData.isString() && newData.val().length <= 5000"
           },
           "name": {
-            ".validate": "newData.isString() && newData.val().length <= 80"
+            ".validate": "newData.isString() && newData.val().length <= 80",
+            ".write": "auth != null && newData.val() === '' && (auth.uid === root.child('posts').child($ex).child($key).child('by').val() || root.child('devices').child(root.child('posts').child($ex).child($key).child('by').val()).child(auth.uid).exists())"
           },
           "role": {
             ".validate": "newData.isString() && newData.val().length <= 120"
@@ -174,22 +176,54 @@
           },
           "answers": {
             "$i": {
-              ".validate": "newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 300)"
+              ".validate": "$i.length <= 3 && (newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 300))"
             }
           },
           "ratings": {
             "$i": {
-              ".validate": "newData.isNumber()"
+              ".validate": "$i.length <= 3 && newData.isNumber()"
             }
           },
           "$other": {
-            ".validate": "newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 3000) || newData.hasChildren()"
+            ".validate": false
+          },
+          "by": {
+            ".write": "auth != null && !newData.exists() && (auth.uid === data.val() || root.child('devices').child(data.val()).child(auth.uid).exists())",
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          ".validate": "$ex.length <= 60",
+          "uid": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "group": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
+          },
+          "ts": {
+            ".validate": "newData.isNumber()"
+          },
+          "nps": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+          },
+          "metric": {
+            ".validate": "newData.isNumber()"
+          },
+          "state": {
+            ".validate": "newData.hasChildren()",
+            "$k": {
+              ".validate": "$k.length <= 24 && (newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 1500) || newData.hasChildren())",
+              "$j": {
+                ".validate": "$j.length <= 24 && (newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 500))",
+                "$z": {
+                  ".validate": false
+                }
+              }
+            }
           }
         }
       }
     },
     "storyLikes": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$story": {
         "likes": {
@@ -200,7 +234,7 @@
       }
     },
     "assess": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$phase": {
         "$uid": {
@@ -220,14 +254,14 @@
       }
     },
     "attendance": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && !newData.exists()"
       }
     },
     "checkins": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$day": {
         "$uid": {
@@ -245,11 +279,14 @@
       }
     },
     "lab": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "timers": {
         "$group": {
-          ".write": "auth != null && newData.child('by').isString() && (auth.uid === newData.child('by').val() || root.child('devices').child(newData.child('by').val()).child(auth.uid).exists()) && root.child('users').child(newData.child('by').val()).child('gkey').val() === $group"
+          ".write": "auth != null && newData.child('by').isString() && (auth.uid === newData.child('by').val() || root.child('devices').child(newData.child('by').val()).child(auth.uid).exists()) && root.child('users').child(newData.child('by').val()).child('gkey').val() === $group",
+          "by": {
+            ".write": "auth != null && !newData.exists() && (auth.uid === data.val() || root.child('devices').child(data.val()).child(auth.uid).exists())"
+          }
         }
       },
       "answers": {
@@ -260,14 +297,18 @@
               ".validate": "newData.isString() && newData.val().length <= 5000"
             },
             "name": {
-              ".validate": "newData.isString() && newData.val().length <= 80"
+              ".validate": "newData.isString() && newData.val().length <= 80",
+              ".write": "auth != null && newData.val() === '' && (auth.uid === root.child('lab').child('answers').child($group).child($stage).child('uid').val() || root.child('devices').child(root.child('lab').child('answers').child($group).child($stage).child('uid').val()).child(auth.uid).exists())"
+            },
+            "uid": {
+              ".write": "auth != null && !newData.exists() && (auth.uid === data.val() || root.child('devices').child(data.val()).child(auth.uid).exists())"
             }
           }
         }
       }
     },
     "assign": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists()) && !newData.exists()"
@@ -309,7 +350,13 @@
           ".read": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())",
           ".write": "auth != null && (auth.uid === $uid || root.child('devices').child($uid).child(auth.uid).exists())",
           "$f": {
-            ".validate": "newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 2000) || newData.hasChildren()"
+            ".validate": "$f.length <= 24 && (newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 2000) || newData.hasChildren())",
+            "$g": {
+              ".validate": "$g.length <= 24 && (newData.isNumber() || newData.isBoolean() || (newData.isString() && newData.val().length <= 500))",
+              "$z": {
+                ".validate": false
+              }
+            }
           }
         }
       }
@@ -326,8 +373,8 @@
       ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$ex": {
         "$sid": {
-          ".write": "auth != null && auth.uid === $sid",
-          ".validate": "$ex.length <= 60 && newData.hasChildren(['ts'])",
+          ".write": "auth != null && ($sid === auth.uid || $sid.beginsWith(auth.uid + '-'))",
+          ".validate": "$sid.length <= 80 && $ex.length <= 60 && newData.hasChildren(['ts'])",
           "n": {
             ".validate": "newData.isString() && newData.val().length <= 80"
           },

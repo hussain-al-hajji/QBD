@@ -50,12 +50,15 @@ const FORMAT_MODE = {mcq:'individual',truefalse:'individual',fillblank:'group',c
 // ---------------------------------------------------------------------
 // 2) طبقات آمنة للتخزين والتاريخ (بعض البيئات المعزولة ترمي SecurityError)
 // ---------------------------------------------------------------------
+// كل مفاتيح التخزين المحلي تحمل بادئة المشروع: المشاريع المنشورة على النطاق نفسه (github.io) تتشارك
+// التخزين المحلي والكوكيز، فبدون البادئة يرى مشروعٌ هويةَ متدرب وجلسة مدرب مشروعٍ آخر
+const STORE_NS = 'qbd:';
 const memStore = {};
 function mkSafeStore(getter) {
   return {
-    get(k) { try { const s = getter(); return s ? s.getItem(k) : (k in memStore ? memStore[k] : null); } catch (e) { return k in memStore ? memStore[k] : null; } },
-    set(k, v) { memStore[k] = v; try { const s = getter(); if (s) s.setItem(k, v); } catch (e) {} },
-    del(k) { delete memStore[k]; try { const s = getter(); if (s) s.removeItem(k); } catch (e) {} }
+    get(k) { k = STORE_NS + k; try { const s = getter(); return s ? s.getItem(k) : (k in memStore ? memStore[k] : null); } catch (e) { return k in memStore ? memStore[k] : null; } },
+    set(k, v) { k = STORE_NS + k; memStore[k] = v; try { const s = getter(); if (s) s.setItem(k, v); } catch (e) {} },
+    del(k) { k = STORE_NS + k; delete memStore[k]; try { const s = getter(); if (s) s.removeItem(k); } catch (e) {} }
   };
 }
 const SafeLS = mkSafeStore(() => window.localStorage);
@@ -186,7 +189,7 @@ const DB = (function () {
   function related(a, b) { a = norm(a); b = norm(b); return !a || !b || a === b || a.startsWith(b + '/') || b.startsWith(a + '/'); }
   function notify(changed) { watchers.slice().forEach(w => { if (w.alive && related(w.path, changed)) { try { w.cb(clone(getAt(w.path))); } catch (e) { console.error(e); } } }); }
   const clone = v => v == null ? null : JSON.parse(JSON.stringify(v));
-  window.addEventListener('storage', e => { if (e.key === KEY) { try { tree = JSON.parse(e.newValue || '{}') || {}; } catch (er) {} notify(''); } });
+  window.addEventListener('storage', e => { if (e.key === STORE_NS + KEY) { try { tree = JSON.parse(e.newValue || '{}') || {}; } catch (er) {} notify(''); } });
   status.connected = true;
   const lguard = (op, path, obj, o) => { const p = norm(path); if (!p && op !== 'update') throw new Error('DB: ممنوع ' + op + ' على جذر القاعدة'); if (op === 'update') Object.keys(obj || {}).forEach(k => { const full = norm((p ? p + '/' : '') + k); if (!full) throw new Error('DB: مفتاح فارغ'); if (!p && full.indexOf('/') === -1 && !(o && o.allowTopLevel)) throw new Error('DB: استبدال العقدة «' + full + '» كاملة غير مسموح هنا'); }); };
   return {

@@ -105,10 +105,18 @@ function syncWatchers() {
   Object.keys(defs).forEach(path => {
     if (Watch.active[path]) return;
     Watch.active[path] = DB.watch(path, v => {
+      if (Watch.publicPaths.indexOf(path) > -1) App.watchError = null;
       defs[path](v);
       if (!Watch.seen.has(path)) { Watch.seen.add(path); if (!App.dataReady && Watch.publicPaths.every(x => Watch.seen.has(x))) { App.dataReady = true; DB.markReady(); App.render(); } }
       App.onData();
-    }, e => { console.warn('watch denied', path, e); if (errs[path]) errs[path](e); if (Watch.publicPaths.indexOf(path) > -1) { App.watchError = e; App.render(); } });
+    }, e => {
+      // مراقبة مرفوضة تُلغى نهائيًا في Firebase: نزيلها لتُعاد عند المزامنة التالية (بعد اكتمال الدخول مثلًا)
+      console.warn('watch denied', path, e); const un = Watch.active[path]; delete Watch.active[path]; try { un && un(); } catch (er) {}
+      if (errs[path]) errs[path](e);
+      // الرفض أثناء تبديل الحساب (خروج ثم جلسة جديدة) متوقع؛ الخطأ الحقيقي فقط بعد اكتمال الدخول
+      if (Watch.publicPaths.indexOf(path) > -1 && (!AUTH.enabled || (AUTH.resolved && authUid()))) { App.watchError = e; App.render(); }
+      else if (Watch.publicPaths.indexOf(path) > -1 && AUTH.enabled && AUTH.resolved && !authUid() && AUTH.anonError) { App.watchError = new Error('تعذر إنشاء جلسة دخول آمنة للزائر. إن كنت المسؤول: فعّل Anonymous في Firebase Authentication ← Sign-in method.'); App.render(); }
+    });
   });
 }
 function watchAll() { syncWatchers(); }
@@ -145,7 +153,10 @@ function userDataPaths(uid) {
   upd['users/' + uid] = null; upd['assess/pre/' + uid] = null; upd['assess/post/' + uid] = null; upd['attendance/' + uid] = null; upd['assign/' + uid] = null; upd['leads/' + uid] = null;
   ['30', '60', '90'].forEach(n => { upd['followups/d' + n + '/' + uid] = null; });
   upd['private/' + uid] = null; upd['secrets/' + uid] = null; upd['devices/' + uid] = null; Attend.days().forEach(d => { upd['checkins/d' + d + '/' + uid] = null; });
-  Object.keys(Store.posts || {}).forEach(ex => { const ps = Store.posts[ex] || {}; Object.keys(ps).forEach(k => { const p = ps[k] || {}; if (k === uid) upd['posts/' + ex + '/' + k] = null; else { if (p.members && p.members[uid]) upd['posts/' + ex + '/' + k + '/members/' + uid] = null; if (p.likes && p.likes[uid]) upd['posts/' + ex + '/' + k + '/likes/' + uid] = null; if (p.by === uid) upd['posts/' + ex + '/' + k + '/name'] = ''; } }); });
+  Object.keys(Store.posts || {}).forEach(ex => { const ps = Store.posts[ex] || {}; Object.keys(ps).forEach(k => { const p = ps[k] || {}; if (k === uid) upd['posts/' + ex + '/' + k] = null; else { if (p.members && p.members[uid]) upd['posts/' + ex + '/' + k + '/members/' + uid] = null; if (p.likes && p.likes[uid]) upd['posts/' + ex + '/' + k + '/likes/' + uid] = null; if (p.by === uid) { upd['posts/' + ex + '/' + k + '/name'] = ''; upd['posts/' + ex + '/' + k + '/by'] = null; } } }); });
+  // مخرجات المختبر تبقى للمجموعة مع إزالة اسم كاتبها ومعرّفه
+  Object.keys(Store.labAnswers || {}).forEach(g => { const ga = Store.labAnswers[g] || {}; Object.keys(ga).forEach(st => { if (ga[st] && ga[st].uid === uid) { upd['lab/answers/' + g + '/' + st + '/name'] = ''; upd['lab/answers/' + g + '/' + st + '/uid'] = null; } }); });
+  Object.keys(Store.labTimers || {}).forEach(g => { if ((Store.labTimers[g] || {}).by === uid) upd['lab/timers/' + g + '/by'] = null; });
   Object.keys(Store.storyLikes || {}).forEach(st => { if (((Store.storyLikes[st] || {}).likes || {})[uid]) upd['storyLikes/' + st + '/likes/' + uid] = null; });
   return upd;
 }
@@ -174,7 +185,9 @@ function checkSelfDeleted() {
 async function deleteMyData() {
   const ok = await UI.confirm('سيُحذف نهائيًا من السيرفر: بياناتك، ومشاركاتك الفردية، ونتائج تقييماتك، وسجل حضورك، واهتماماتك، ومتابعاتك، وإعجاباتك. إجابات المجموعات تبقى باسم المجموعة مع إزالة اسمك منها. لا يمكن التراجع، ولن تتمكن من الحصول على الشهادة.', { danger: true, ok: 'احذف بياناتي نهائيًا', title: 'حذف بياناتي' });
   if (!ok) return; const uid = Me.uid();
-  await DB.update('', userDataPaths(uid)); DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1));
+  try { await DB.update('', userDataPaths(uid), { quiet: true }); }
+  catch (e) { UI.alert('تعذر حذف بياناتك الآن (' + h((e && e.code) || (e && e.message) || e) + '). لم يُحذف شيء — أعد المحاولة، أو اطلب من المدرب حذف حسابك من قائمة المسجلين.', 'تعذر الحذف'); return; }
+  DB.transaction('stats/registered', c => Math.max(0, (Number(c) || 0) - 1), { quiet: true }).catch(() => {});
   Me.clear(); UIState.draft = {}; UIState.editing = {}; Router.go('home'); UI.toast('تم حذف بياناتك نهائيًا');
 }
 function welcomeModal(me) {
@@ -237,13 +250,13 @@ async function copyEx(id) {
 }
 async function backupData() { // يُقرأ من الخادم مباشرة (لا من حالة الواجهة) حتى لا تُصدَّر نسخة ناقصة
   const g = k => DB.get(k);
-  return { app: 'qdb-ecom', version: 2, exportedAt: new Date().toISOString(), data: { content: await g('content'), added: await g('added'), visibility: await g('visibility'), enabled: await g('enabled'), order: await g('order'), media: await g('media'), site: await g('site'), settings: await g('settings') } };
+  return { app: 'qdb-ecom', version: 2, exportedAt: new Date().toISOString(), data: { content: await g('content'), added: await g('added'), visibility: await g('visibility'), enabled: await g('enabled'), order: await g('order'), media: await g('media'), site: await g('site'), settings: await g('settings'), removed: await g('removed') } };
 }
 async function importBackup(file) {
   try {
     const obj = JSON.parse(await file.text());
     if (!obj || obj.app !== 'qdb-ecom' || !obj.data) { UI.alert('الملف ليس نسخة احتياطية صالحة لهذا الموقع.'); return; }
-    const d = obj.data; const keys = ['media', 'content', 'added', 'visibility', 'enabled', 'order'].filter(k => d[k] != null);
+    const d = obj.data; const keys = ['media', 'content', 'added', 'visibility', 'enabled', 'order', 'removed'].filter(k => d[k] != null);
     const merge = ['site', 'settings'].filter(k => d[k] && typeof d[k] === 'object');
     const ok = await UI.confirm('استيراد نسخة المحتوى (' + h(obj.exportedAt || '') + '):<br>• تُستبدل: ' + (keys.map(h).join('، ') || '—') + '<br>• تُحدَّث عناصرها الموجودة في الملف فقط: ' + (merge.map(h).join('، ') || '—') + '<br>ما لا يحتويه الملف يبقى كما هو، ومشاركات المتدربين لا تتأثر. سيُنزَّل ملف بالمحتوى الحالي أولًا.', { danger: true, ok: 'تنزيل الحالي ثم الاستيراد' });
     if (!ok) return;
@@ -254,21 +267,29 @@ async function importBackup(file) {
   } catch (e) { UI.alert('تعذر الاستيراد: ' + h(e.message || e)); }
 }
 // نسخة كاملة من كل عقد القاعدة (ملف خارجي) — للاحتفاظ بها خارج Firebase
-const ALL_NODES = ['admins', 'secure', 'monitorData', 'private', 'devices', 'secrets', 'checkins', 'content', 'added', 'visibility', 'enabled', 'order', 'site', 'settings', 'media', 'users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes', 'reveal', 'broadcast', 'stats', 'meta', 'cohorts', 'cohortIndex', 'backups', 'backupIndex'];
+// (العقدة admins لا تُقرأ كاملة بالقواعد — تُدار من لوحة Firebase — والحضور الحي مؤقت بطبيعته)
+const ALL_NODES = ['secure', 'private', 'devices', 'secrets', 'checkins', 'content', 'added', 'visibility', 'enabled', 'order', 'site', 'settings', 'media', 'users', 'posts', 'assess', 'attendance', 'lab', 'assign', 'leads', 'followups', 'storyLikes', 'reveal', 'broadcast', 'stats', 'meta', 'cohorts', 'cohortIndex', 'backups', 'backupIndex', 'invite', 'removed'];
 async function exportAll() {
   const pm = progressModal('💾 نسخة كاملة'); const out = {};
-  try { for (let i = 0; i < ALL_NODES.length; i++) { pm.set(i + 1, ALL_NODES.length, ALL_NODES[i]); out[ALL_NODES[i]] = await DB.get(ALL_NODES[i]); }
-    downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom', kind: 'full', exportedAt: new Date().toISOString(), data: out })], { type: 'application/json' }), 'نسخة كاملة لقاعدة البيانات ' + dayKey(DB.now()) + '.json'); pm.close(); UI.toast('✅ نُزّلت النسخة الكاملة');
+  // كل عقدة تُقرأ منفصلة: تعذر قراءة عقدة واحدة لا يُسقط النسخة كلها، ويُذكر اسمها في النتيجة
+  const skipped = [];
+  try { for (let i = 0; i < ALL_NODES.length; i++) { pm.set(i + 1, ALL_NODES.length, ALL_NODES[i]); try { out[ALL_NODES[i]] = await DB.get(ALL_NODES[i]); } catch (e) { skipped.push(ALL_NODES[i]); } }
+    downloadBlob(new Blob([JSON.stringify({ app: 'qdb-ecom', kind: 'full', exportedAt: new Date().toISOString(), skipped, data: out })], { type: 'application/json' }), 'نسخة كاملة لقاعدة البيانات ' + dayKey(DB.now()) + '.json'); pm.close();
+    if (skipped.length) UI.alert('نُزّلت النسخة، لكن تعذرت قراءة: <b dir="ltr">' + skipped.map(h).join('، ') + '</b> — غالبًا لأن القواعد المنشورة أقدم من هذه النسخة.'); else UI.toast('✅ نُزّلت النسخة الكاملة');
   } catch (e) { pm.close(); UI.alert('تعذر التنزيل: ' + h(e.message || e)); }
 }
+// الحضور الحي والدعوة: كتابات منفصلة هادئة حتى لا تُفشل قواعدٌ قديمة عملية المسح نفسها
+function clearLive() { DB.remove('presence', { quiet: true, allowTopLevel: true }).catch(() => {}); DB.remove('invite', { quiet: true }).catch(() => {}); }
 async function globalReset() {
   const ok = await UI.confirm('<b>تحذير:</b> سيُمسح نهائيًا كل ما أدخله المتدربون (المشاركات، المختبر، المؤقتات، التقييم القبلي والبعدي، الحضور، قائمة المسجّلين، التعيينات)، ما عدا الاستطلاع الختامي، وسيُطلب من كل متصفح تسجيل اسم جديد. لا يمكن التراجع.', { danger: true, ok: 'نعم، امسح كل المدخلات', title: 'إعادة ضبط شاملة' });
   if (!ok) return;
   const posts = await DB.get('posts') || {}; const upd = {};
   Object.keys(posts).forEach(k => { if (k !== SURVEY_ID) upd['posts/' + k] = null; }); // استثناء صريح للاستطلاع الختامي
-  await autoBackup(true); // نسخة احتياطية تلقائية قبل المسح
+  // نسخة احتياطية تلقائية قبل المسح — وإن فشلت لا نمسح دون موافقة صريحة
+  if (!(await autoBackup(true)) && !(await UI.confirm('تعذر حفظ النسخة الاحتياطية التلقائية قبل المسح. المتابعة تعني مسح المدخلات دون نسخة. يُنصح بالإلغاء وتنزيل «💾 نسخة كاملة» أولًا.', { danger: true, ok: 'امسح دون نسخة', title: 'النسخة الاحتياطية فشلت' }))) return;
+  upd.storyLikes = null; upd.reveal = null; upd['stats/registered'] = 0;
   upd.lab = null; upd.users = null; upd.private = null; upd.devices = null; upd.secrets = null; upd.checkins = null; upd.assign = null; upd.assess = null; upd.attendance = null; upd.leads = null; upd.followups = null; upd['meta/resetStamp'] = DB.now();
-  await DB.update('', upd, { allowTopLevel: true }); UI.toast('تمت إعادة الضبط الشاملة');
+  await DB.update('', upd, { allowTopLevel: true }); clearLive(); UI.toast('تمت إعادة الضبط الشاملة');
 }
 
 function collectRegRows() {
@@ -345,7 +366,8 @@ document.addEventListener('click', async ev => {
       const e = Content.ex(exId); const d = UIState.draft.sv || { ratings: {} };
       if (e.rates.some((_, i) => !d.ratings[i])) { UI.alert('قيّم كل البنود بالنجوم قبل الإرسال.'); break; }
       if (e.nps && d.nps == null) { UI.alert('اختر درجة التوصية من 0 إلى 10.'); break; }
-      const me = Me.actor(); await DB.set('posts/' + exId + '/' + me.uid, Object.assign({}, (Store.posts[exId] || {})[me.uid] || {}, { ratings: d.ratings, nps: d.nps, text: ($('#svText') || {}).value ? $('#svText').value.trim() : '', name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() }));
+      const me = Me.actor(); // تحديث حقول التقييم فقط (لا إعادة كتابة للمنشور كاملًا مع إعجابات الآخرين)
+      await DB.update('posts/' + exId + '/' + me.uid, { ratings: d.ratings, nps: d.nps, text: ($('#svText') || {}).value ? $('#svText').value.trim() : '', name: me.name, role: me.role || '', uid: me.uid, ts: DB.now() });
       UIState.editing[exId] = false; delete UIState.draft.sv; UI.toast('✅ شكرًا لتقييمك'); App.render(); break;
     }
     case 'sim-step': { const e = Content.ex(exId); Sims.state(e).step = +t.getAttribute('data-i'); App.render(); break; }
@@ -452,7 +474,7 @@ document.addEventListener('click', async ev => {
       await DB.update('settings/attendance', upd); UI.toast(f === 'enabled' ? (on ? '⏸ عُطّل تسجيل الحضور (ومعه الشهادة)' : '✅ فُعّل تسجيل الحضور') : (on ? '⏸ عُطّلت شهادة المشاركة' : '✅ فُعّلت شهادة المشاركة')); break;
     }
     case 'att-cfg-save': { const days = parseInt($('#attDays').value, 10), hours = parseFloat($('#attHours').value), th = parseInt($('#attTh').value, 10); if (!(days >= 1 && days <= 10) || !(hours > 0) || !(th >= 0 && th <= 100)) { UI.alert('تحقق من القيم المدخلة.'); break; } await DB.update('settings/attendance', { days, hours, threshold: th }); UI.toast('✅ حُفظت إعدادات الحضور'); break; }
-    case 'att-code': { const d = t.getAttribute('data-d'); await DB.set('secure/attcodes/d' + d + '/code', String(Math.floor(1000 + Math.random() * 9000))); break; }
+    case 'att-code': { const d = t.getAttribute('data-d'); await DB.set('secure/attcodes/d' + d + '/code', String(Math.floor(100000 + Math.random() * 900000)) /* 6 أرقام: التخمين الآلي أصعب بكثير */); break; }
     case 'att-open': { const d = t.getAttribute('data-d'); const cd = Attend.cfg().codes['d' + d] || {}; await DB.update('settings/attendance/codes/d' + d, { open: !cd.open }); UI.toast(cd.open ? '🔒 أُغلق تسجيل الحضور' : '🟢 فُتح تسجيل الحضور لليوم ' + d); break; }
     case 'att-show': { const d = t.getAttribute('data-d'); const cd = Attend.cfg().codes['d' + d] || {}; const m = UI.modal('<div class="center"><div class="sec-kicker">رمز حضور اليوم ' + d + '</div><div class="att-big num notranslate" translate="no">' + h(cd.code || '') + '</div><p class="muted" style="font-family:var(--f-ui)">افتح المنصة ← أدخل الرمز في شريط «تسجيل الحضور» أعلى الصفحة</p></div><div class="actions" style="justify-content:center"><button class="btn btn-ghost" data-x>إغلاق</button></div>', { wide: true }); $('[data-x]', m.el).onclick = () => m.close(); break; }
     case 'att-all': { const d = t.getAttribute('data-d'); if (!(await UI.confirm('تسجيل حضور كامل لكل المسجّلين في اليوم ' + d + '؟', { ok: 'تسجيل' }))) break; const upd = {}; Object.keys(Store.users || {}).forEach(u => { upd['attendance/' + u + '/d' + d] = Attend.cfg().hours; }); await DB.update('', upd); UI.toast('✅ تم'); break; }
@@ -635,7 +657,7 @@ async function closeCohort() {
     pm.set(2, 3, 'جارٍ الحفظ في الأرشيف…'); await DB.set('cohorts/' + id, { meta, data }); await DB.set('cohortIndex/' + id, Object.assign({}, meta, { summary }));
     pm.set(3, 3, 'جارٍ تجهيز الدفعة الجديدة…'); const upd = {}; BACKUP_PATHS.forEach(k => { upd[k] = null; }); upd['meta/resetStamp'] = DB.now(); upd['stats/registered'] = 0; upd['settings/attendance/codes'] = null; upd.reveal = null;
     upd['settings/cohort'] = { name: 'الدفعة ' + num, start: '', end: '' };
-    await DB.update('', upd, { allowTopLevel: true }); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
+    await DB.update('', upd, { allowTopLevel: true }); clearLive(); pm.close(); UI.toast('✅ أُرشفت الدفعة وبدأت دفعة جديدة');
   } catch (e) { pm.close(); UI.alert('تعذرت الأرشفة: ' + h(e.message || e)); }
 }
 
@@ -673,7 +695,7 @@ function authInit() {
 const authUid = () => (AUTH.user && AUTH.user.uid) || null;
 function genCode() { const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; const r = new Uint32Array(6); try { crypto.getRandomValues(r); } catch (e) { for (let i = 0; i < 6; i++) r[i] = Math.floor(Math.random() * 1e9); } for (let i = 0; i < 6; i++) s += a[r[i] % a.length]; return s; }
 // ربط الجهاز بالسجل: السجل الجديد يُربط فورًا، والدخول من جهاز آخر يحتاج رمز الدخول الشخصي
-async function linkDevice(uid, code) { const au = authUid(); if (!DB.real || !au) return true; try { await DB.set('devices/' + uid + '/' + au, code || 'legacy', { quiet: true, beforeReady: true }); return true; } catch (e) { return false; } }
+async function linkDevice(uid, code) { const au = authUid(); if (!DB.real || !AUTH.enabled) return true; if (!au) return false; /* بلا جلسة آمنة لا ربط (ولا دخول وهمي على الجهاز) */ try { await DB.set('devices/' + uid + '/' + au, code || 'legacy', { quiet: true, beforeReady: true }); return true; } catch (e) { return false; } }
 async function ensureOwnership() {
   if (!DB.real || !Me.data || !authUid() || !AUTH.enabled) return;
   const uid = Me.data.uid; if (uid === authUid()) return;
@@ -749,7 +771,8 @@ function boot() {
   Router.cur = Router.parse();
   SafeHist.replace(Router.cur, Router.url(Router.cur));
   authInit();
-  watchAll();
+  // بيانات المتدربين تتطلب جلسة دخول: مع Firebase Authentication تبدأ المراقبات بعد اكتمال الجلسة (في authInit)
+  if (!AUTH.enabled) watchAll();
   if (Session.notice) setTimeout(() => UI.toast('🔒 انتهت مدة الدخول (72 ساعة من آخر استخدام) — يرجى تسجيل الدخول من جديد.', 7000), 1500);
   if (Me.data && Me.data._fromHash) DB.get('users/' + Me.data.uid).then(u => { if (u) Me.save({ uid: Me.data.uid, name: u.name, role: u.role || '', org: u.org || '', email: u.email || '', member: u.member, ts: u.ts || 0, group: u.group || null }); else Me.clear(); App.render(); });
   Translate.boot();
@@ -763,6 +786,8 @@ function boot() {
   DB.onReject = (e, where) => { console.warn('write rejected', where, e);
     const denied = (e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)); const node = String(where || '').split(/[\/,]/)[0];
     if (denied && Admin.ok() && NEW_RULE_NODES.indexOf(node) > -1) { rulesOutdatedAlert(node); App.onData(); return; } UI.toast('⚠️ تعذّر حفظ التعديل: ' + ((e && e.code === 'PERMISSION_DENIED') || /permission/i.test(String(e && e.message)) ? 'رفضت قاعدة البيانات الكتابة' : String((e && e.message) || e)) + ' — تُعرض الآن آخر نسخة محفوظة على الخادم', 6000); App.onData(); };
+  // رفض الكتابة يُعرض للمستخدم عبر DB.onReject؛ لا داعي لتكراره كخطأ «غير معالَج» في وحدة التحكم
+  window.addEventListener('unhandledrejection', ev => { const r = ev.reason || {}; if (r.code === 'PERMISSION_DENIED' || /permission|لم تكتمل قراءة/i.test(String(r.message || ''))) ev.preventDefault(); });
   DB.onSynced = () => UI.toast('✅ عاد الاتصال وحُفظت كل التعديلات المعلّقة', 4000);
   window.addEventListener('beforeunload', e => { if (DB.status && DB.status.pending > 0) { e.preventDefault(); e.returnValue = ''; return ''; } });
   App.render();

@@ -17,7 +17,7 @@ const ME = { uid: 'u1', name: 'سارة أحمد', member: 1001, ts: 1, code: 'A
     await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
     await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
     await p.addInitScript(([d, r, x, me]) => { window.__MOCKCFG = Object.assign({ data: d, rules: r, delayFirst: 80 }, x || {}); window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };
-      if (me) { localStorage.setItem('ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [o.data || SEED, RULES, o.cfg, o.me]);
+      if (me) { localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [o.data || SEED, RULES, o.cfg, o.me]);
     await p.goto(U + (o.hash || '')); await p.waitForTimeout(900); return { ctx, p, net, errs };
   }
   const acts = p => p.$$eval('.topbar .top-actions > *', e => e.map(x => x.getAttribute('data-act') || x.getAttribute('data-go') || x.className));
@@ -54,13 +54,13 @@ const ME = { uid: 'u1', name: 'سارة أحمد', member: 1001, ts: 1, code: 'A
     R.trainee.confirmShown = true; await p.click('.modal [data-no]'); await p.waitForTimeout(300);
     R.trainee.stillIn = await p.evaluate(() => Me.uid()) === 'u1'; ok('الإلغاء يبقي الدخول', R.trainee.stillIn);
     await p.click('.topbar [data-act="user-logout"]'); await p.waitForSelector('.modal [data-ok]'); await p.click('.modal [data-ok]'); await p.waitForTimeout(400);
-    R.trainee.loggedOut = await p.evaluate(() => !Me.data && !localStorage.getItem('ec_me')); ok('الخروج بعد التأكيد', R.trainee.loggedOut);
+    R.trainee.loggedOut = await p.evaluate(() => !Me.data && !localStorage.getItem('qbd:ec_me')); ok('الخروج بعد التأكيد', R.trainee.loggedOut);
     R.trainee.realNet = net.real; R.trainee.errs = errs; await ctx.close();
   }
   { // 3) المدرب على جهاز فيه هوية متدرب: يدخل بالقفل ← الواجهة التعليمية أولًا بهوية «الإدارة»
     const { ctx, p, net, errs } = await open({ me: ME, cfg: { googleUser: { uid: 'adm1', email: 't@x' } }, hash: '#/home' });
     await p.evaluate(() => LoginModal.open()); await p.click('.trainer-lock'); await p.waitForTimeout(300); await p.click('[data-google]'); await p.waitForTimeout(900);
-    R.admin = { view: await p.evaluate(() => Router.cur.view), acts: await acts(p), uid: await p.evaluate(() => Me.uid()), stored: await p.evaluate(() => JSON.parse(localStorage.getItem('ec_me')).uid) };
+    R.admin = { view: await p.evaluate(() => Router.cur.view), acts: await acts(p), uid: await p.evaluate(() => Me.uid()), stored: await p.evaluate(() => JSON.parse(localStorage.getItem('qbd:ec_me')).uid) };
     ok('المدرب: الواجهة التعليمية أولًا', R.admin.view === 'home');
     ok('المدرب: لوحة التحكم + ترجمة + Aa + خروج', JSON.stringify(R.admin.acts) === JSON.stringify(['admin-panel', 'translate', 'prefs', 'admin-exit']));
     ok('هوية الإدارة في الذاكرة فقط', R.admin.uid === 'admin' && R.admin.stored === 'u1');

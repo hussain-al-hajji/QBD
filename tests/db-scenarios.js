@@ -21,8 +21,8 @@ async function open(b, o = {}) {
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-database-compat\.js/, r => o.blockLib ? r.abort() : r.fulfill({ body: '', contentType: 'application/javascript' }));
   await ctx.route(/fonts\.googleapis|fonts\.gstatic|cdnjs|translate\.google/, r => r.abort());
   await p.addInitScript(c => { window.__MOCKCFG = c; }, Object.assign({ data: SEED, delayFirst: 0 }, o.cfg || {}));
-  if (o.admin) await p.addInitScript(() => { try { sessionStorage.setItem('ec_admin', '1'); } catch (e) {} });
-  if (o.guest) await p.addInitScript(() => { try { localStorage.setItem('ec_guest', '1'); } catch (e) {} });
+  if (o.admin) await p.addInitScript(() => { try { sessionStorage.setItem('qbd:ec_admin', '1'); } catch (e) {} });
+  if (o.guest) await p.addInitScript(() => { try { localStorage.setItem('qbd:ec_guest', '1'); } catch (e) {} });
   await p.goto(U + (o.hash || ''));
   return { ctx, p, net, errs };
 }
@@ -36,10 +36,10 @@ const S = (p, path) => p.evaluate(path => { let n = window.__mock.server; for (c
   if (run('0')) { // مكتبة Firebase لم تُحمَّل (شبكة ضعيفة/حجب)
     const { ctx, p, net } = await open(b, { blockLib: true, guest: true }); await p.waitForTimeout(1500);
     const t = await txt(p);
-    R['0_lib_blocked'] = { dbReal: await p.evaluate(() => DB.real), warningShown: /تعذّر|تعذر الاتصال|غير متصل|الاتصال/.test(t), localDbKey: await p.evaluate(() => !!localStorage.getItem('qdb_ecom_demo_db')), realNet: net.real };
+    R['0_lib_blocked'] = { dbReal: await p.evaluate(() => DB.real), warningShown: /تعذّر|تعذر الاتصال|غير متصل|الاتصال/.test(t), localDbKey: await p.evaluate(() => !!localStorage.getItem('qbd:qdb_ecom_demo_db')), realNet: net.real };
     // المتدرب يسجّل ويجيب — أين تذهب البيانات؟
     R['0_lib_blocked'].writeResult = await p.evaluate(async () => { try { await DB.set('posts/a1e1/uX', { text: 'x' }); return 'accepted'; } catch (e) { return 'rejected: ' + e.message; } });
-    R['0_lib_blocked'].answerSavedWhere = await p.evaluate(() => (JSON.parse(localStorage.getItem('qdb_ecom_demo_db') || '{}').posts ? 'localStorage فقط' : 'لم يُكتب محليًا'));
+    R['0_lib_blocked'].answerSavedWhere = await p.evaluate(() => (JSON.parse(localStorage.getItem('qbd:qdb_ecom_demo_db') || '{}').posts ? 'localStorage فقط' : 'لم يُكتب محليًا'));
     R['0_lib_blocked'].warnAfterWrite = /تعذّر|تعذر|غير متصل|لم تُحفظ/.test(await txt(p));
     await ctx.close();
   }

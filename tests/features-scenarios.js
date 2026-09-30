@@ -16,7 +16,7 @@ const base = att => ({ admins: { adm1: true }, users: { u1: { name: 'سارة أ
     await ctx.route(/firebase-(database|auth|app-check)-compat\.js/, r => r.fulfill({ body: '', contentType: 'application/javascript' }));
     await ctx.route(/fonts\.|cdnjs|translate\.google/, r => r.abort());
     await p.addInitScript(([d, r, x, me]) => { window.__MOCKCFG = Object.assign({ data: d, rules: r, delayFirst: 80 }, x || {}); window.__FB_TEST_CONFIG = { apiKey: 'k', authDomain: 't', projectId: 't' };
-      if (me) { localStorage.setItem('ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [data, RULES, x, me]);
+      if (me) { localStorage.setItem('qbd:ec_me', JSON.stringify(me)); localStorage.setItem('__mock_auth', JSON.stringify({ uid: me.uid, isAnonymous: true })); } }, [data, RULES, x, me]);
     await p.goto(U); await p.waitForTimeout(900); return { ctx, p, net, errs };
   }
   const trainee = async (label, att) => {
